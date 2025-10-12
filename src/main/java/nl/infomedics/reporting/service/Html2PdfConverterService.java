@@ -2,16 +2,26 @@ package nl.infomedics.reporting.service;
 
 import com.openhtmltopdf.pdfboxout.PdfRendererBuilder;
 import com.openhtmltopdf.svgsupport.BatikSVGDrawer;
-
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.w3c.dom.Document;
 
+import javax.xml.XMLConstants;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.transform.OutputKeys;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
 import java.io.*;
 import java.nio.file.*;
 import java.util.concurrent.Executors;
 
 @Service
 public class Html2PdfConverterService {
+
+    private final QrBarcodeObjectFactory objectFactory = new QrBarcodeObjectFactory();
 
     @Value("${input.path.html}")
     private String htmlInputPath;
@@ -36,7 +46,7 @@ public class Html2PdfConverterService {
                     if (event.kind() == StandardWatchEventKinds.ENTRY_CREATE) {
                         Path filename = (Path) event.context();
                         String fileName2 = filename.toString().toLowerCase();
-						if (fileName2.endsWith(".html") || fileName2.endsWith(".xhtml")) {
+                        if (fileName2.endsWith(".html") || fileName2.endsWith(".xhtml")) {
                             Path htmlFile = inputDir.resolve(filename);
                             convertHtmlToPdf(htmlFile);
                         }
@@ -51,21 +61,77 @@ public class Html2PdfConverterService {
 
     private void convertHtmlToPdf(Path htmlFile) {
         try {
-            String baseName = htmlFile.getFileName().toString().replaceAll("\\.html$", "");
+            String baseName = stripExtension(htmlFile.getFileName().toString());
             Path pdfFile = Paths.get(pdfOutputPath, baseName + ".pdf");
+            Files.createDirectories(pdfFile.getParent());
 
-            try (OutputStream os = new FileOutputStream(pdfFile.toFile())) {
+            Document document = parseDocument(htmlFile);
+            Path intermediateHtml = null;
+            if (document != null) {
+                objectFactory.preprocessDocument(document);
+                intermediateHtml = writeIntermediateHtml(pdfFile, baseName, document);
+            }
+
+            try (OutputStream os = Files.newOutputStream(pdfFile, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE)) {
                 PdfRendererBuilder builder = new PdfRendererBuilder();
-                builder.useFastMode();
+                builder.useSlowMode();
                 builder.useSVGDrawer(new BatikSVGDrawer());
+                builder.useObjectDrawerFactory(objectFactory);
                 builder.usePdfAConformance(PdfRendererBuilder.PdfAConformance.NONE);
-                builder.withFile(htmlFile.toFile());
+                if (document != null) {
+                    String baseUrl = htmlFile.getParent() != null ? htmlFile.getParent().toUri().toString() : htmlFile.toUri().toString();
+                    builder.withW3cDocument(document, baseUrl);
+                } else {
+                    builder.withFile(htmlFile.toFile());
+                }
                 builder.toStream(os);
                 builder.run();
             }
             System.out.println("Converted: " + htmlFile + " -> " + pdfFile);
+            if (document != null) {
+                System.out.println("Intermediate HTML saved to: " + intermediateHtml);
+            }
         } catch (Exception e) {
             System.err.println("Error converting " + htmlFile + ": " + e.getMessage());
         }
+    }
+
+    private String stripExtension(String name) {
+        int idx = name.lastIndexOf('.');
+        if (idx > 0) {
+            return name.substring(0, idx);
+        }
+        return name;
+    }
+
+    private Document parseDocument(Path htmlFile) {
+        try (InputStream in = Files.newInputStream(htmlFile)) {
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            factory.setNamespaceAware(true);
+            factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
+            factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+            DocumentBuilder builder = factory.newDocumentBuilder();
+            Document document = builder.parse(in);
+            document.getDocumentElement().normalize();
+            return document;
+        } catch (Exception ex) {
+            System.err.println("Unable to parse " + htmlFile + " as XHTML: " + ex.getMessage());
+            return null;
+        }
+    }
+
+    private Path writeIntermediateHtml(Path pdfFile, String baseName, Document document) {
+        Path debugFile = pdfFile.getParent().resolve(baseName + "-intermediate.xhtml");
+        try (OutputStream out = Files.newOutputStream(debugFile, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE)) {
+            TransformerFactory transformerFactory = TransformerFactory.newInstance();
+            Transformer transformer = transformerFactory.newTransformer();
+            transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+            transformer.setOutputProperty(OutputKeys.METHOD, "xml");
+            transformer.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
+            transformer.transform(new DOMSource(document), new StreamResult(out));
+        } catch (Exception e) {
+            System.err.println("Unable to write intermediate HTML: " + e.getMessage());
+        }
+        return debugFile;
     }
 }
