@@ -22,6 +22,8 @@ import java.util.concurrent.Executors;
 public class Html2PdfConverterService {
 
     private final QrBarcodeObjectFactory objectFactory = new QrBarcodeObjectFactory();
+    private static final int PARSE_RETRY_ATTEMPTS = 10;
+    private static final long PARSE_RETRY_DELAY_MS = 150L;
 
     @Value("${input.path.html}")
     private String htmlInputPath;
@@ -65,7 +67,7 @@ public class Html2PdfConverterService {
             Path pdfFile = Paths.get(pdfOutputPath, baseName + ".pdf");
             Files.createDirectories(pdfFile.getParent());
 
-            Document document = parseDocument(htmlFile);
+            Document document = parseDocumentWithRetry(htmlFile);
             Path intermediateHtml = null;
             if (document != null) {
                 objectFactory.preprocessDocument(document);
@@ -104,20 +106,32 @@ public class Html2PdfConverterService {
         return name;
     }
 
-    private Document parseDocument(Path htmlFile) {
-        try (InputStream in = Files.newInputStream(htmlFile)) {
-            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-            factory.setNamespaceAware(true);
-            factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
-            factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
-            DocumentBuilder builder = factory.newDocumentBuilder();
-            Document document = builder.parse(in);
-            document.getDocumentElement().normalize();
-            return document;
-        } catch (Exception ex) {
-            System.err.println("Unable to parse " + htmlFile + " as XHTML: " + ex.getMessage());
-            return null;
+    private Document parseDocumentWithRetry(Path htmlFile) {
+        for (int attempt = 1; attempt <= PARSE_RETRY_ATTEMPTS; attempt++) {
+            try (InputStream in = Files.newInputStream(htmlFile)) {
+                DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+                factory.setNamespaceAware(true);
+                factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
+                factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+                DocumentBuilder builder = factory.newDocumentBuilder();
+                Document document = builder.parse(in);
+                document.getDocumentElement().normalize();
+                return document;
+            } catch (Exception ex) {
+                if (attempt == PARSE_RETRY_ATTEMPTS) {
+                    System.err.println("Unable to parse " + htmlFile + " as XHTML after "
+                            + PARSE_RETRY_ATTEMPTS + " attempts: " + ex.getMessage());
+                } else {
+                    try {
+                        Thread.sleep(PARSE_RETRY_DELAY_MS);
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                        break;
+                    }
+                }
+            }
         }
+        return null;
     }
 
     private Path writeIntermediateHtml(Path pdfFile, String baseName, Document document) {
