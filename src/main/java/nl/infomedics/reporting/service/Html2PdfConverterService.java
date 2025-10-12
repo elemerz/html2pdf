@@ -62,16 +62,17 @@ public class Html2PdfConverterService {
     }
 
     private void convertHtmlToPdf(Path htmlFile) {
+        long startMillis = System.currentTimeMillis();
         try {
             String baseName = stripExtension(htmlFile.getFileName().toString());
             Path pdfFile = Paths.get(pdfOutputPath, baseName + ".pdf");
             Files.createDirectories(pdfFile.getParent());
 
             Document document = parseDocumentWithRetry(htmlFile);
-            Path intermediateHtml = null;
+            //Path intermediateHtml = null;
             if (document != null) {
                 objectFactory.preprocessDocument(document);
-                intermediateHtml = writeIntermediateHtml(pdfFile, baseName, document);
+                //intermediateHtml = writeIntermediateHtml(pdfFile, baseName, document);
             }
 
             try (OutputStream os = Files.newOutputStream(pdfFile, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE)) {
@@ -90,11 +91,17 @@ public class Html2PdfConverterService {
                 builder.run();
             }
             System.out.println("Converted: " + htmlFile + " -> " + pdfFile);
-            if (document != null) {
-                System.out.println("Intermediate HTML saved to: " + intermediateHtml);
-            }
+//            if (document != null) {
+//                System.out.println("Intermediate HTML saved to: " + intermediateHtml);
+//            }
+            long duration = System.currentTimeMillis() - startMillis;
+            System.out.println("Conversion time: " + duration + " ms");
         } catch (Exception e) {
             System.err.println("Error converting " + htmlFile + ": " + e.getMessage());
+        } finally {
+            if (Thread.interrupted()) {
+                Thread.currentThread().interrupt();
+            }
         }
     }
 
