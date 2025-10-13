@@ -17,6 +17,7 @@ import javax.xml.transform.stream.StreamResult;
 import java.io.*;
 import java.nio.file.*;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ExecutorService;
 
 @Service
 public class Html2PdfConverterService {
@@ -24,6 +25,8 @@ public class Html2PdfConverterService {
     private final QrBarcodeObjectFactory objectFactory = new QrBarcodeObjectFactory();
     private static final int PARSE_RETRY_ATTEMPTS = 10;
     private static final long PARSE_RETRY_DELAY_MS = 150L;
+    private final ExecutorService conversionExecutor = Executors.newVirtualThreadPerTaskExecutor();
+    private volatile Thread watcherThread;
 
     @Value("${input.path.html}")
     private String htmlInputPath;
@@ -32,7 +35,13 @@ public class Html2PdfConverterService {
     private String pdfOutputPath;
 
     public void startWatching() {
-        Executors.newSingleThreadExecutor().execute(this::watchFolder);
+        synchronized (this) {
+            if (watcherThread == null || !watcherThread.isAlive()) {
+                watcherThread = Thread.ofPlatform()
+                        .name("html2pdf-watch")
+                        .start(this::watchFolder);
+            }
+        }
     }
 
     private void watchFolder() {
@@ -50,7 +59,7 @@ public class Html2PdfConverterService {
                         String fileName2 = filename.toString().toLowerCase();
                         if (fileName2.endsWith(".html") || fileName2.endsWith(".xhtml")) {
                             Path htmlFile = inputDir.resolve(filename);
-                            convertHtmlToPdf(htmlFile);
+                            conversionExecutor.submit(() -> convertHtmlToPdf(htmlFile));
                         }
                     }
                 }
