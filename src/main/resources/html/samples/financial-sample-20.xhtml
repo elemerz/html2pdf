@@ -1,4 +1,3 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en">
 <head>
 <meta http-equiv="Content-Type" content="application/xhtml+xml; charset=UTF-8" />
@@ -13,7 +12,9 @@ table { width: 100%; border-collapse: collapse; margin: 12pt 0 18pt 0; }
 th, td { border-bottom: 1px solid #b0b8c1; padding: 6px 10px; text-align: right; }
 th { background: #e8eff7; text-align: left; }
 .pagebreak { page-break-after: always; }
-.logo { display: flex; align-items: center; gap: 10px; margin-bottom: 12pt; }
+.logo { margin-bottom: 12pt; font-size: 0;}
+.logo > * {display: inline-block; vertical-align: middle; font-size: 12pt;}
+.logo > * + * {margin-left: 10px;}
 .logo img { width: 20mm; height: 20mm; }
 .meta { font-size: 10pt; color: #5a6472; }
 footer { font-size: 9pt; text-align: center; margin-top: 24pt; color: #6d7885; }

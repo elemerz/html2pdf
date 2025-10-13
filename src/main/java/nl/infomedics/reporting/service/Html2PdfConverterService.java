@@ -14,11 +14,17 @@ import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
-import java.util.concurrent.ExecutorService;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Service
 public class Html2PdfConverterService {
@@ -57,26 +63,71 @@ public class Html2PdfConverterService {
 
             System.out.println("Watching folder: " + htmlInputPath);
             while (true) {
-                WatchKey key = watchService.take();
+                Set<Path> batchFiles = new LinkedHashSet<>();
+                WatchKey key;
+                try {
+                    key = watchService.take();
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    return;
+                }
+                collectBatchFiles(key, inputDir, batchFiles);
+                key.reset();
 
-                for (WatchEvent<?> event : key.pollEvents()) {
-                    if (event.kind() == StandardWatchEventKinds.ENTRY_CREATE) {
-                        Path filename = (Path) event.context();
-                        String fileName2 = filename.toString().toLowerCase();
-                        if (fileName2.endsWith(".html") || fileName2.endsWith(".xhtml")) {
-                            Path htmlFile = inputDir.resolve(filename);
-                            conversionExecutor.submit(() -> convertHtmlToPdf(htmlFile));
-                        }
+                final long aggregationWindowMs = 350;
+                long deadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(aggregationWindowMs);
+                while (true) {
+                    long remainingNanos = deadline - System.nanoTime();
+                    if (remainingNanos <= 0) {
+                        break;
+                    }
+                    long waitMs = Math.max(1L, TimeUnit.NANOSECONDS.toMillis(remainingNanos));
+                    WatchKey additionalKey;
+                    try {
+                        additionalKey = watchService.poll(waitMs, TimeUnit.MILLISECONDS);
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                        return;
+                    }
+                    if (additionalKey == null) {
+                        break;
+                    }
+                    collectBatchFiles(additionalKey, inputDir, batchFiles);
+                    additionalKey.reset();
+                    deadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(aggregationWindowMs);
+                }
+
+                if (!batchFiles.isEmpty()) {
+                    List<Path> ordered = new ArrayList<>(batchFiles);
+                    BatchConversionTracker tracker = new BatchConversionTracker(ordered.size());
+                    tracker.logBatchStart(ordered);
+                    for (Path htmlFile : ordered) {
+                        conversionExecutor.submit(() -> convertHtmlToPdf(htmlFile, tracker));
                     }
                 }
-                key.reset();
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    private void convertHtmlToPdf(Path htmlFile) {
+    private void collectBatchFiles(WatchKey key, Path inputDir, Set<Path> batchFiles) {
+        for (WatchEvent<?> event : key.pollEvents()) {
+            if (event.kind() == StandardWatchEventKinds.ENTRY_CREATE) {
+                Path filename = (Path) event.context();
+                if (filename == null) {
+                    continue;
+                }
+                String lowerName = filename.toString().toLowerCase();
+                if (lowerName.endsWith(".html") || lowerName.endsWith(".xhtml")) {
+                    Path resolved = inputDir.resolve(filename);
+                    batchFiles.add(resolved);
+                }
+            }
+        }
+    }
+
+    private void convertHtmlToPdf(Path htmlFile, BatchConversionTracker tracker) {
         long startMillis = System.currentTimeMillis();
         try {
             String baseName = stripExtension(htmlFile.getFileName().toString());
@@ -103,6 +154,9 @@ public class Html2PdfConverterService {
         } catch (Exception e) {
             System.err.println("Error converting " + htmlFile + ": " + e.getMessage());
         } finally {
+            if (tracker != null) {
+                tracker.recordCompletion();
+            }
             if (Thread.interrupted()) {
                 Thread.currentThread().interrupt();
             }
@@ -181,6 +235,43 @@ public class Html2PdfConverterService {
         }
         Path parent = htmlFile.getParent();
         return parent != null ? parent.toUri().toString() : htmlFile.toUri().toString();
+    }
+
+    private static final class BatchConversionTracker {
+        private final long startNanos = System.nanoTime();
+        private final AtomicInteger remaining;
+        private final int total;
+
+        private BatchConversionTracker(int total) {
+            this.total = total;
+            this.remaining = new AtomicInteger(total);
+        }
+
+        private void logBatchStart(List<Path> files) {
+            StringBuilder builder = new StringBuilder();
+            builder.append("Starting batch conversion for ").append(total).append(" file(s)");
+            if (!files.isEmpty()) {
+                builder.append(": ");
+                for (int i = 0; i < files.size() && i < 3; i++) {
+                    builder.append(files.get(i).getFileName());
+                    if (i < Math.min(files.size(), 3) - 1) {
+                        builder.append(", ");
+                    }
+                }
+                if (files.size() > 3) {
+                    builder.append(" ...");
+                }
+            }
+            System.out.println(builder);
+        }
+
+        private void recordCompletion() {
+            int remainingJobs = remaining.decrementAndGet();
+            if (remainingJobs == 0) {
+                long elapsedMs = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startNanos);
+                System.out.println("Batch conversion completed for " + total + " file(s) in " + elapsedMs + " ms");
+            }
+        }
     }
 
     private void runWarmupIfConfigured() {
