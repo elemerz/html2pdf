@@ -3,9 +3,6 @@ package nl.infomedics.reporting.service;
 import com.openhtmltopdf.pdfboxout.PdfRendererBuilder;
 import com.openhtmltopdf.svgsupport.BatikSVGDrawer;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.Resource;
-import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
-import org.springframework.core.io.support.ResourcePatternResolver;
 import org.springframework.stereotype.Service;
 import org.w3c.dom.Document;
 
@@ -17,18 +14,9 @@ import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
-import java.awt.Font;
-import java.awt.FontFormatException;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Stream;
@@ -37,17 +25,13 @@ import java.util.stream.Stream;
 public class Html2PdfConverterService {
 
     private final QrBarcodeObjectFactory objectFactory = new QrBarcodeObjectFactory();
+    private final FontRegistry fontRegistry;
     private static final int PARSE_RETRY_ATTEMPTS = 10;
     private static final long PARSE_RETRY_DELAY_MS = 150L;
-    private static final String FONT_RESOURCE_DIRECTORY = "fonts";
-    private static final String[] FONT_EXTENSIONS = {"ttf", "otf", "ttc", "otc"};
     private final ExecutorService conversionExecutor = Executors.newVirtualThreadPerTaskExecutor();
     private volatile Thread watcherThread;
     private volatile boolean warmupAttempted;
     private volatile boolean initialScanScheduled;
-    private final Object fontLoadLock = new Object();
-    private volatile Map<String, byte[]> cachedFontData;
-    private final Map<String, Set<String>> loadedFontAliases = new ConcurrentHashMap<>();
 
     @Value("${input.path.html}")
     private String htmlInputPath;
@@ -60,6 +44,10 @@ public class Html2PdfConverterService {
 
     @Value("${debug:false}")
     private boolean debugEnabled;
+
+    public Html2PdfConverterService(FontRegistry fontRegistry) {
+        this.fontRegistry = fontRegistry;
+    }
 
     public void startWatching() {
         runWarmupIfConfigured();
@@ -225,7 +213,7 @@ public class Html2PdfConverterService {
         builder.useSVGDrawer(new BatikSVGDrawer());
         builder.useObjectDrawerFactory(objectFactory);
         builder.usePdfAConformance(PdfRendererBuilder.PdfAConformance.NONE);
-        registerEmbeddedFonts(builder);
+        fontRegistry.registerEmbeddedFonts(builder);
         return builder;
     }
 
@@ -287,119 +275,4 @@ public class Html2PdfConverterService {
         return debugFile;
     }
 
-    private void registerEmbeddedFonts(PdfRendererBuilder builder) {
-        registerFonts(builder, loadEmbeddedFontData());
-    }
-
-    private void registerFonts(PdfRendererBuilder builder, Map<String, byte[]> fonts) {
-        if (builder == null || fonts == null || fonts.isEmpty()) {
-            return;
-        }
-        for (Map.Entry<String, byte[]> entry : fonts.entrySet()) {
-            String fileName = entry.getKey();
-            byte[] fontBytes = entry.getValue();
-            if (fontBytes == null || fontBytes.length == 0) {
-                System.err.println("Skipping font " + fileName + " because it contains no data.");
-                continue;
-            }
-            final byte[] fontBytesCopy = fontBytes;
-            Set<String> aliases = loadedFontAliases.computeIfAbsent(fileName,
-                    key -> deriveFontAliases(key, fontBytesCopy));
-            if (aliases == null || aliases.isEmpty()) {
-                System.err.println("Skipping font " + fileName + " because no aliases could be derived.");
-                continue;
-            }
-            aliases.forEach(alias -> builder.useFont(() -> new ByteArrayInputStream(fontBytesCopy), alias));
-        }
-    }
-
-    private Map<String, byte[]> loadEmbeddedFontData() {
-        Map<String, byte[]> fonts = cachedFontData;
-        if (fonts == null) {
-            synchronized (fontLoadLock) {
-                fonts = cachedFontData;
-                if (fonts == null) {
-                    fonts = Collections.unmodifiableMap(readFontsFromResources(FONT_RESOURCE_DIRECTORY));
-                    cachedFontData = fonts;
-                }
-            }
-        }
-        return fonts;
-    }
-
-    private Map<String, byte[]> readFontsFromResources(String resourceFolder) {
-        Map<String, byte[]> fonts = new LinkedHashMap<>();
-        ResourcePatternResolver resolver = new PathMatchingResourcePatternResolver(getClass().getClassLoader());
-        for (String extension : FONT_EXTENSIONS) {
-            String pattern = String.format("classpath*:%s/**/*.%s", resourceFolder, extension);
-            try {
-                Resource[] resources = resolver.getResources(pattern);
-                for (Resource resource : resources) {
-                    if (!resource.isReadable()) {
-                        continue;
-                    }
-                    String filename = resource.getFilename();
-                    if (filename == null || fonts.containsKey(filename)) {
-                        continue;
-                    }
-                    try (InputStream input = resource.getInputStream()) {
-                        fonts.put(filename, input.readAllBytes());
-                    }
-                }
-            } catch (IOException e) {
-                System.err.println("Unable to load font resources for pattern " + pattern + ": " + e.getMessage());
-            }
-        }
-        return fonts;
-    }
-
-    private Set<String> deriveFontAliases(String fileName, byte[] fontBytes) {
-        Set<String> aliases = new LinkedHashSet<>();
-        addAliasVariant(aliases, stripExtension(fileName));
-        addAliasVariant(aliases, fileName);
-        if (fontBytes != null && fontBytes.length > 0) {
-            try (ByteArrayInputStream input = new ByteArrayInputStream(fontBytes)) {
-                Font font = Font.createFont(Font.TRUETYPE_FONT, input);
-                addAliasVariant(aliases, font.getFamily(Locale.ROOT));
-                addAliasVariant(aliases, font.getFontName(Locale.ROOT));
-                addAliasVariant(aliases, font.getPSName());
-            } catch (FontFormatException | IOException e) {
-                System.err.println("Unable to read font metadata from " + fileName + ": " + e.getMessage());
-            }
-        }
-        return Collections.unmodifiableSet(aliases);
-    }
-
-    private void addAliasVariant(Set<String> aliases, String candidate) {
-        if (candidate == null) {
-            return;
-        }
-        String trimmed = candidate.trim();
-        if (trimmed.isEmpty()) {
-            return;
-        }
-        addIfPresent(aliases, trimmed);
-        if (trimmed.contains(" ")) {
-            addIfPresent(aliases, trimmed.replace(' ', '_'));
-            addIfPresent(aliases, trimmed.replace(' ', '-'));
-        }
-        if (trimmed.contains("_")) {
-            addIfPresent(aliases, trimmed.replace('_', ' '));
-            addIfPresent(aliases, trimmed.replace('_', '-'));
-        }
-        if (trimmed.contains("-")) {
-            addIfPresent(aliases, trimmed.replace('-', ' '));
-            addIfPresent(aliases, trimmed.replace('-', '_'));
-        }
-    }
-
-    private void addIfPresent(Set<String> aliases, String candidate) {
-        if (candidate == null) {
-            return;
-        }
-        String trimmed = candidate.trim();
-        if (!trimmed.isEmpty()) {
-            aliases.add(trimmed);
-        }
-    }
 }
