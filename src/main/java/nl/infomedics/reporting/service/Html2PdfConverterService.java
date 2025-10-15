@@ -58,6 +58,9 @@ public class Html2PdfConverterService {
     @Value("${warmup.html:}")
     private String warmupHtml;
 
+    @Value("${debug:false}")
+    private boolean debugEnabled;
+
     public void startWatching() {
         runWarmupIfConfigured();
         scheduleExistingFiles();
@@ -130,7 +133,9 @@ public class Html2PdfConverterService {
             Path intermediateHtml = null;
             if (document != null) {
                 objectFactory.preprocessDocument(document);
-                intermediateHtml = writeIntermediateHtml(pdfFile, baseName, document);
+                if (debugEnabled) {
+                    intermediateHtml = writeIntermediateHtml(pdfFile, baseName, document);
+                }
             }
 
             try (OutputStream os = Files.newOutputStream(pdfFile, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE)) {
@@ -138,7 +143,7 @@ public class Html2PdfConverterService {
                 renderToPdf(document, htmlFile, baseUrl, os);
             }
             System.out.println("Converted: " + htmlFile + " -> " + pdfFile);
-            if (document != null) {
+            if (debugEnabled && intermediateHtml != null) {
                 System.out.println("Intermediate HTML saved to: " + intermediateHtml);
             }
             long duration = System.currentTimeMillis() - startMillis;
