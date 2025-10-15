@@ -45,6 +45,9 @@ public class Html2PdfConverterService {
     @Value("${debug:false}")
     private boolean debugEnabled;
 
+    @Value("${failed.path.pdf}")
+    private String failedOutputPath;
+
     public Html2PdfConverterService(FontRegistry fontRegistry) {
         this.fontRegistry = fontRegistry;
     }
@@ -74,8 +77,8 @@ public class Html2PdfConverterService {
         }
         try (Stream<Path> files = Files.list(inputDir)) {
             files.filter(Files::isRegularFile)
-                    .filter(this::isHtmlFile)
-                    .forEach(file -> conversionExecutor.submit(() -> convertHtmlToPdf(file)));
+                    .filter(this::isMarkerFile)
+                    .forEach(file -> conversionExecutor.submit(() -> processMarker(file)));
         } catch (IOException e) {
             System.err.println("Unable to process existing HTML files in " + inputDir + ": " + e.getMessage());
         }
@@ -96,10 +99,9 @@ public class Html2PdfConverterService {
                         if (filename == null) {
                             continue;
                         }
-                        String lowerName = filename.toString().toLowerCase();
-                        if (lowerName.endsWith(".html") || lowerName.endsWith(".xhtml")) {
-                            Path htmlFile = inputDir.resolve(filename);
-                            conversionExecutor.submit(() -> convertHtmlToPdf(htmlFile));
+                        if (isMarkerFile(filename)) {
+                            Path markerFile = inputDir.resolve(filename);
+                            conversionExecutor.submit(() -> processMarker(markerFile));
                         }
                     }
                 }
@@ -110,7 +112,31 @@ public class Html2PdfConverterService {
         }
     }
 
-    private void convertHtmlToPdf(Path htmlFile) {
+    private void processMarker(Path markerFile) {
+        Path htmlFile = null;
+        try {
+            if (markerFile == null || !Files.exists(markerFile)) {
+                return;
+            }
+            htmlFile = resolveHtmlForMarker(markerFile);
+            if (htmlFile == null || !Files.exists(htmlFile)) {
+                System.err.println("Marker " + markerFile + " found but corresponding HTML/XHTML file is missing.");
+                return;
+            }
+            boolean success = convertHtmlToPdf(htmlFile);
+            if (success) {
+                deleteIfExists(htmlFile);
+                deleteIfExists(markerFile);
+            } else {
+                movePairToFailed(htmlFile, markerFile);
+            }
+        } catch (Exception ex) {
+            System.err.println("Unexpected error processing marker " + markerFile + ": " + ex.getMessage());
+            movePairToFailed(htmlFile, markerFile);
+        }
+    }
+
+    private boolean convertHtmlToPdf(Path htmlFile) {
         long startMillis = System.currentTimeMillis();
         try {
             String baseName = stripExtension(htmlFile.getFileName().toString());
@@ -136,8 +162,10 @@ public class Html2PdfConverterService {
             }
             long duration = System.currentTimeMillis() - startMillis;
             System.out.println("Conversion time: " + duration + " ms");
+            return true;
         } catch (Exception e) {
             System.err.println("Error converting " + htmlFile + ": " + e.getMessage());
+            return false;
         } finally {
             if (Thread.interrupted()) {
                 Thread.currentThread().interrupt();
@@ -146,6 +174,9 @@ public class Html2PdfConverterService {
     }
 
     private String stripExtension(String name) {
+        if (name == null) {
+            return null;
+        }
         int idx = name.lastIndexOf('.');
         if (idx > 0) {
             return name.substring(0, idx);
@@ -153,9 +184,12 @@ public class Html2PdfConverterService {
         return name;
     }
 
-    private boolean isHtmlFile(Path file) {
+    private boolean isMarkerFile(Path file) {
+        if (file == null) {
+            return false;
+        }
         String lowerName = file.getFileName().toString().toLowerCase();
-        return lowerName.endsWith(".html") || lowerName.endsWith(".xhtml");
+        return lowerName.endsWith(".txt");
     }
 
     private Document parseDocumentWithRetry(Path htmlFile) {
@@ -275,4 +309,85 @@ public class Html2PdfConverterService {
         return debugFile;
     }
 
+    private Path resolveHtmlForMarker(Path markerFile) {
+        if (markerFile == null) {
+            return null;
+        }
+        String baseName = stripExtension(markerFile.getFileName().toString());
+        if (baseName == null) {
+            return null;
+        }
+        Path directory = markerFile.getParent();
+        if (directory == null) {
+            directory = markerFile.toAbsolutePath().getParent();
+        }
+        if (directory == null) {
+            return null;
+        }
+        String[] extensions = {".xhtml", ".html"};
+        for (String extension : extensions) {
+            Path candidate = directory.resolve(baseName + extension);
+            if (Files.exists(candidate)) {
+                return candidate;
+            }
+        }
+        return null;
+    }
+
+    private void deleteIfExists(Path file) {
+        if (file == null) {
+            return;
+        }
+        try {
+            Files.deleteIfExists(file);
+        } catch (IOException e) {
+            System.err.println("Unable to delete file " + file + ": " + e.getMessage());
+        }
+    }
+
+    private void movePairToFailed(Path htmlFile, Path markerFile) {
+        if (failedOutputPath == null || failedOutputPath.trim().isEmpty()) {
+            System.err.println("failed.path.pdf is not configured; leaving files in place for manual review.");
+            return;
+        }
+        Path failedDir = Paths.get(failedOutputPath);
+        moveFileToDirectory(htmlFile, failedDir);
+        moveFileToDirectory(markerFile, failedDir);
+    }
+
+    private void moveFileToDirectory(Path source, Path targetDir) {
+        if (source == null || targetDir == null) {
+            return;
+        }
+        try {
+            if (!Files.exists(source)) {
+                return;
+            }
+            Files.createDirectories(targetDir);
+            String originalName = source.getFileName().toString();
+            Path destination = targetDir.resolve(originalName);
+            if (Files.exists(destination)) {
+                destination = resolveUniqueDestination(targetDir, originalName);
+            }
+            Files.move(source, destination, StandardCopyOption.REPLACE_EXISTING);
+        } catch (IOException e) {
+            System.err.println("Unable to move " + source + " to " + targetDir + ": " + e.getMessage());
+        }
+    }
+
+    private Path resolveUniqueDestination(Path directory, String originalName) throws IOException {
+        String base = stripExtension(originalName);
+        String extension = "";
+        int idx = originalName.lastIndexOf('.');
+        if (idx >= 0) {
+            extension = originalName.substring(idx);
+        }
+        int attempt = 1;
+        Path candidate;
+        do {
+            candidate = directory.resolve(base + "-" + System.currentTimeMillis() + "-" + attempt + extension);
+            attempt++;
+        } while (Files.exists(candidate));
+        return candidate;
+    }
 }
