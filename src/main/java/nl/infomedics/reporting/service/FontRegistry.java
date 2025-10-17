@@ -20,6 +20,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * Loads and caches font resources shipped with the application, exposing them to the PDF renderer.
+ */
 @Component
 public class FontRegistry {
 
@@ -31,18 +34,37 @@ public class FontRegistry {
     private volatile Map<String, byte[]> cachedFontData;
     private final Map<String, Set<String>> aliasCache = new ConcurrentHashMap<>();
 
+    /**
+     * Creates a registry backed by a classpath-aware resource resolver.
+     */
     public FontRegistry() {
         this(new PathMatchingResourcePatternResolver(FontRegistry.class.getClassLoader()));
     }
 
+    /**
+     * Visible for testing constructor that accepts a custom resource resolver.
+     *
+     * @param resourceResolver resolver used to locate font resources
+     */
     FontRegistry(ResourcePatternResolver resourceResolver) {
         this.resourceResolver = resourceResolver;
     }
 
+    /**
+     * Registers all embedded fonts with the renderer builder.
+     *
+     * @param builder PDF renderer builder used during conversion
+     */
     public void registerEmbeddedFonts(PdfRendererBuilder builder) {
         registerFonts(builder, loadEmbeddedFontData());
     }
 
+    /**
+     * Registers the provided raw font map with the renderer builder.
+     *
+     * @param builder target renderer builder
+     * @param fonts   map of file name to raw font bytes
+     */
     public void registerFonts(PdfRendererBuilder builder, Map<String, byte[]> fonts) {
         if (builder == null || fonts == null || fonts.isEmpty()) {
             return;
@@ -66,6 +88,11 @@ public class FontRegistry {
         }
     }
 
+    /**
+     * Lazily loads the embedded font data from the classpath, caching the result for reuse.
+     *
+     * @return immutable map of font file names to bytes
+     */
     public Map<String, byte[]> loadEmbeddedFontData() {
         Map<String, byte[]> fonts = cachedFontData;
         if (fonts == null) {
@@ -80,6 +107,12 @@ public class FontRegistry {
         return fonts;
     }
 
+    /**
+     * Reads fonts from the specified classpath folder, supporting multiple font file extensions.
+     *
+     * @param resourceFolder classpath folder to scan
+     * @return ordered map of file name to raw bytes
+     */
     private Map<String, byte[]> readFontsFromResources(String resourceFolder) {
         Map<String, byte[]> fonts = new LinkedHashMap<>();
         for (String extension : FONT_EXTENSIONS) {
@@ -105,6 +138,13 @@ public class FontRegistry {
         return fonts;
     }
 
+    /**
+     * Determines all meaningful aliases for the supplied font so it can be referenced by name in CSS.
+     *
+     * @param fileName font file name
+     * @param fontBytes font data
+     * @return immutable set of aliases
+     */
     private Set<String> deriveFontAliases(String fileName, byte[] fontBytes) {
         Set<String> aliases = new LinkedHashSet<>();
         addAliasVariant(aliases, stripExtension(fileName));
@@ -122,6 +162,12 @@ public class FontRegistry {
         return Collections.unmodifiableSet(aliases);
     }
 
+    /**
+     * Registers the provided alias and typical separator variants.
+     *
+     * @param aliases collection to mutate
+     * @param candidate base alias
+     */
     private void addAliasVariant(Set<String> aliases, String candidate) {
         if (candidate == null) {
             return;
@@ -145,6 +191,12 @@ public class FontRegistry {
         }
     }
 
+    /**
+     * Adds the candidate string to the collection when non-empty.
+     *
+     * @param aliases target alias set
+     * @param candidate alias to consider
+     */
     private void addIfPresent(Set<String> aliases, String candidate) {
         if (candidate == null) {
             return;
@@ -155,6 +207,12 @@ public class FontRegistry {
         }
     }
 
+    /**
+     * Removes a file extension from the supplied name.
+     *
+     * @param name font file name
+     * @return base name without extension
+     */
     private String stripExtension(String name) {
         if (name == null) {
             return null;
@@ -166,6 +224,13 @@ public class FontRegistry {
         return name;
     }
 
+    /**
+     * Builds a cache key for the alias cache using the file name and content hash.
+     *
+     * @param fileName font file name
+     * @param fontBytes font data
+     * @return alias cache key
+     */
     private String buildAliasCacheKey(String fileName, byte[] fontBytes) {
         return fileName + ":" + Arrays.hashCode(fontBytes);
     }

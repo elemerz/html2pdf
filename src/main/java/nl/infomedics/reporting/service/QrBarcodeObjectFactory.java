@@ -35,17 +35,26 @@ public class QrBarcodeObjectFactory extends DefaultObjectDrawerFactory {
     private static final String FACTORY_ID = "QrBarcodeObjectFactory";
     private static final ZXingObjectDrawer ZXING_DRAWER = new ZXingObjectDrawer();
 
+    /**
+     * Registers ZXing-backed drawers for QR and 1D barcode MIME types.
+     */
     public QrBarcodeObjectFactory() {
         registerDrawer(TYPE_QR, ZXING_DRAWER);
         registerDrawer(TYPE_BARCODE, ZXING_DRAWER);
     }
 
+    /**
+     * Prepares the element before delegating to the base implementation.
+     */
     @Override
     public FSObjectDrawer createDrawer(Element element) {
         prepareElement(element);
         return super.createDrawer(element);
     }
 
+    /**
+     * Recognises ZXing-compatible elements even when the superclass would not treat them as replaced objects.
+     */
     @Override
     public boolean isReplacedObject(Element element) {
         if (prepareElement(element)) {
@@ -95,6 +104,12 @@ public class QrBarcodeObjectFactory extends DefaultObjectDrawerFactory {
         }
     }
 
+    /**
+     * Extracts and normalises the MIME type attribute from the given element.
+     *
+     * @param element candidate element
+     * @return lower-case MIME type or empty string
+     */
     private static String getMimeType(Element element) {
         if (element == null || !element.hasAttribute(ATTR_TYPE)) {
             return "";
@@ -102,6 +117,12 @@ public class QrBarcodeObjectFactory extends DefaultObjectDrawerFactory {
         return element.getAttribute(ATTR_TYPE).trim().toLowerCase(Locale.ROOT);
     }
 
+    /**
+     * Rewrites QR code specific attributes into the format expected by ZXing.
+     *
+     * @param element QR code element
+     * @return {@code true} if sufficient data is present for rendering
+     */
     private boolean prepareQrCode(Element element) {
         String value = element.getAttribute(ATTR_DATA).trim();
         if (value.isEmpty()) {
@@ -119,6 +140,12 @@ public class QrBarcodeObjectFactory extends DefaultObjectDrawerFactory {
         return true;
     }
 
+    /**
+     * Normalises 1D barcode metadata, inferring format/value pairs when possible.
+     *
+     * @param element barcode element
+     * @return {@code true} if the element contains renderable data
+     */
     private boolean prepareBarcode(Element element) {
         String raw = sanitizeString(element.getAttribute(ATTR_DATA));
         if (raw.isEmpty()) {
@@ -150,6 +177,12 @@ public class QrBarcodeObjectFactory extends DefaultObjectDrawerFactory {
         return true;
     }
 
+    /**
+     * Parses an optional margin attribute, clamping the value to non-negative integers.
+     *
+     * @param element barcode element
+     * @return optional stringified margin
+     */
     private Optional<String> readMargin(Element element) {
         String marginAttr = sanitizeString(element.getAttribute(ATTR_MARGIN));
         if (marginAttr.isEmpty()) {
@@ -163,11 +196,23 @@ public class QrBarcodeObjectFactory extends DefaultObjectDrawerFactory {
         }
     }
 
+    /**
+     * Converts optional colour overrides into the format ZXing expects.
+     *
+     * @param element barcode element
+     */
     private void propagateColorAttributes(Element element) {
         maybePropagateColor(element, ATTR_ON_COLOR, "on-color");
         maybePropagateColor(element, ATTR_OFF_COLOR, "off-color");
     }
 
+    /**
+     * Copies a colour attribute into the ZXing-specific attribute slot when a value exists.
+     *
+     * @param element element to mutate
+     * @param sourceAttr attribute coming from the XHTML author
+     * @param targetAttr attribute consumed by ZXing
+     */
     private void maybePropagateColor(Element element, String sourceAttr, String targetAttr) {
         String colorValue = sanitizeString(element.getAttribute(sourceAttr));
         if (colorValue.isEmpty()) {
@@ -179,6 +224,12 @@ public class QrBarcodeObjectFactory extends DefaultObjectDrawerFactory {
         }
     }
 
+    /**
+     * Parses a CSS colour string into its RGB integer representation.
+     *
+     * @param color colour string (e.g. {@code #FF0000})
+     * @return integer RGB value or {@code null} when parsing fails
+     */
     private Integer parseColor(String color) {
         try {
             Color awtColor = Color.decode(color);
@@ -188,6 +239,13 @@ public class QrBarcodeObjectFactory extends DefaultObjectDrawerFactory {
         }
     }
 
+    /**
+     * Adds an encode-hint child element for ZXing when a value is supplied.
+     *
+     * @param element barcode element to enrich
+     * @param name hint name
+     * @param value hint value
+     */
     private void appendEncodeHint(Element element, String name, String value) {
         if (value == null || value.isEmpty()) {
             return;
@@ -204,6 +262,11 @@ public class QrBarcodeObjectFactory extends DefaultObjectDrawerFactory {
         element.appendChild(hint);
     }
 
+    /**
+     * Strips encode hints created by this factory to avoid duplicating nodes on repeated passes.
+     *
+     * @param element barcode element to clean
+     */
     private void removeGeneratedHints(Element element) {
         List<Node> toRemove = new ArrayList<>();
         NodeList children = element.getChildNodes();
@@ -219,6 +282,11 @@ public class QrBarcodeObjectFactory extends DefaultObjectDrawerFactory {
         toRemove.forEach(element::removeChild);
     }
 
+    /**
+     * Propagates width/height attributes into inline styles so layout engines respect the intended size.
+     *
+     * @param element barcode element
+     */
     private void ensureSizeStyles(Element element) {
         int width = parseLength(element.getAttribute("width"));
         int height = parseLength(element.getAttribute("height"));
@@ -241,6 +309,12 @@ public class QrBarcodeObjectFactory extends DefaultObjectDrawerFactory {
         element.setAttribute("style", style.toString());
     }
 
+    /**
+     * Parses an integer pixel length from an attribute, tolerating an optional {@code px} suffix.
+     *
+     * @param attr raw attribute value
+     * @return parsed length or {@code -1} when missing/invalid
+     */
     private int parseLength(String attr) {
         String value = sanitizeString(attr);
         if (value.endsWith("px")) {
@@ -256,11 +330,24 @@ public class QrBarcodeObjectFactory extends DefaultObjectDrawerFactory {
         }
     }
 
+    /**
+     * Checks whether the style buffer already contains the specified property.
+     *
+     * @param style style buffer to inspect
+     * @param property property name
+     * @return {@code true} if the property exists
+     */
     private boolean styleContainsProperty(StringBuilder style, String property) {
         String lower = style.toString().toLowerCase(Locale.ROOT);
         return lower.contains(property.toLowerCase(Locale.ROOT) + ":");
     }
 
+    /**
+     * Trims the supplied string and converts {@code null} to an empty string.
+     *
+     * @param input raw input
+     * @return trimmed string or empty string when {@code null}
+     */
     private String sanitizeString(String input) {
         return input == null ? "" : input.trim();
     }

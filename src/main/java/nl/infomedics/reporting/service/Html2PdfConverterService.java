@@ -21,6 +21,10 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Stream;
 
+/**
+ * Watches an input directory for marker files, pairs them with XHTML input, and converts the content to PDF.
+ * Conversion is delegated to OpenHTMLtoPDF, and failures are quarantined for review.
+ */
 @Service
 public class Html2PdfConverterService {
 
@@ -48,10 +52,18 @@ public class Html2PdfConverterService {
     @Value("${failed.path.pdf}")
     private String failedOutputPath;
 
+    /**
+     * Creates the converter service with an injected font registry for renderer configuration.
+     *
+     * @param fontRegistry registry responsible for exposing embedded fonts
+     */
     public Html2PdfConverterService(FontRegistry fontRegistry) {
         this.fontRegistry = fontRegistry;
     }
 
+    /**
+     * Ensures warm-up runs once, schedules any pre-existing work, and spins up the directory watcher.
+     */
     public void startWatching() {
         runWarmupIfConfigured();
         scheduleExistingFiles();
@@ -64,6 +76,9 @@ public class Html2PdfConverterService {
         }
     }
 
+    /**
+     * Submits already-present marker files for conversion when the service starts.
+     */
     private void scheduleExistingFiles() {
         Path inputDir = Paths.get(htmlInputPath);
         if (!Files.isDirectory(inputDir)) {
@@ -84,6 +99,9 @@ public class Html2PdfConverterService {
         }
     }
 
+    /**
+     * Blocks on file-system events and triggers conversion when a new marker arrives.
+     */
     private void watchFolder() {
         try (WatchService watchService = FileSystems.getDefault().newWatchService()) {
             Path inputDir = Paths.get(htmlInputPath);
@@ -112,6 +130,11 @@ public class Html2PdfConverterService {
         }
     }
 
+    /**
+     * Resolves the HTML counterpart for the supplied marker and attempts conversion.
+     *
+     * @param markerFile signal file that indicates a report is ready to convert
+     */
     private void processMarker(Path markerFile) {
         Path htmlFile = null;
         try {
@@ -136,6 +159,12 @@ public class Html2PdfConverterService {
         }
     }
 
+    /**
+     * Runs the XHTML to PDF conversion and manages debug artifacts.
+     *
+     * @param htmlFile XHTML/HTML file to convert
+     * @return {@code true} if the PDF was produced successfully; {@code false} otherwise
+     */
     private boolean convertHtmlToPdf(Path htmlFile) {
         long startMillis = System.currentTimeMillis();
         try {
@@ -173,6 +202,12 @@ public class Html2PdfConverterService {
         }
     }
 
+    /**
+     * Drops the trailing extension, if present.
+     *
+     * @param name file name
+     * @return base component without extension
+     */
     private String stripExtension(String name) {
         if (name == null) {
             return null;
@@ -184,6 +219,12 @@ public class Html2PdfConverterService {
         return name;
     }
 
+    /**
+     * Identifies whether the provided path refers to a marker file.
+     *
+     * @param file candidate path
+     * @return {@code true} if the file uses a marker extension
+     */
     private boolean isMarkerFile(Path file) {
         if (file == null) {
             return false;
@@ -192,6 +233,12 @@ public class Html2PdfConverterService {
         return lowerName.endsWith(".txt");
     }
 
+    /**
+     * Attempts to parse the document multiple times to guard against transient file-access issues.
+     *
+     * @param htmlFile source file
+     * @return parsed DOM document or {@code null} when parsing fails
+     */
     private Document parseDocumentWithRetry(Path htmlFile) {
         for (int attempt = 1; attempt <= PARSE_RETRY_ATTEMPTS; attempt++) {
             try (InputStream in = Files.newInputStream(htmlFile)) {
@@ -213,6 +260,13 @@ public class Html2PdfConverterService {
         return null;
     }
 
+    /**
+     * Parses the supplied stream as a safe, namespace-aware DOM document.
+     *
+     * @param input XHTML/HTML stream
+     * @return DOM representation
+     * @throws Exception when the XML cannot be parsed
+     */
     private Document parseDocument(InputStream input) throws Exception {
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
         factory.setNamespaceAware(true);
@@ -224,6 +278,15 @@ public class Html2PdfConverterService {
         return document;
     }
 
+    /**
+     * Configures the renderer, supplying either a DOM document or backing file to produce a PDF.
+     *
+     * @param document parsed document (optional)
+     * @param htmlFile fallback file when the DOM is unavailable
+     * @param baseUrl  base URL for relative resource resolution
+     * @param os       output stream receiving the PDF bytes
+     * @throws IOException when rendering fails
+     */
     private void renderToPdf(Document document, Path htmlFile, String baseUrl, OutputStream os) throws IOException {
         try {
             PdfRendererBuilder builder = configuredBuilder();
@@ -241,6 +304,11 @@ public class Html2PdfConverterService {
         }
     }
 
+    /**
+     * Provides a renderer builder with the application-specific options applied.
+     *
+     * @return configured builder instance
+     */
     private PdfRendererBuilder configuredBuilder() {
         PdfRendererBuilder builder = new PdfRendererBuilder();
         builder.useSlowMode();
@@ -251,6 +319,12 @@ public class Html2PdfConverterService {
         return builder;
     }
 
+    /**
+     * Resolves a base URL so relative assets within the XHTML can be located during rendering.
+     *
+     * @param htmlFile source file
+     * @return string form of the base URL
+     */
     private String resolveBaseUrl(Path htmlFile) {
         if (htmlFile == null) {
             return "about:blank";
@@ -259,6 +333,9 @@ public class Html2PdfConverterService {
         return parent != null ? parent.toUri().toString() : htmlFile.toUri().toString();
     }
 
+    /**
+     * Executes an optional inline warm-up render to amortize initialization costs before real work begins.
+     */
     private void runWarmupIfConfigured() {
         if (warmupAttempted) {
             return;
@@ -294,6 +371,14 @@ public class Html2PdfConverterService {
         }
     }
 
+    /**
+     * Writes the transformed XHTML to disk when debug mode is enabled.
+     *
+     * @param pdfFile  target PDF path (used to determine sibling location)
+     * @param baseName file base name
+     * @param document DOM to serialise
+     * @return path to the debug XHTML file
+     */
     private Path writeIntermediateHtml(Path pdfFile, String baseName, Document document) {
         Path debugFile = pdfFile.getParent().resolve(baseName + "-intermediate.xhtml");
         try (OutputStream out = Files.newOutputStream(debugFile, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE)) {
@@ -309,6 +394,12 @@ public class Html2PdfConverterService {
         return debugFile;
     }
 
+    /**
+     * Locates the HTML or XHTML file that corresponds with the provided marker.
+     *
+     * @param markerFile marker signalling conversion readiness
+     * @return matching HTML path or {@code null} if none is found
+     */
     private Path resolveHtmlForMarker(Path markerFile) {
         if (markerFile == null) {
             return null;
@@ -334,6 +425,11 @@ public class Html2PdfConverterService {
         return null;
     }
 
+    /**
+     * Attempts to delete the given file, logging errors instead of throwing.
+     *
+     * @param file candidate for deletion
+     */
     private void deleteIfExists(Path file) {
         if (file == null) {
             return;
@@ -345,6 +441,12 @@ public class Html2PdfConverterService {
         }
     }
 
+    /**
+     * Moves the HTML/marker pair into the configured failure directory for manual inspection.
+     *
+     * @param htmlFile   HTML input that failed
+     * @param markerFile marker associated with the failure
+     */
     private void movePairToFailed(Path htmlFile, Path markerFile) {
         if (failedOutputPath == null || failedOutputPath.trim().isEmpty()) {
             System.err.println("failed.path.pdf is not configured; leaving files in place for manual review.");
@@ -355,6 +457,12 @@ public class Html2PdfConverterService {
         moveFileToDirectory(markerFile, failedDir);
     }
 
+    /**
+     * Moves an individual file into a target directory, ensuring the directory exists first.
+     *
+     * @param source    file to move
+     * @param targetDir destination directory
+     */
     private void moveFileToDirectory(Path source, Path targetDir) {
         if (source == null || targetDir == null) {
             return;
@@ -375,6 +483,14 @@ public class Html2PdfConverterService {
         }
     }
 
+    /**
+     * Generates a unique destination name when a conflicting file already exists.
+     *
+     * @param directory    target directory
+     * @param originalName original file name
+     * @return collision-free destination path
+     * @throws IOException if directory access fails
+     */
     private Path resolveUniqueDestination(Path directory, String originalName) throws IOException {
         String base = stripExtension(originalName);
         String extension = "";
