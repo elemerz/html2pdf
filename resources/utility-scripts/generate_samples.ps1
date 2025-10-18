@@ -1,11 +1,13 @@
 Param(
-    [string]$Prefix = 'financial-sample',
-    [int]$Start = 1,
-    [int]$End = 10,
+    [string]$Prefix = 'fin-sample',
+    [int]$startIndex = 1,
     [int]$Digits = 4,
-    [string]$OutputDir = 'src/main/resources/html/samples',
+    [string]$OutputDir = 'samples',
+    [int]$LevelCount = 0,
+    [int]$FoldersPerLevel = 0,
+    [int]$FilesPerFolder = 100,
     [int]$MinPages = 1,
-    [int]$MaxPages = 10,
+    [int]$MaxPages = 6,
     [int]$MinCols = 3,
     [int]$MaxCols = 6,
     [int]$MinRows = 4,
@@ -24,6 +26,10 @@ function Swap-IfNeeded {
 Swap-IfNeeded ([ref]$MinPages) ([ref]$MaxPages)
 Swap-IfNeeded ([ref]$MinCols) ([ref]$MaxCols)
 Swap-IfNeeded ([ref]$MinRows) ([ref]$MaxRows)
+
+if ($LevelCount -lt 0) { $LevelCount = 0 }
+if ($FoldersPerLevel -lt 0) { $FoldersPerLevel = 0 }
+if ($FilesPerFolder -lt 0) { $FilesPerFolder = 0 }
 
 $seed = [int]([System.DateTime]::UtcNow.Ticks % [int]::MaxValue)
 $script:Rng = [System.Random]::new($seed)
@@ -81,8 +87,8 @@ function Get-Slug {
     return $slug.Trim('-')
 }
 
-$companyLogoData = 'iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAMAAACdt4HsAAAAVFBMVEVHcEzSAxnhABzKBBjhABvYARngABrSAhjRAhnVAhnCBRjeABrDBRjiACrhACDhAC7hACfhACThAB3CBRjRAhzIBBroOFfdAR7lFjnxg5ftX3jrUWzx8D1CAAAADXRSTlMAdvNP3h69CJQ21F7wo2ktJAAAAgdJREFUWMPtlsuSgyAQRUVR8dU8NKjx//9zOgKKE4hmFrPyblJF5R5vNzSaJLdu3YqqRF1ZCyvPWIFiTe6tNe9rMTuhoIwoq+wao2pbO0FkVMEu2rxSN5tdKVBmLSb8L0gpBQp/AFJWJiQFaYErIyVxQpNK/Vwm0aFWBgDBtU5umQwh5q+o0vM8684KEZCi/5VGrokMglaRzWMKJq0n3vENgSaxAQwCCUW4iCoFvjw1d7IE4WQJryKyIIApuczzMnEfIaTwCSbCyIIVFDDNs5fAEmw7dgJGqEOnIaeALVwOgK0Z3SHC2FbhFmgMMPEgwWsCAvrsMoC/BwA1hAH0BLDvYxiAPZhegK57BxwDjI9gD3AX+HMFdKcB6uBJIgq0AXQnAXoWvgqwhuVXCYcA4AK0kWHAWdB4DkwCwwkVgAEiA50XimtTw0EHPxZQVx/mGcdxfSzvtqE8+oe+J/EbiQAOtLlQ/AC+P17AenW/roRJiPcCdn+8ANsGAHkg+BuI/jb7fC1X1BBEwD+g/1MDfIJ3jQg3gsMD/ez09VT+Jhj/OFz0u5eLlI4hnf2qf6vCakS3efxVPxKK0WkYjB39LSkvv97zYtj1WO193XzzhZAza3b2k/MTCEHah1G/iuVff6ZkdW/NX5Xvt5I5/7fx96+Vdn38H+J7ZfR1ViZ/V85Inty6des/9APDZ0reCrsSPAAAAABJRU5ErkJggg=='
-$isoLogoData = 'iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAARVBMVEVHcExHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0f///8YF4JyAAAAD3RSTlMABf2Npdaf3un7YVkZCQQgjdC9AAAAUUlEQVQY02NgwAnYGBgYkNkEGMBoYmBiYDQDEwMTA+MDA0NDPYyMjIMjAwOhAakpGRgbGxsZCcgFyMjIAkoKyjIMmBmYGRhYIbCQ4gNFAAo4xMHf8cKvAAAAAElFTkSuQmCC'
+$companyLogoData = 'iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAMAAABEpIrGAAABR1BMVEVHcEwAAAAHExMMHhwJDg4AAAAMExUAAAAUKyoAAAAAAAAAAAAABAQ3VW0AAAABAgIaHRwODw8HCwsULS4nO0sAAAAAAAADCgkGBwgAAAAaODoaJzIfSkULNjEGCQt4//F6//Rr5NaGzf9t6NkmOTtv8eEiP06UjYvIvLkrVVJbi7F0+Oh3/e3///9gz8FKS0tUtqpBk4kuYls0cWr16OR8dnQVHhy+s7BDQUJk2cswSU1hl8A7hn2JgYBCYnxiX101Tl8qMDA7wrJLpZpbw7axrKpLcpBzu/Lh1NFoZmbw8PDWzcpWV1Zx9ORzs+Q+SVFlncgxsqMrJSZGm5ExenLMwsBopdSlm5h0//Js/u5DHybgSWNPq6Dw499Rg6pQepvX1tVF0cF+v/K7urqBxfm1NUubKz6ZlJOgn545a5N0KDX8U3BrJjJBuoRSAAAAH3RSTlMASM3GsgbHFdYONViX/iWN8t64++9oeqWfG+zi8OnwdQqZwAAAAmRJREFUOMttkldz2kAUhSUQoolqcMF2dlFFxUIFBIhuisGmVwPG3U79/88RZCaTCToze/Vwvt29umcR5B95/UQUdzjwaAh1ITY6O+GnSlOWm4p6QXhtgFBJhBCKklUY7fjQ9zoLAEgNnlcAgNfY4SVuTxKAJisIrAzAi9NlewIsVZ6EwBTanuDCZKZUZ4sCTav98YlNk9iU787L+TyXqmol4tBHI0b5rnXX6Vgla0R8By3gXD7VzVe3nV4+m0uXD5rYA6lOaru1ih2AoNHwfJvjslkutc2FMZ/NpLByz5ypqm5Ws6e2YRwbDQZACJip4bfzkaBHhsASVHC3LYD4j5Q+AEwjjNr7Xn84zeu6mY6g/6XtDvqCvjjhTNDz3HKZytUTTsLv+wsFQ55Y7PzLUaPAaNlMJrOt6n25oV84Q39+1X/eXry+D4SazsCHSS6TWRpNCCAQC+plfDefxKhi1gJmrRjQReqovuQmtAjEkqZK9y+XPuQMHxXTz2+tZ65ywz7AWbrazatQKkw+60lpNTtG4gFS6F5ZagXIR15q9m5v0wWpRK83a7q0GmMIJpCL4a0FlNvkgE2K/LylSX36Y/Nz82muxlHEMSLfa29X1r4FecPKUM12H6DIr39sfq211RhH8CJJVr597d0NB3ugUKcpAChl8jFRqPtrB0I8WQA3pDkLWLAUkLTZLg6Gr2si2AFo7JWsVGtPveEN+V23rCQF9gRlpbIDXKdtUjACRaNGjmiFSiYpa+20+1BjhzVoZ3tgPg5YoZiIeA60e/3B01i7OHoM4H73ofaBuVACd2DxM9sn8BuR+XN8yditeQAAAABJRU5ErkJggg=='
+$isoLogoData = 'iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAMAAABEpIrGAAAAz1BMVEVHcEwAAAAAAAADDA8FGiBRuNQJHiMAAAAAAAAGDQ8KKTAATV0AAAAAAAAAAAAAAQIAAQEAAABLqMApW2gAAADzcoJj4P9h2/wlVWIbNDwE0vzdaHbpbn00dIVEIyfIXmpAHiJ3OD9f1vY3ICWNQkorY3Lvb3/vXHBFn7cgSVNiLjSyVmJVwN29WGPQY3BOJSlLrMc72f6qR1RZyugLcYfiUmXla3oFttwj1v0+kaY9ip6NMT0rJSsgEBIAWm0AYXUAgZsDv+ZClKrDR1gBocIT0rrUAAAAFXRSTlMAGYrD3f77NgH86/7aKW2umUE7uiA8qHmwAAACCklEQVQ4y4VT2ZLaMBA04IMbNonlQ7JkWb7lA8wNe2U3//9NkSCY1FYlnio/TbvV3TOjKPcazuaL6UjUdDGfDZWvNTSW6kR3PqLow9FtdWl8gfT64+1hmxXA80CReYU37vf+7huD18MxdTQgAUBzUlBEA+PRf1Lf3XWQncFGs21tA85ZAIKz+tT+P538XIPUOdkOw5g59klQgI09/cPRG7xNnCjNRv6lhAhBEuJRlkaOHQ2uOob9V9ddefrLZRebt9qHL7q3CqyoL70Y44O7BifWJNf+DVQ+n4AFivFMECy37hGsnpuE7BEnyEQlhxKxApalfVOUmXqQDi7JPi+p7zf73Md1ZZphFlhW8P2HMp+4rpX6uwTVvKYlDGuIaC504FRQ2HNl8e4eLfuSxAJAcp/T0DR5LZSEtmWB80JRf7nHjfMpAU1T0bzBBOZU6CTOxgIrVdGFBI3tEhPlPBcakBCSQ2EGMpF8oSujt+3WFhJME8ZxJfTHVYWkU4Rtz4tGD0AMkSkR8oMwbgH3JxBlOaSsrkKGSciq9om7SMI4Dv0yDzGnFPqkFSltBt5nAuv6pcGQ0pqEFGHS2rwGFfBdUmFMfCIYSioBbVC3qEVSpC5j4ZNQxjjKiYwaFOrsMaydGMCeV2JYRDjicljAWw47xm38d2GC28J0rlz30navfffhdJ9e9/H++/x/A06tZ8nd4zdPAAAAAElFTkSuQmCC'
 
 $companyNames = @(
     'Aurora Analytics',
@@ -233,11 +239,41 @@ $phoneNumbers = @(
     '+49 (0)30 8800 2255'
 )
 
-New-Item -ItemType Directory -Path $OutputDir -Force | Out-Null
+[long]$totalLeaves = 1
+if ($LevelCount -gt 0 -and $FoldersPerLevel -gt 0) {
+    for ($levelIndex = 0; $levelIndex -lt $LevelCount; $levelIndex++) {
+        $totalLeaves *= [long]$FoldersPerLevel
+    }
+}
 
-for ($i = $Start; $i -le $End; $i++) {
+[long]$totalSamples = $totalLeaves * [long]$FilesPerFolder
+[long]$maxId = if ($totalSamples -gt 0) { [long]$startIndex + $totalSamples - 1 } else { [long]$startIndex - 1 }
+
+if ($totalSamples -gt 0) {
+    $requiredDigits = ($maxId.ToString()).Length
+    if ($requiredDigits -gt $Digits) {
+        $Digits = $requiredDigits
+    }
+}
+
+$script:FolderDigits = [Math]::Max(1, ($FoldersPerLevel.ToString()).Length)
+$script:FolderFormat = "D{0}" -f $script:FolderDigits
+$script:TotalSamples = $totalSamples
+$script:GeneratedCount = 0
+$script:StartIndex = [long]$startIndex
+
+function New-Sample {
+    param(
+        [long]$Id,
+        [string]$TargetDir
+    )
+
+    if (-not (Test-Path -LiteralPath $TargetDir)) {
+        New-Item -ItemType Directory -Path $TargetDir -Force | Out-Null
+    }
+
     $null = $script:Rng.Next()
-    $id = $i.ToString("D$Digits")
+    $idText = $Id.ToString("D$Digits")
     $companyName = Get-RandomItem $companyNames
     $reportTitle = Get-RandomItem $reportTitles
     $intro = Get-RandomItem $introParagraphs
@@ -248,10 +284,10 @@ for ($i = $Start; $i -le $End; $i++) {
     $phone = Get-RandomItem $phoneNumbers
     $openingHours = Get-RandomItem $openingHoursOptions
 
-    $xhtmlPath = Join-Path $OutputDir "$Prefix-$id.xhtml"
-    $markerPath = Join-Path $OutputDir "$Prefix-$id.txt"
+    $xhtmlPath = Join-Path $TargetDir "$Prefix-$idText.xhtml"
+    $markerPath = Join-Path $TargetDir "$Prefix-$idText.txt"
 
-    $titleText = [string]::Format("{0} {1} {2}", (Escape-HtmlText $companyName), (Escape-HtmlText $reportTitle), (Escape-HtmlText $id))
+    $titleText = [string]::Format("{0} {1} {2}", (Escape-HtmlText $companyName), (Escape-HtmlText $reportTitle), (Escape-HtmlText $idText))
 
     $builder = [System.Text.StringBuilder]::new()
     [void]$builder.AppendLine('<html xmlns="http://www.w3.org/1999/xhtml" lang="en">')
@@ -288,7 +324,7 @@ for ($i = $Start; $i -le $End; $i++) {
         $paragraphOne = Escape-HtmlText (Get-RandomItem $narrativeBlocks)
         $paragraphTwo = Escape-HtmlText (Get-RandomItem $narrativeBlocks)
         $focusTemplate = Get-RandomItem $deepDiveFocus
-        $metricValue = [string]::Format([System.Globalization.CultureInfo]::InvariantCulture, "{0:0.0}", (50 + ($i % 17) + $script:Rng.NextDouble() * 15))
+        $metricValue = [string]::Format([System.Globalization.CultureInfo]::InvariantCulture, "{0:0.0}", (50 + ($Id % 17) + $script:Rng.NextDouble() * 15))
         $focusParagraph = Escape-HtmlText ($focusTemplate -replace '\{metric\}', $metricValue)
         $bulletCount = Get-RandomBetween -Min 3 -Max 5
         $bulletItems = Get-UniqueSelection -Source $actionChecklist -Count $bulletCount
@@ -356,3 +392,37 @@ for ($i = $Start; $i -le $End; $i++) {
     $builder.ToString() | Set-Content -LiteralPath $xhtmlPath -Encoding UTF8
     New-Item -ItemType File -Path $markerPath -Force | Out-Null
 }
+
+function Invoke-TreePopulation {
+    param(
+        [int]$Level,
+        [string]$CurrentDir
+    )
+
+    if (-not (Test-Path -LiteralPath $CurrentDir)) {
+        New-Item -ItemType Directory -Path $CurrentDir -Force | Out-Null
+    }
+
+    if ($script:TotalSamples -le 0) { return }
+
+    if ($Level -ge $LevelCount -or $FoldersPerLevel -eq 0) {
+        if ($FilesPerFolder -le 0) { return }
+
+        for ($fileIdx = 0; $fileIdx -lt $FilesPerFolder -and $script:GeneratedCount -lt $script:TotalSamples; $fileIdx++) {
+            $id = $script:StartIndex + $script:GeneratedCount
+            New-Sample -Id $id -TargetDir $CurrentDir
+            $script:GeneratedCount++
+        }
+        return
+    }
+
+    for ($folderIdx = 1; $folderIdx -le $FoldersPerLevel; $folderIdx++) {
+        if ($script:GeneratedCount -ge $script:TotalSamples) { break }
+        $folderIndex = $folderIdx.ToString($script:FolderFormat)
+        $folderName = "level-{0}-{1}" -f ($Level + 1), $folderIndex
+        $childDir = Join-Path $CurrentDir $folderName
+        Invoke-TreePopulation -Level ($Level + 1) -CurrentDir $childDir
+    }
+}
+
+Invoke-TreePopulation -Level 0 -CurrentDir $OutputDir

@@ -17,6 +17,12 @@ import javax.xml.transform.stream.StreamResult;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
+import java.nio.file.LinkOption;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.nio.file.FileVisitResult;
+import java.nio.file.SimpleFileVisitor;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Stream;
@@ -61,6 +67,81 @@ public class Html2PdfConverterService {
         this.fontRegistry = fontRegistry;
     }
 
+    private void registerAllDirectories(Path start, WatchService watchService, Map<WatchKey, Path> watchKeys) throws IOException {
+        if (start == null) {
+            return;
+        }
+        if (!Files.exists(start)) {
+            try {
+                Files.createDirectories(start);
+            } catch (IOException ioe) {
+                System.err.println("Unable to create input directory " + start + ": " + ioe.getMessage());
+                return;
+            }
+        }
+        Files.walkFileTree(start, new SimpleFileVisitor<>() {
+            @Override
+            public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+                registerDirectory(dir, watchService, watchKeys);
+                return FileVisitResult.CONTINUE;
+            }
+
+            @Override
+            public FileVisitResult visitFileFailed(Path file, IOException exc) {
+                System.err.println("Unable to access " + file + ": " + exc.getMessage());
+                return FileVisitResult.CONTINUE;
+            }
+        });
+    }
+
+    private void registerDirectory(Path dir, WatchService watchService, Map<WatchKey, Path> watchKeys) throws IOException {
+        if (dir == null) {
+            return;
+        }
+        if (watchKeys.containsValue(dir)) {
+            return;
+        }
+        WatchKey key = dir.register(watchService, StandardWatchEventKinds.ENTRY_CREATE, StandardWatchEventKinds.ENTRY_MODIFY);
+        watchKeys.put(key, dir);
+    }
+
+    private Path resolvePdfOutputPath(Path htmlFile, String baseName) {
+        Path outputRoot = getOutputRoot();
+        Path inputRoot = getInputRoot();
+        Path htmlAbsolute = htmlFile.toAbsolutePath().normalize();
+        Path relative;
+        try {
+            relative = inputRoot.relativize(htmlAbsolute);
+        } catch (IllegalArgumentException ex) {
+            relative = htmlAbsolute.getFileName();
+        }
+
+        Path relativeDir = relative != null ? relative.getParent() : null;
+        Path targetDir = relativeDir != null ? outputRoot.resolve(relativeDir) : outputRoot;
+        return targetDir.resolve(baseName + ".pdf");
+    }
+
+    private void submitExistingMarkers(Path directory) {
+        if (directory == null) {
+            return;
+        }
+        try (Stream<Path> files = Files.list(directory)) {
+            files.filter(Files::isRegularFile)
+                    .filter(this::isMarkerFile)
+                    .forEach(file -> conversionExecutor.submit(() -> processMarker(file)));
+        } catch (IOException e) {
+            System.err.println("Unable to scan directory " + directory + " for markers: " + e.getMessage());
+        }
+    }
+
+    private Path getInputRoot() {
+        return Paths.get(htmlInputPath).toAbsolutePath().normalize();
+    }
+
+    private Path getOutputRoot() {
+        return Paths.get(pdfOutputPath).toAbsolutePath().normalize();
+    }
+
     /**
      * Ensures warm-up runs once, schedules any pre-existing work, and spins up the directory watcher.
      */
@@ -80,7 +161,7 @@ public class Html2PdfConverterService {
      * Submits already-present marker files for conversion when the service starts.
      */
     private void scheduleExistingFiles() {
-        Path inputDir = Paths.get(htmlInputPath);
+        Path inputDir = getInputRoot();
         if (!Files.isDirectory(inputDir)) {
             return;
         }
@@ -90,7 +171,7 @@ public class Html2PdfConverterService {
             }
             initialScanScheduled = true;
         }
-        try (Stream<Path> files = Files.list(inputDir)) {
+        try (Stream<Path> files = Files.walk(inputDir)) {
             files.filter(Files::isRegularFile)
                     .filter(this::isMarkerFile)
                     .forEach(file -> conversionExecutor.submit(() -> processMarker(file)));
@@ -103,30 +184,56 @@ public class Html2PdfConverterService {
      * Blocks on file-system events and triggers conversion when a new marker arrives.
      */
     private void watchFolder() {
+        Path inputRoot = getInputRoot();
         try (WatchService watchService = FileSystems.getDefault().newWatchService()) {
-            Path inputDir = Paths.get(htmlInputPath);
-            inputDir.register(watchService, StandardWatchEventKinds.ENTRY_CREATE);
+            Map<WatchKey, Path> watchKeys = new HashMap<>();
+            registerAllDirectories(inputRoot, watchService, watchKeys);
 
-            System.out.println("Watching folder: " + htmlInputPath);
+            System.out.println("Watching folder: " + inputRoot);
             while (true) {
                 WatchKey key = watchService.take();
+                Path dir = watchKeys.get(key);
+                if (dir == null) {
+                    key.reset();
+                    continue;
+                }
 
                 for (WatchEvent<?> event : key.pollEvents()) {
-                    if (event.kind() == StandardWatchEventKinds.ENTRY_CREATE) {
-                        Path filename = (Path) event.context();
-                        if (filename == null) {
-                            continue;
+                    WatchEvent.Kind<?> kind = event.kind();
+                    if (kind == StandardWatchEventKinds.OVERFLOW) {
+                        continue;
+                    }
+                    Path relative = (Path) event.context();
+                    if (relative == null) {
+                        continue;
+                    }
+                    Path child = dir.resolve(relative);
+                    if (kind == StandardWatchEventKinds.ENTRY_CREATE) {
+                        if (Files.isDirectory(child, LinkOption.NOFOLLOW_LINKS)) {
+                            registerAllDirectories(child, watchService, watchKeys);
+                            submitExistingMarkers(child);
+                        } else if (isMarkerFile(child)) {
+                            conversionExecutor.submit(() -> processMarker(child));
                         }
-                        if (isMarkerFile(filename)) {
-                            Path markerFile = inputDir.resolve(filename);
-                            conversionExecutor.submit(() -> processMarker(markerFile));
+                    } else if (kind == StandardWatchEventKinds.ENTRY_MODIFY && Files.isRegularFile(child)) {
+                        if (isMarkerFile(child)) {
+                            conversionExecutor.submit(() -> processMarker(child));
                         }
                     }
                 }
-                key.reset();
+
+                boolean valid = key.reset();
+                if (!valid) {
+                    watchKeys.remove(key);
+                    if (watchKeys.isEmpty()) {
+                        break;
+                    }
+                }
             }
-        } catch (Exception e) {
-            e.printStackTrace();
+        } catch (InterruptedException ie) {
+            Thread.currentThread().interrupt();
+        } catch (IOException ioe) {
+            System.err.println("Watcher stopped due to I/O error: " + ioe.getMessage());
         }
     }
 
@@ -169,7 +276,10 @@ public class Html2PdfConverterService {
         long startMillis = System.currentTimeMillis();
         try {
             String baseName = stripExtension(htmlFile.getFileName().toString());
-            Path pdfFile = Paths.get(pdfOutputPath, baseName + ".pdf");
+            if (baseName == null || baseName.isBlank()) {
+                baseName = "document";
+            }
+            Path pdfFile = resolvePdfOutputPath(htmlFile, baseName);
             Files.createDirectories(pdfFile.getParent());
 
             Document document = parseDocumentWithRetry(htmlFile);

@@ -2,11 +2,13 @@
 set -euo pipefail
 
 # PARAMETERS -------------------------------------------------------------------
-PREFIX="financial-sample"                    # Base name for XHTML/marker pairs
-START=101                                    # First numerical identifier (inclusive)
-END=200                                      # Last numerical identifier (inclusive)
+PREFIX="sample"                    # Base name for XHTML/marker pairs
+START_INDEX=1                                # First numerical identifier (inclusive)
 DIGITS=4                                     # Width of zero padding; 4 -> 0001..9999
-OUTPUT_DIR="src/main/resources/html/samples"  # Destination folder for generated pairs
+OUTPUT_DIR="."                         # Destination folder for generated pairs
+LEVEL_COUNT=2                                # Depth of folder tree below output dir
+FOLDERS_PER_LEVEL=10                        # Subfolders created within each folder level
+FILES_PER_FOLDER=3                           # XHTML samples generated per leaf folder
 MIN_PAGES=1                                  # Minimum number of pages per sample
 MAX_PAGES=4                                  # Maximum number of pages per sample
 MIN_COLS=3                                   # Minimum number of financial columns per table
@@ -29,7 +31,21 @@ swap_if_needed MIN_PAGES MAX_PAGES
 swap_if_needed MIN_COLS MAX_COLS
 swap_if_needed MIN_ROWS MAX_ROWS
 
-mkdir -p "${OUTPUT_DIR}"
+((LEVEL_COUNT < 0)) && LEVEL_COUNT=0
+((FOLDERS_PER_LEVEL < 0)) && FOLDERS_PER_LEVEL=0
+((FILES_PER_FOLDER < 0)) && FILES_PER_FOLDER=0
+
+digits_for() {
+  local number=$1
+  local digits=0
+  ((number < 0)) && number=$(( -number ))
+  while ((number > 0)); do
+    number=$((number / 10))
+    ((digits++))
+  done
+  ((digits == 0)) && digits=1
+  echo "${digits}"
+}
 
 rand_between() {
   local min=$1
@@ -216,32 +232,72 @@ phone_numbers=(
   "+49 (0)30 8800 2255"
 )
 
-COMPANY_LOGO_DATA="iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAMAAACdt4HsAAAAVFBMVEVHcEzSAxnhABzKBBjhABvYARngABrSAhjRAhnVAhnCBRjeABrDBRjiACrhACDhAC7hACfhACThAB3CBRjRAhzIBBroOFfdAR7lFjnxg5ftX3jrUWzx8D1CAAAADXRSTlMAdvNP3h69CJQ21F7wo2ktJAAAAgdJREFUWMPtlsuSgyAQRUVR8dU8NKjx//9zOgKKE4hmFrPyblJF5R5vNzSaJLdu3YqqRF1ZCyvPWIFiTe6tNe9rMTuhoIwoq+wao2pbO0FkVMEu2rxSN5tdKVBmLSb8L0gpBQp/AFJWJiQFaYErIyVxQpNK/Vwm0aFWBgDBtU5umQwh5q+o0vM8684KEZCi/5VGrokMglaRzWMKJq0n3vENgSaxAQwCCUW4iCoFvjw1d7IE4WQJryKyIIApuczzMnEfIaTwCSbCyIIVFDDNs5fAEmw7dgJGqEOnIaeALVwOgK0Z3SHC2FbhFmgMMPEgwWsCAvrsMoC/BwA1hAH0BLDvYxiAPZhegK57BxwDjI9gD3AX+HMFdKcB6uBJIgq0AXQnAXoWvgqwhuVXCYcA4AK0kWHAWdB4DkwCwwkVgAEiA50XimtTw0EHPxZQVx/mGcdxfSzvtqE8+oe+J/EbiQAOtLlQ/AC+P17AenW/roRJiPcCdn+8ANsGAHkg+BuI/jb7fC1X1BBEwD+g/1MDfIJ3jQg3gsMD/ez09VT+Jhj/OFz0u5eLlI4hnf2qf6vCakS3efxVPxKK0WkYjB39LSkvv97zYtj1WO193XzzhZAza3b2k/MTCEHah1G/iuVff6ZkdW/NX5Xvt5I5/7fx96+Vdn38H+J7ZfR1ViZ/V85Inty6des/9APDZ0reCrsSPAAAAABJRU5ErkJggg=="
-ISO_LOGO_DATA="iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAARVBMVEVHcExHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0dHR0f///8YF4JyAAAAD3RSTlMABf2Npdaf3un7YVkZCQQgjdC9AAAAUUlEQVQY02NgwAnYGBgYkNkEGMBoYmBiYDQDEwMTA+MDA0NDPYyMjIMjAwOhAakpGRgbGxsZCcgFyMjIAkoKyjIMmBmYGRhYIbCQ4gNFAAo4xMHf8cKvAAAAAElFTkSuQmCC"
+COMPANY_LOGO_DATA="iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAMAAABEpIrGAAABR1BMVEVHcEwAAAAHExMMHhwJDg4AAAAMExUAAAAUKyoAAAAAAAAAAAAABAQ3VW0AAAABAgIaHRwODw8HCwsULS4nO0sAAAAAAAADCgkGBwgAAAAaODoaJzIfSkULNjEGCQt4//F6//Rr5NaGzf9t6NkmOTtv8eEiP06UjYvIvLkrVVJbi7F0+Oh3/e3///9gz8FKS0tUtqpBk4kuYls0cWr16OR8dnQVHhy+s7BDQUJk2cswSU1hl8A7hn2JgYBCYnxiX101Tl8qMDA7wrJLpZpbw7axrKpLcpBzu/Lh1NFoZmbw8PDWzcpWV1Zx9ORzs+Q+SVFlncgxsqMrJSZGm5ExenLMwsBopdSlm5h0//Js/u5DHybgSWNPq6Dw499Rg6pQepvX1tVF0cF+v/K7urqBxfm1NUubKz6ZlJOgn545a5N0KDX8U3BrJjJBuoRSAAAAH3RSTlMASM3GsgbHFdYONViX/iWN8t64++9oeqWfG+zi8OnwdQqZwAAAAmRJREFUOMttkldz2kAUhSUQoolqcMF2dlFFxUIFBIhuisGmVwPG3U79/88RZCaTCToze/Vwvt29umcR5B95/UQUdzjwaAh1ITY6O+GnSlOWm4p6QXhtgFBJhBCKklUY7fjQ9zoLAEgNnlcAgNfY4SVuTxKAJisIrAzAi9NlewIsVZ6EwBTanuDCZKZUZ4sCTav98YlNk9iU787L+TyXqmol4tBHI0b5rnXX6Vgla0R8By3gXD7VzVe3nV4+m0uXD5rYA6lOaru1ih2AoNHwfJvjslkutc2FMZ/NpLByz5ypqm5Ws6e2YRwbDQZACJip4bfzkaBHhsASVHC3LYD4j5Q+AEwjjNr7Xn84zeu6mY6g/6XtDvqCvjjhTNDz3HKZytUTTsLv+wsFQ55Y7PzLUaPAaNlMJrOt6n25oV84Q39+1X/eXry+D4SazsCHSS6TWRpNCCAQC+plfDefxKhi1gJmrRjQReqovuQmtAjEkqZK9y+XPuQMHxXTz2+tZ65ywz7AWbrazatQKkw+60lpNTtG4gFS6F5ZagXIR15q9m5v0wWpRK83a7q0GmMIJpCL4a0FlNvkgE2K/LylSX36Y/Nz82muxlHEMSLfa29X1r4FecPKUM12H6DIr39sfq211RhH8CJJVr597d0NB3ugUKcpAChl8jFRqPtrB0I8WQA3pDkLWLAUkLTZLg6Gr2si2AFo7JWsVGtPveEN+V23rCQF9gRlpbIDXKdtUjACRaNGjmiFSiYpa+20+1BjhzVoZ3tgPg5YoZiIeA60e/3B01i7OHoM4H73ofaBuVACd2DxM9sn8BuR+XN8yditeQAAAABJRU5ErkJggg=="
+ISO_LOGO_DATA="iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAMAAABEpIrGAAAAz1BMVEVHcEwAAAAAAAADDA8FGiBRuNQJHiMAAAAAAAAGDQ8KKTAATV0AAAAAAAAAAAAAAQIAAQEAAABLqMApW2gAAADzcoJj4P9h2/wlVWIbNDwE0vzdaHbpbn00dIVEIyfIXmpAHiJ3OD9f1vY3ICWNQkorY3Lvb3/vXHBFn7cgSVNiLjSyVmJVwN29WGPQY3BOJSlLrMc72f6qR1RZyugLcYfiUmXla3oFttwj1v0+kaY9ip6NMT0rJSsgEBIAWm0AYXUAgZsDv+ZClKrDR1gBocIT0rrUAAAAFXRSTlMAGYrD3f77NgH86/7aKW2umUE7uiA8qHmwAAACCklEQVQ4y4VT2ZLaMBA04IMbNonlQ7JkWb7lA8wNe2U3//9NkSCY1FYlnio/TbvV3TOjKPcazuaL6UjUdDGfDZWvNTSW6kR3PqLow9FtdWl8gfT64+1hmxXA80CReYU37vf+7huD18MxdTQgAUBzUlBEA+PRf1Lf3XWQncFGs21tA85ZAIKz+tT+P538XIPUOdkOw5g59klQgI09/cPRG7xNnCjNRv6lhAhBEuJRlkaOHQ2uOob9V9ddefrLZRebt9qHL7q3CqyoL70Y44O7BifWJNf+DVQ+n4AFivFMECy37hGsnpuE7BEnyEQlhxKxApalfVOUmXqQDi7JPi+p7zf73Md1ZZphFlhW8P2HMp+4rpX6uwTVvKYlDGuIaC504FRQ2HNl8e4eLfuSxAJAcp/T0DR5LZSEtmWB80JRf7nHjfMpAU1T0bzBBOZU6CTOxgIrVdGFBI3tEhPlPBcakBCSQ2EGMpF8oSujt+3WFhJME8ZxJfTHVYWkU4Rtz4tGD0AMkSkR8oMwbgH3JxBlOaSsrkKGSciq9om7SMI4Dv0yDzGnFPqkFSltBt5nAuv6pcGQ0pqEFGHS2rwGFfBdUmFMfCIYSioBbVC3qEVSpC5j4ZNQxjjKiYwaFOrsMaydGMCeV2JYRDjicljAWw47xm38d2GC28J0rlz30navfffhdJ9e9/H++/x/A06tZ8nd4zdPAAAAAElFTkSuQmCC"
 
 months=(January February March April May June July August September October November December)
 
-for ((i = START; i <= END; i++)); do
+mkdir -p "${OUTPUT_DIR}"
+
+total_leaves=1
+if ((LEVEL_COUNT > 0 && FOLDERS_PER_LEVEL > 0)); then
+  for ((lvl = 0; lvl < LEVEL_COUNT; lvl++)); do
+    total_leaves=$((total_leaves * FOLDERS_PER_LEVEL))
+  done
+fi
+
+total_samples=$((total_leaves * FILES_PER_FOLDER))
+if ((total_samples > 0)); then
+  max_id=$((START_INDEX + total_samples - 1))
+else
+  max_id=$((START_INDEX - 1))
+fi
+
+if ((total_samples > 0)); then
+  required_digits=$(digits_for "${max_id}")
+  if ((required_digits > DIGITS)); then
+    DIGITS=$required_digits
+  fi
+fi
+
+folder_digits=$(digits_for "${FOLDERS_PER_LEVEL}")
+generated_count=0
+
+generate_sample() {
+  local i=$1
+  local target_dir=$2
+
+  mkdir -p "${target_dir}"
+
   # Stir the RNG differently for each iteration to improve variability.
   RANDOM=$((RANDOM ^ (i * 1103515245 + 12345)))
 
+  local id
   id=$(printf "%0${DIGITS}d" "$i")
+  local company_name
   company_name=$(random_choice company_names)
+  local report_title
   report_title=$(random_choice report_titles)
+  local intro
   intro=$(random_choice intro_paragraphs)
+  local report_date_month report_date_day report_date_year report_date
   report_date_month=${months[$((RANDOM % ${#months[@]}))]}
   report_date_day=$((1 + RANDOM % 28))
   report_date_year=$((2020 + RANDOM % 6))
   report_date="${report_date_month} ${report_date_day}, ${report_date_year}"
+  local page_count
   page_count=$(rand_between "${MIN_PAGES}" "${MAX_PAGES}")
+  local website_domain
   website_domain="$(slugify "${company_name}")"
   [[ -z "${website_domain}" ]] && website_domain="company"
-  company_site="https://${website_domain}.com"
+  local company_site="https://${website_domain}.com"
+  local phone
   phone=$(random_choice phone_numbers)
+  local opening_hours
   opening_hours=$(random_choice opening_hours_options)
 
-  xhtml="${OUTPUT_DIR}/${PREFIX}-${id}.xhtml"
-  marker="${OUTPUT_DIR}/${PREFIX}-${id}.txt"
+  local xhtml="${target_dir}/${PREFIX}-${id}.xhtml"
+  local marker="${target_dir}/${PREFIX}-${id}.txt"
 
   {
     cat <<HTML
@@ -275,23 +331,37 @@ footer { font-size: 9pt; text-align: center; margin-top: 24pt; color: #6d7885; }
 <p>${intro}</p>
 HTML
 
+    local page
     for ((page = 1; page <= page_count; page++)); do
+      local page_heading
       page_heading=$(random_choice page_topics)
+      local paragraph_one
       paragraph_one=$(random_choice narrative_blocks)
+      local paragraph_two
       paragraph_two=$(random_choice narrative_blocks)
+      local focus_template
       focus_template=$(random_choice deep_dive_focus)
+      local metric_value
       metric_value=$(awk -v seed=$((RANDOM + page + i)) -v base=$((50 + (i % 17))) 'BEGIN { srand(seed); printf "%.1f", base + rand() * 15 }')
-      focus_paragraph=${focus_template/\{metric\}/${metric_value}}
+      local focus_paragraph="${focus_template/\{metric\}/${metric_value}}"
+      local bullet_count
       bullet_count=$(rand_between 3 5)
+      local -a bullet_items
       mapfile -t bullet_items < <(pick_unique "${bullet_count}" "${action_checklist[@]}")
 
+      local col_count
       col_count=$(rand_between "${MIN_COLS}" "${MAX_COLS}")
+      local row_count
       row_count=$(rand_between "${MIN_ROWS}" "${MAX_ROWS}")
+      local -a selected_columns
       mapfile -t selected_columns < <(pick_unique "${col_count}" "${column_pool[@]}")
 
-      row_names=()
+      local -a row_names=()
+      local r
       for ((r = 0; r < row_count; r++)); do
+        local prefix
         prefix=$(random_choice segment_prefixes)
+        local suffix
         suffix=$(random_choice segment_suffixes)
         row_names+=("${prefix} ${suffix}")
       done
@@ -305,6 +375,7 @@ HTML
 <ul>
 HTML
 
+      local bullet
       for bullet in "${bullet_items[@]}"; do
         printf '<li>%s</li>\n' "${bullet}"
       done
@@ -317,6 +388,7 @@ HTML
 <th>Metric</th>
 HTML
 
+      local column
       for column in "${selected_columns[@]}"; do
         printf '<th>%s</th>\n' "${column}"
       done
@@ -327,10 +399,13 @@ HTML
 <tbody>
 HTML
 
+      local row_name
       for row_name in "${row_names[@]}"; do
         printf '<tr>\n<td>%s</td>\n' "${row_name}"
+        local c
         for ((c = 0; c < ${#selected_columns[@]}; c++)); do
-          value_integer=$((40 + RANDOM % 960))
+          local value_integer=$((40 + RANDOM % 960))
+          local value_decimal
           value_decimal=$(printf "%02d" $((RANDOM % 100)))
           printf '<td>%s.%s</td>\n' "${value_integer}" "${value_decimal}"
         done
@@ -351,6 +426,7 @@ HTML
       fi
     done
 
+    local closing
     closing=$(random_choice closing_notes)
 
     cat <<HTML
@@ -366,4 +442,37 @@ HTML
   } > "${xhtml}"
 
   : > "${marker}"
-done
+}
+
+populate_folder_tree() {
+  local level=$1
+  local current_dir=$2
+
+  mkdir -p "${current_dir}"
+
+  if ((level >= LEVEL_COUNT || FOLDERS_PER_LEVEL == 0)); then
+    if ((FILES_PER_FOLDER == 0 || total_samples == 0)); then
+      return
+    fi
+
+    local file_idx sample_id
+    for ((file_idx = 0; file_idx < FILES_PER_FOLDER && generated_count < total_samples; file_idx++)); do
+      sample_id=$((START_INDEX + generated_count))
+      generate_sample "${sample_id}" "${current_dir}"
+      ((generated_count += 1))
+    done
+    return
+  fi
+
+  local folder_idx child_dir folder_name
+  for ((folder_idx = 1; folder_idx <= FOLDERS_PER_LEVEL; folder_idx++)); do
+    if ((generated_count >= total_samples && total_samples > 0)); then
+      break
+    fi
+    printf -v folder_name "level-%d-%0${folder_digits}d" "$((level + 1))" "${folder_idx}"
+    child_dir="${current_dir}/${folder_name}"
+    populate_folder_tree "$((level + 1))" "${child_dir}"
+  done
+}
+
+populate_folder_tree 0 "${OUTPUT_DIR}"
