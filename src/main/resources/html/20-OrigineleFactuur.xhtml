@@ -7,7 +7,10 @@
       size: A4 portrait;
       margin: 10mm 10mm 10mm 15mm; /* top right bottom left */
     }
+    .page { position: relative; min-height: 276.7mm; }
+    .page + .page { page-break-before: always; break-before: page; }
 
+    /*.pagebreak { page-break-after: always; } */
     /*** Custom fonts ***/
     @font-face {
       font-family: 'Roboto';
@@ -42,7 +45,7 @@
       font-size: 9pt;
     }
     body{
-      border:1px dotted #ccc;
+      /*border:1px dotted #ccc;*/
     }
     table {
       border-collapse: collapse;
@@ -237,9 +240,21 @@
     }
     .debt-transfer .c3 {width: auto; text-align: right;}
     .debt-transfer .c3 img {width: 21.5mm;}
+
+    /*** Page 2 ***/
+    /*** Terms ***/
+    .list-terms {width: 100%;}
+    .list-terms .c1 {width: 7mm; font-size: 24pt; line-height:75%; vertical-align: top; padding-left: 5mm;}
+    .list-terms .c2 {width: auto;}
+
+    /*** FAQ ***/
+    .list-faq {width: 100%;}
+    .list-faq .c1{width: 7mm;vertical-align: top;padding-left: 5mm;}
+    .list-faq .c2{width: auto;}
   </style>
 </head>
 <body>
+<div class="page page-1">
 <!-- Debug Title -->
 <table class="debug-title">
   <tr><td>Factuurtype: 20</td></tr>
@@ -350,5 +365,40 @@
     <td class="c3"><img alt="iso-logos_optimized" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAHkAAAAoBAMAAAAoBkgoAAAABGdBTUEAALGPC/xhBQAAAAFzUkdCAK7OHOkAAAGHaVRYdFhNTDpjb20uYWRvYmUueG1wAAAAAAA8P3hwYWNrZXQgYmVnaW49J++7vycgaWQ9J1c1TTBNcENlaGlIenJlU3pOVGN6a2M5ZCc/Pg0KPHg6eG1wbWV0YSB4bWxuczp4PSJhZG9iZTpuczptZXRhLyI+PHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj48cmRmOkRlc2NyaXB0aW9uIHJkZjphYm91dD0idXVpZDpmYWY1YmRkNS1iYTNkLTExZGEtYWQzMS1kMzNkNzUxODJmMWIiIHhtbG5zOnRpZmY9Imh0dHA6Ly9ucy5hZG9iZS5jb20vdGlmZi8xLjAvIj48dGlmZjpPcmllbnRhdGlvbj4xPC90aWZmOk9yaWVudGF0aW9uPjwvcmRmOkRlc2NyaXB0aW9uPjwvcmRmOlJERj48L3g6eG1wbWV0YT4NCjw/eHBhY2tldCBlbmQ9J3cnPz4slJgLAAAACXBIWXMAABYlAAAWJQFJUiTwAAAAKlBMVEX////m6e25wM04TXB9i6JUZoTV2uH29/miq7vv8PNtfJaOmq7GzNaHk6n+mamxAAADW0lEQVRIx83Wz0/TUBwA8O+2rlvh0jFgbuEA7dCFaML2gMzJYawbQbnwYwOil+IYGLxsLIghHsCJCqdiIB70IEyMxssMCTHIYRfjwX/KV/reKz56w4Mv6eWbftLv971vvy3sBrgVAoAKHwzgoMshmOXXIb6xlw9qOOjlgzkZ0sCtNnwpfNCDL4EPuq+uFzZgj2UzRnRrGvx2joalxVEQ7aB+rodHIYjoGiD67DcILIhkSz/uMNx2sNvUUv7QQWdzDrovJ/PaF65gPaWhTGza1ksi1kkVJZRjW4d2y2400IuSyhbVrmgb1mkVdYOvxnSmHeu4B/UDFJnuyeBnJ3AcIEI1SlgaobSXaW3A0gjNuJlWkaURSko0c6WH6sFdps27LY30aarNU7I0aqhk12yNuqepRojpCZXqKmI6XqV1A9NN9uyRbgfdk2b6dpDowijLHJi+l2daPmYnljdY5kSb1RAdFx3qToJD3YNQIxqfyrmeUox9xNedVHQB8XWnlF8iPbHNkKWH4JrdLSMBS6fgzTTTNwOWHjREjeo8rduoX+jULMl8Q73QqVlS98Q+6/OmRPTsqq1fiUQP+W097ytbOiWyPi/MEJ2SbL3zke6aXGe6VCD6PCMr8+w3uucbRabHpqg2MyI6Nke1mRHfqQk/07udVJsZEV0JUG1mdPEdw2O0C+kae8eCpjbHaL1R/Psdk3CwNuulvWZOh4OAqWdKVOfqWA+bY7eejLA9L2CdNIO1VBfplvklh9ky3+kwW550Aj9boHHdQd9456BXhMv6xYyDjnx10C258iVdMRzmuUt2mOdS6F9/Da6o3+vQBNBhDdZ8MtGG5AqvuXjt84FeMQzfBd0//ql0CutHwpGQ8/TTTm3vGOv1yNpQ/W7efYdoz4OWDS22OLr8cHL2dZFqOeNvBItBb8kboFpbiITUPhlmh4yod5V8xzyfX57U+krgb87dylaJ3otj3aoVhWVbj+c7emL3ZbERnYh6BHJinq32k2Js8ay0uD35IyhbenPqtNQUf1ZLweKzOJ0t+UhYUWX/UuzDzvpWmdStS358wHrlbdlYq5QtvdVwH8DTL67v4slelujtRyvXFwWj1YiFs0the8+l/+e8Mwq3nuN4lA+q5l8PH4zKcKU/rj/MwjHpu5niygAAAABJRU5ErkJggg=="/></td>
   </tr>
 </table>
+</div><!--End of page 01-->
+
+<div class="page page-2">
+<!-- Second Page -->
+<div>
+  <b>Waarom krijgt u uw rekening van Infomedics?</b>
+  <br/><br/>
+  In opdracht van uw zorgaanbieder versturen en incasseren wij rekeningen voor de zorg die u heeft gehad.
+  Hierdoor heeft de zorgaanbieder meer aandacht voor het leveren van de beste zorg!
+  <br/><br/>
+  We voldoen hierbij uiteraard aan alle (privacy) wet- en regelgeving, zowel de regels die van toepassing zijn op uw
+  zorgaanbieder als de regels die gelden voor onze organisatie.
+  <br/><br/>
+  <b>Wat zijn de belangrijkste betalingsvoorwaarden van mijn rekening van Infomedics?</b>
+  <br/><br/>
+  <table class="list-terms bullet-list">
+    <tr class="r1"><td class="c1">˙</td><td class="c2">Infomedics mag, als dit mogelijk is, uw rekening declareren bij uw zorgverzekeraar. U ziet een eventuele vergoeding altijd terug op de rekening.</td></tr>
+    <tr class="r2"><td class="c1">˙</td><td class="c2">Wij verwachten dat u de rekening betaalt vóór de vervaldatum zoals vermeld op de rekening.</td></tr>
+    <tr class="r3"><td class="c1">˙</td><td class="c2">Als u de rekening niet voor de vervaldatum heeft betaald, dan bent u in verzuim zonder dat daarvoor een nadere ingebrekestelling is vereist. Omdat u het uiteraard vergeten kunt zijn, sturen we u een herinnering waarin wij u vragen de rekening alsnog binnen 15 dagen nadat deze brief bij u bezorgd is, te voldoen. Mocht de betaling binnen deze gestelde datum uitblijven, dan brengen wij rente en incassokosten in rekening.</td></tr>
+    <tr class="r4"><td class="c1">˙</td><td class="c2">Wij mogen uw betaling eerst in mindering brengen op de incassokosten, vervolgens op de in rekening gebrachte rente en tenslotte op het oorspronkelijke bedrag van uw rekening.</td></tr>
+    <tr class="r5"><td class="c1">˙</td><td class="c2">Houd er rekening mee dat, wanneer u een klacht indient of zich inschrijft bij een andere zorgaanbieder, uw rekening uiteindelijk nog steeds betaald moet worden. Uw betalingsverplichting kan hierdoor niet worden opgeschort.</td></tr>
+  </table>
+  <br/>
+  <b>Veelgestelde vragen aan Infomedics</b>
+  <br/><br/>
+  <table class="list-faq numbered-list">
+    <tr class="r1"><td class="c1">1.</td><td class="c2">Heb ik mijn rekening al betaald?<br/>Als u niet zeker weet of u uw rekening heeft betaald, kunt u op www.infomedics.nl zonder in te loggen de<br/>status van uw rekening controleren. U ziet direct of er is betaald, wanneer dit niet het geval is kunt u uw<br/>rekening direct betalen.</td></tr>
+    <tr class="r2"><td class="c1">2.</td><td class="c2">Kan ik een betalingsregeling afsluiten met Infomedics?<br/>Alleen wanneer u uw rekening niet in één keer kunt betalen, bieden wij een betalingsregeling aan. Hieraan<br/>zijn bepaalde voorwaarden verbonden. Meer informatie over een betalingsregeling vindt u op<br/><a href="www.infomedics.nl">www.infomedics.nl</a>, hier kunt u ook direct een betalingsregeling aanvragen.</td></tr>
+    <tr class="r3"><td class="c1">3.</td><td class="c2">Ik heb betaald, maar ontvang toch een herinnering of aanmaning.<br/>Dat is vervelend. Helaas kan het soms een aantal dagen duren voordat een betaalopdracht bij ons<br/>binnen is. Er bestaat dus de mogelijkheid dat de betaling en de herinnering of aanmaning elkaar hebben<br/>gekruist. Wij adviseren u daarom nadrukkelijk om de status van uw betaling altijd te controleren op<br/><a href="www.infomedics.nl">www.infomedics.nl</a>. Indien u de rekening al betaald heeft, kunt u de herinnering of aanmaning als niet<br/>verzonden beschouwen.</td></tr>
+    <tr class="r4"><td class="c1">4.</td><td class="c2">Ik heb een vraag over de gehanteerde tarieven en/of codes.<br/>Op de website <a href="www.nza.nl">www.nza.nl</a> (website van de Nederlandse Zorgautoriteit, NZa) kunt u alle informatie<br/>terugvinden over de gehanteerde tarieven en/of codes op uw rekening.</td></tr>
+  </table>
+  <br/>
+  <table><tr><td>Op <a href="www.infomedics.nl/faq">www.infomedics.nl/faq</a> kunt u al onze veelgestelde vragen bekijken. Op <a href="www.infomedics.nl/contact">www.infomedics.nl/contact</a> vindt u<br/>al onze contactopties.</td></tr></table>
+</div>
+</div>
 </body>
 </html>
