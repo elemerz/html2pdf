@@ -21,10 +21,21 @@ import java.nio.file.LinkOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.FileVisitResult;
 import java.nio.file.SimpleFileVisitor;
+import java.time.Instant;
+import java.time.LocalTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 
 /**
@@ -38,7 +49,22 @@ public class Html2PdfConverterService {
     private final FontRegistry fontRegistry;
     private static final int PARSE_RETRY_ATTEMPTS = 10;
     private static final long PARSE_RETRY_DELAY_MS = 150L;
+    private static final long CONVERSION_IDLE_THRESHOLD_MS = 1_000L;
+    private static final DateTimeFormatter TIMESTAMP_FORMATTER = DateTimeFormatter.ofPattern("HH:mm:ss");
+    private static final ZoneId SYSTEM_ZONE = ZoneId.systemDefault();
     private final ExecutorService conversionExecutor = Executors.newVirtualThreadPerTaskExecutor();
+    private final ScheduledExecutorService conversionTimingExecutor = Executors.newSingleThreadScheduledExecutor(r -> {
+        Thread thread = new Thread(r, "conversion-timing");
+        thread.setDaemon(true);
+        return thread;
+    });
+    private final Semaphore conversionPermits;
+    private final AtomicInteger activeConversions = new AtomicInteger();
+    private final AtomicInteger peakConcurrentConversions = new AtomicInteger();
+    private final AtomicLong firstConversionStartMillis = new AtomicLong();
+    private final AtomicLong lastConversionFinishMillis = new AtomicLong();
+    private final AtomicReference<ScheduledFuture<?>> pendingBatchCompletionLog = new AtomicReference<>();
+    private final int maxConcurrentConversions;
     private volatile Thread watcherThread;
     private volatile boolean warmupAttempted;
     private volatile boolean initialScanScheduled;
@@ -63,8 +89,17 @@ public class Html2PdfConverterService {
      *
      * @param fontRegistry registry responsible for exposing embedded fonts
      */
-    public Html2PdfConverterService(FontRegistry fontRegistry) {
+    public Html2PdfConverterService(FontRegistry fontRegistry,
+                                    @Value("${converter.max-concurrent:16}") int configuredMaxConcurrent) {
         this.fontRegistry = fontRegistry;
+        if (configuredMaxConcurrent < 1) {
+            System.err.println("Configured converter.max-concurrent " + configuredMaxConcurrent
+                    + " is invalid; defaulting to 1.");
+        }
+        this.maxConcurrentConversions = Math.max(1, configuredMaxConcurrent);
+        this.conversionPermits = new Semaphore(this.maxConcurrentConversions);
+        System.out.println("Html2PdfConverterService concurrency limited to "
+                + this.maxConcurrentConversions + " simultaneous conversions.");
     }
 
     private void registerAllDirectories(Path start, WatchService watchService, Map<WatchKey, Path> watchKeys) throws IOException {
@@ -128,7 +163,7 @@ public class Html2PdfConverterService {
         try (Stream<Path> files = Files.list(directory)) {
             files.filter(Files::isRegularFile)
                     .filter(this::isMarkerFile)
-                    .forEach(file -> conversionExecutor.submit(() -> processMarker(file)));
+                    .forEach(this::submitForConversion);
         } catch (IOException e) {
             System.err.println("Unable to scan directory " + directory + " for markers: " + e.getMessage());
         }
@@ -174,7 +209,7 @@ public class Html2PdfConverterService {
         try (Stream<Path> files = Files.walk(inputDir)) {
             files.filter(Files::isRegularFile)
                     .filter(this::isMarkerFile)
-                    .forEach(file -> conversionExecutor.submit(() -> processMarker(file)));
+                    .forEach(this::submitForConversion);
         } catch (IOException e) {
             System.err.println("Unable to process existing HTML files in " + inputDir + ": " + e.getMessage());
         }
@@ -213,11 +248,11 @@ public class Html2PdfConverterService {
                             registerAllDirectories(child, watchService, watchKeys);
                             submitExistingMarkers(child);
                         } else if (isMarkerFile(child)) {
-                            conversionExecutor.submit(() -> processMarker(child));
+                            submitForConversion(child);
                         }
                     } else if (kind == StandardWatchEventKinds.ENTRY_MODIFY && Files.isRegularFile(child)) {
                         if (isMarkerFile(child)) {
-                            conversionExecutor.submit(() -> processMarker(child));
+                            submitForConversion(child);
                         }
                     }
                 }
@@ -234,6 +269,49 @@ public class Html2PdfConverterService {
             Thread.currentThread().interrupt();
         } catch (IOException ioe) {
             System.err.println("Watcher stopped due to I/O error: " + ioe.getMessage());
+        }
+    }
+
+    private void submitForConversion(Path markerFile) {
+        if (markerFile == null) {
+            return;
+        }
+        conversionExecutor.submit(() -> runWithConversionPermit(markerFile));
+    }
+
+    private void runWithConversionPermit(Path markerFile) {
+        try (ConversionPermit ignored = acquireConversionPermit()) {
+            processMarker(markerFile);
+        } catch (InterruptedException ie) {
+            Thread.currentThread().interrupt();
+            System.err.println("Conversion interrupted before acquiring permit for " + markerFile);
+        }
+    }
+
+    private ConversionPermit acquireConversionPermit() throws InterruptedException {
+        conversionPermits.acquire();
+        int current = activeConversions.incrementAndGet();
+        int peak = peakConcurrentConversions.updateAndGet(prev -> Math.max(prev, current));
+        logActiveConversions(current, peak);
+        return new ConversionPermit();
+    }
+
+    private void logActiveConversions(int current, int peak) {
+        System.out.println("Active conversions: " + current + "/" + maxConcurrentConversions + " (peak: " + peak + ")");
+    }
+
+    private final class ConversionPermit implements AutoCloseable {
+        private boolean closed;
+
+        @Override
+        public void close() {
+            if (closed) {
+                return;
+            }
+            closed = true;
+            int current = activeConversions.decrementAndGet();
+            conversionPermits.release();
+            logActiveConversions(current, peakConcurrentConversions.get());
         }
     }
 
@@ -274,6 +352,7 @@ public class Html2PdfConverterService {
      */
     private boolean convertHtmlToPdf(Path htmlFile) {
         long startMillis = System.currentTimeMillis();
+        noteConversionStarted();
         try {
             String baseName = stripExtension(htmlFile.getFileName().toString());
             if (baseName == null || baseName.isBlank()) {
@@ -300,16 +379,66 @@ public class Html2PdfConverterService {
                 System.out.println("Intermediate HTML saved to: " + intermediateHtml);
             }
             long duration = System.currentTimeMillis() - startMillis;
-            System.out.println("Conversion time: " + duration + " ms");
+            String timestamp = LocalTime.now().format(TIMESTAMP_FORMATTER);
+            System.out.println(timestamp + " Conversion time: " + duration + " ms");
             return true;
         } catch (Exception e) {
             System.err.println("Error converting " + htmlFile + ": " + e.getMessage());
             return false;
         } finally {
+            long finishMillis = System.currentTimeMillis();
+            scheduleBatchCompletionCheck(finishMillis);
             if (Thread.interrupted()) {
                 Thread.currentThread().interrupt();
             }
         }
+    }
+
+    private void noteConversionStarted() {
+        ScheduledFuture<?> pending = pendingBatchCompletionLog.getAndSet(null);
+        if (pending != null) {
+            pending.cancel(false);
+        }
+        long now = System.currentTimeMillis();
+        firstConversionStartMillis.compareAndSet(0L, now);
+    }
+
+    private void scheduleBatchCompletionCheck(long finishMillis) {
+        lastConversionFinishMillis.set(finishMillis);
+        final ScheduledFuture<?>[] holder = new ScheduledFuture<?>[1];
+        Runnable task = () -> handlePotentialBatchCompletion(finishMillis, holder[0]);
+        ScheduledFuture<?> future = conversionTimingExecutor.schedule(task, CONVERSION_IDLE_THRESHOLD_MS, TimeUnit.MILLISECONDS);
+        holder[0] = future;
+        ScheduledFuture<?> previous = pendingBatchCompletionLog.getAndSet(future);
+        if (previous != null) {
+            previous.cancel(false);
+        }
+    }
+
+    private void handlePotentialBatchCompletion(long scheduledFinishMillis, ScheduledFuture<?> future) {
+        if (future == null) {
+            return;
+        }
+        if (!pendingBatchCompletionLog.compareAndSet(future, null)) {
+            return;
+        }
+        if (activeConversions.get() != 0) {
+            return;
+        }
+        long start = firstConversionStartMillis.get();
+        if (start == 0L) {
+            return;
+        }
+        long finishMillis = Math.max(lastConversionFinishMillis.get(), scheduledFinishMillis);
+        long elapsed = Math.max(finishMillis - start, 0L);
+        String timestamp = LocalTime.now().format(TIMESTAMP_FORMATTER);
+        System.out.println(timestamp + " Conversion batch elapsed: " + elapsed + " ms (first at "
+                + formatClockTime(start) + ", last at " + formatClockTime(finishMillis) + ")");
+        firstConversionStartMillis.compareAndSet(start, 0L);
+    }
+
+    private String formatClockTime(long epochMillis) {
+        return Instant.ofEpochMilli(epochMillis).atZone(SYSTEM_ZONE).toLocalTime().format(TIMESTAMP_FORMATTER);
     }
 
     /**

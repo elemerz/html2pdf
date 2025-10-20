@@ -43,3 +43,9 @@ loaded from bundled resources.
 - `src/main/java/nl/infomedics/reporting/service/FontRegistry.java`: discovers fonts under `classpath:/fonts/**` and registers aliases with the renderer.
 - `src/main/resources/application.properties`: default configuration; adjust for your environment.
 - `re.sh`: convenience script that rebuilds and restarts the service in one step.
+## Stats
+30 Threads, 5000 XHTML-s => 81 seconds
+50 Threads, 5000 XHTML-s => 75 seconds
+75 Threads, 5000 XHTML-s => 76 seconds
+100 Threads, 5000 XHTML-s => 83 seconds
+200 Threads, 5000 XHTML-s => 78 seconds
