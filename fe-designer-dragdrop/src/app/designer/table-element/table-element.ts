@@ -1,4 +1,4 @@
-import { Component, HostListener, Input, signal, inject } from '@angular/core';
+import { Component, HostListener, Input, signal, inject, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { CanvasElement } from '../../shared/models/schema';
 import { DesignerStateService } from '../../core/services/designer-state.service';
@@ -26,6 +26,7 @@ export class TableElementComponent {
   @Input() gridSize = 10;
 
   private designerState = inject(DesignerStateService);
+  private hostRef = inject(ElementRef<HTMLElement>);
   private activeResize: ResizeMode | null = null;
 
   protected showContextMenu = signal(false);
@@ -60,7 +61,11 @@ export class TableElementComponent {
     this.designerState.selectElement(this.element.id);
     this.designerState.selectTableCell(this.element.id, row, col);
     this.contextMenuCell.set({ row, col });
-    this.contextMenuPosition.set({ x: event.clientX, y: event.clientY });
+    const hostRect = this.hostRef.nativeElement.getBoundingClientRect();
+    this.contextMenuPosition.set({
+      x: event.clientX - hostRect.left,
+      y: event.clientY - hostRect.top
+    });
     this.showContextMenu.set(true);
   }
 
@@ -215,6 +220,17 @@ export class TableElementComponent {
   @HostListener('document:mouseup')
   onDocumentMouseUp(): void {
     this.activeResize = null;
+  }
+
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent): void {
+    if (!this.showContextMenu()) {
+      return;
+    }
+    const host = this.hostRef.nativeElement;
+    if (!host.contains(event.target as Node)) {
+      this.closeContextMenu();
+    }
   }
 
   private handleRowResize(event: MouseEvent): void {
