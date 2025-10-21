@@ -5,10 +5,11 @@
   <table class="element-table" aria-label="Table element">
     <tbody>
       @for (rowSize of rowSizes; track $index; let rowIndex = $index) {
-        <tr [style.height.%]="rowSize * 100">
+        <tr [style.height.mm]="element.height * rowSize">
           @for (colSize of colSizes; track $index; let colIndex = $index) {
             <td
-              [style.width.%]="colSize * 100"
+              [style.width.mm]="element.width * colSize"
+              [style.height.mm]="element.height * rowSize"
               (click)="onCellClick($event, rowIndex, colIndex)"
               (contextmenu)="onCellContextMenu($event, rowIndex, colIndex)"
               [class.selected]="isCellSelected(rowIndex, colIndex)"
