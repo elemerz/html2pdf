@@ -1,5 +1,6 @@
 import { Injectable, signal, computed, effect } from '@angular/core';
 import { CanvasElement, ReportLayout, createDefaultLayout, A4_WIDTH_MM, A4_HEIGHT_MM } from '../../shared/models/schema';
+import { getTableRowSizes, getTableColSizes } from '../../shared/utils/table-utils';
 
 export interface PageGutters {
   top: number;
@@ -11,6 +12,12 @@ export interface PageGutters {
 export interface HistoryEntry {
   elements: CanvasElement[];
   timestamp: number;
+}
+
+export interface TableCellSelection {
+  elementId: string;
+  row: number;
+  col: number;
 }
 
 export type CanvasZoomMode = 'fit' | 'width' | 'height';
@@ -30,6 +37,8 @@ export class DesignerStateService {
   // Selected element
   private selectedElementIdSignal = signal<string | null>(null);
   readonly selectedElementId = this.selectedElementIdSignal.asReadonly();
+  private selectedTableCellSignal = signal<TableCellSelection | null>(null);
+  readonly selectedTableCell = this.selectedTableCellSignal.asReadonly();
   
   // Computed: selected element object
   readonly selectedElement = computed(() => {
@@ -87,6 +96,7 @@ export class DesignerStateService {
     this.clampElementsToMargins(this.pageGutters());
     this.clearHistory();
     this.addToHistory(this.elementsSignal());
+    this.clearTableCellSelection();
   }
 
   updateLayoutName(name: string) {
@@ -100,6 +110,7 @@ export class DesignerStateService {
     this.elementsSignal.update(elements => [...elements, clampedElement]);
     this.addToHistory(this.elementsSignal());
     this.selectedElementIdSignal.set(clampedElement.id);
+    this.clearTableCellSelection();
   }
 
   updateElement(id: string, updates: Partial<CanvasElement>) {
@@ -112,6 +123,7 @@ export class DesignerStateService {
       })
     );
     this.addToHistory(this.elementsSignal());
+    this.ensureTableCellSelectionInBounds(id);
   }
 
   removeElement(id: string) {
@@ -120,10 +132,46 @@ export class DesignerStateService {
     if (this.selectedElementIdSignal() === id) {
       this.selectedElementIdSignal.set(null);
     }
+    const cellSelection = this.selectedTableCellSignal();
+    if (cellSelection?.elementId === id) {
+      this.clearTableCellSelection();
+    }
   }
 
   selectElement(id: string | null) {
     this.selectedElementIdSignal.set(id);
+    const cellSelection = this.selectedTableCellSignal();
+    if (!id || cellSelection?.elementId !== id) {
+      this.clearTableCellSelection();
+    }
+  }
+
+  selectTableCell(elementId: string, row: number, col: number) {
+    const element = this.elementsSignal().find(el => el.id === elementId);
+    if (!element) {
+      this.clearTableCellSelection();
+      return;
+    }
+
+    const rows = this.getTableDimension(element, 'rows');
+    const cols = this.getTableDimension(element, 'cols');
+    if (rows <= 0 || cols <= 0) {
+      this.clearTableCellSelection();
+      return;
+    }
+
+    const normalizedRow = Math.min(Math.max(Math.floor(row), 0), rows - 1);
+    const normalizedCol = Math.min(Math.max(Math.floor(col), 0), cols - 1);
+
+    this.selectedTableCellSignal.set({
+      elementId,
+      row: normalizedRow,
+      col: normalizedCol
+    });
+  }
+
+  clearTableCellSelection() {
+    this.selectedTableCellSignal.set(null);
   }
 
   clearElements() {
@@ -131,6 +179,7 @@ export class DesignerStateService {
     this.selectedElementIdSignal.set(null);
     this.clearHistory();
     this.addToHistory([]);
+    this.clearTableCellSelection();
   }
 
   loadLayout(layout: ReportLayout) {
@@ -140,6 +189,7 @@ export class DesignerStateService {
     this.selectedElementIdSignal.set(null);
     this.clearHistory();
     this.addToHistory(this.elementsSignal());
+    this.clearTableCellSelection();
   }
 
   clearLayout() {
@@ -149,6 +199,7 @@ export class DesignerStateService {
     this.selectedElementIdSignal.set(null);
     this.clearHistory();
     this.addToHistory([]);
+    this.clearTableCellSelection();
   }
 
   // History management
@@ -170,6 +221,34 @@ export class DesignerStateService {
     this.historyIndexSignal.set(-1);
   }
 
+  private ensureTableCellSelectionInBounds(elementId: string) {
+    const selection = this.selectedTableCellSignal();
+    if (!selection || selection.elementId !== elementId) {
+      return;
+    }
+
+    const element = this.elementsSignal().find(el => el.id === elementId);
+    if (!element) {
+      this.clearTableCellSelection();
+      return;
+    }
+
+    const rows = this.getTableDimension(element, 'rows');
+    const cols = this.getTableDimension(element, 'cols');
+
+    if (rows <= 0 || cols <= 0) {
+      this.clearTableCellSelection();
+      return;
+    }
+
+    const row = Math.min(selection.row, rows - 1);
+    const col = Math.min(selection.col, cols - 1);
+
+    if (row !== selection.row || col !== selection.col) {
+      this.selectedTableCellSignal.set({ elementId, row, col });
+    }
+  }
+
   undo() {
     if (!this.canUndo()) return;
     
@@ -179,6 +258,7 @@ export class DesignerStateService {
     const entry = this.historySignal()[newIndex];
     this.elementsSignal.set(JSON.parse(JSON.stringify(entry.elements)));
     this.selectedElementIdSignal.set(null);
+    this.clearTableCellSelection();
   }
 
   redo() {
@@ -190,6 +270,7 @@ export class DesignerStateService {
     const entry = this.historySignal()[newIndex];
     this.elementsSignal.set(JSON.parse(JSON.stringify(entry.elements)));
     this.selectedElementIdSignal.set(null);
+    this.clearTableCellSelection();
   }
 
   // Status updates
@@ -297,29 +378,31 @@ export class DesignerStateService {
   }
 
   private serializeTableElement(element: CanvasElement, style: string): string {
-    const rows = this.getTableDimension(element, 'rows');
-    const cols = this.getTableDimension(element, 'cols');
+    const rowSizes = getTableRowSizes(element);
+    const colSizes = getTableColSizes(element);
 
-    const effectiveRows = rows > 0 ? rows : 1;
-    const effectiveCols = cols > 0 ? cols : 1;
+    const effectiveRowSizes = rowSizes.length ? rowSizes : [1];
+    const effectiveColSizes = colSizes.length ? colSizes : [1];
 
-    const rowHeight = element.height / effectiveRows;
-    const colWidth = element.width / effectiveCols;
-    const rowHeightStr = this.formatMillimeters(rowHeight);
-    const colWidthStr = this.formatMillimeters(colWidth);
+    const rowsMarkup = effectiveRowSizes
+      .map(rowRatio => {
+        const rowHeightMm = element.height * rowRatio;
+        const rowHeightStr = this.formatMillimeters(rowHeightMm);
 
-    let rowsMarkup = '';
+        const cells = effectiveColSizes
+          .map(colRatio => {
+            const colWidthMm = element.width * colRatio;
+            const colWidthStr = this.formatMillimeters(colWidthMm);
+            return `        <td style="width:${colWidthStr}mm;height:${rowHeightStr}mm;">&nbsp;</td>`;
+          })
+          .join('\n');
 
-    for (let r = 0; r < effectiveRows; r++) {
-      let cells = '';
-      for (let c = 0; c < effectiveCols; c++) {
-        cells += `        <td style="width:${colWidthStr}mm;height:${rowHeightStr}mm;">&nbsp;</td>\n`;
-      }
-      rowsMarkup += `      <tr style="height:${rowHeightStr}mm;">\n${cells}      </tr>\n`;
-    }
+        return `      <tr style="height:${rowHeightStr}mm;">\n${cells}\n      </tr>`;
+      })
+      .join('\n');
 
     return `<table class="element element-table" style="${style}">\n` +
-      `    <tbody>\n${rowsMarkup}    </tbody>\n  </table>`;
+      `    <tbody>\n${rowsMarkup}\n    </tbody>\n  </table>`;
   }
 
   private formatContent(content: string | undefined | null): string {
@@ -329,6 +412,18 @@ export class DesignerStateService {
   }
 
   private getTableDimension(element: CanvasElement, property: 'rows' | 'cols'): number {
+    if (property === 'rows') {
+      const sizes = element.properties?.['rowSizes'];
+      if (Array.isArray(sizes) && sizes.length > 0) {
+        return sizes.length;
+      }
+    } else if (property === 'cols') {
+      const sizes = element.properties?.['colSizes'];
+      if (Array.isArray(sizes) && sizes.length > 0) {
+        return sizes.length;
+      }
+    }
+
     const value = element.properties?.[property];
     const parsed = typeof value === 'number' ? value : parseInt(value, 10);
     return Number.isFinite(parsed) && parsed > 0 ? parsed : 1;

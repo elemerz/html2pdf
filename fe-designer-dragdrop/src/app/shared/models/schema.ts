@@ -73,6 +73,8 @@ export function createDefaultCanvasElement(
   if (type === 'table') {
     properties['rows'] = 1;
     properties['cols'] = 1;
+    properties['rowSizes'] = [1];
+    properties['colSizes'] = [1];
   }
 
   return {

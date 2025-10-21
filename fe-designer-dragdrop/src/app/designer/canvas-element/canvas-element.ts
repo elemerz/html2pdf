@@ -2,6 +2,7 @@ import { Component, Input, inject, HostListener, HostBinding, ElementRef, signal
 import { CommonModule } from '@angular/common';
 import { CanvasElement, A4_WIDTH_MM, A4_HEIGHT_MM } from '../../shared/models/schema';
 import { DesignerStateService, PageGutters } from '../../core/services/designer-state.service';
+import { TableElementComponent } from '../table-element/table-element';
 
 type ResizeHandle =
   | 'top'
@@ -15,7 +16,7 @@ type ResizeHandle =
 
 @Component({
   selector: 'app-canvas-element',
-  imports: [CommonModule],
+  imports: [CommonModule, TableElementComponent],
   templateUrl: './canvas-element.html',
   styleUrl: './canvas-element.less',
   standalone: true,
@@ -284,39 +285,4 @@ export class CanvasElementComponent {
     return min + clampedSteps * step;
   }
 
-  protected tableRows(element: CanvasElement): number[] {
-    const rows = this.getTableDimension(element, 'rows');
-    return Array.from({ length: rows }, (_, index) => index);
-  }
-
-  protected tableCols(element: CanvasElement): number[] {
-    const cols = this.getTableDimension(element, 'cols');
-    return Array.from({ length: cols }, (_, index) => index);
-  }
-
-  protected tableRowHeight(element: CanvasElement): number {
-    const rows = this.tableRowCount(element);
-    if (rows <= 0) return element.height;
-    return element.height / rows;
-  }
-
-  protected tableColWidth(element: CanvasElement): number {
-    const cols = this.tableColCount(element);
-    if (cols <= 0) return element.width;
-    return element.width / cols;
-  }
-
-  protected tableRowCount(element: CanvasElement): number {
-    return this.getTableDimension(element, 'rows');
-  }
-
-  protected tableColCount(element: CanvasElement): number {
-    return this.getTableDimension(element, 'cols');
-  }
-
-  private getTableDimension(element: CanvasElement, property: 'rows' | 'cols'): number {
-    const value = element.properties?.[property];
-    const parsed = typeof value === 'number' ? value : parseInt(value, 10);
-    return Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
-  }
 }

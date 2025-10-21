@@ -36,23 +36,11 @@
       <div class="element-media">🖼️ Image</div>
     }
     @case ('table') {
-      <table 
-        class="element-table" 
-        aria-label="Table element">
-        <tbody>
-          @for (row of tableRows(element); track row) {
-            <tr [style.height.mm]="tableRowHeight(element)">
-              @for (col of tableCols(element); track col) {
-                <td
-                  [style.width.mm]="tableColWidth(element)"
-                  [style.height.mm]="tableRowHeight(element)">
-                  &nbsp;
-                </td>
-              }
-            </tr>
-          }
-        </tbody>
-      </table>
+      <app-table-element
+        [element]="element"
+        [mmToPx]="mmToPx"
+        [gridSize]="gridSize"
+      ></app-table-element>
     }
     @case ('list') {
       <div class="element-container">📝 List</div>

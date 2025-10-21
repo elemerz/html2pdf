@@ -1,0 +1,128 @@
+@import '../../../styles/theme.less';
+
+:host {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.table-element-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.element-table {
+  width: 100%;
+  height: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  background-color: fade(@background, 60%);
+
+  tbody {
+    height: 100%;
+  }
+
+  tr {
+    height: auto;
+  }
+
+  td {
+    border: 1px solid fade(@foreground, 25%);
+    padding: 0;
+    text-align: center;
+    position: relative;
+    transition: background-color @transition-fast, box-shadow @transition-fast;
+    user-select: none;
+
+    &.selected {
+      background-color: fade(@primary, 12%);
+      box-shadow: inset 0 0 0 2px fade(@primary, 40%);
+    }
+  }
+}
+
+.table-resize-handle {
+  position: absolute;
+  z-index: 5;
+  background-color: transparent;
+
+  &.horizontal {
+    left: 0;
+    right: 0;
+    height: 10px;
+    transform: translateY(-50%);
+    cursor: ns-resize;
+  }
+
+  &.vertical {
+    top: 0;
+    bottom: 0;
+    width: 10px;
+    transform: translateX(-50%);
+    cursor: ew-resize;
+  }
+
+  &::after {
+    content: '';
+    position: absolute;
+    background-color: fade(@primary, 40%);
+    opacity: 0;
+    transition: opacity @transition-fast;
+    pointer-events: none;
+  }
+
+  &.horizontal::after {
+    left: 0;
+    right: 0;
+    top: 50%;
+    height: 2px;
+    transform: translateY(-50%);
+  }
+
+  &.vertical::after {
+    top: 0;
+    bottom: 0;
+    left: 50%;
+    width: 2px;
+    transform: translateX(-50%);
+  }
+
+  &:hover::after,
+  &.resizing::after {
+    opacity: 1;
+  }
+}
+
+.table-context-menu {
+  position: fixed;
+  min-width: 200px;
+  background-color: @popover;
+  border: 1px solid @popover-border;
+  border-radius: @radius;
+  box-shadow: @shadow-lg;
+  z-index: @z-popover;
+  overflow: hidden;
+}
+
+.context-item {
+  width: 100%;
+  padding: 10px 16px;
+  border: none;
+  background: transparent;
+  color: @popover-foreground;
+  text-align: left;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color @transition-fast;
+
+  &:hover {
+    background-color: @accent;
+  }
+}
+
+.table-context-menu-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: @z-popover - 1;
+}

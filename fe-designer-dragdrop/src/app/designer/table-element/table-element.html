@@ -1,0 +1,65 @@
+@let rowSizes = getRowSizes();
+@let colSizes = getColSizes();
+
+<div class="table-element-container">
+  <table class="element-table" aria-label="Table element">
+    <tbody>
+      @for (rowSize of rowSizes; track $index; let rowIndex = $index) {
+        <tr [style.height.%]="rowSize * 100">
+          @for (colSize of colSizes; track $index; let colIndex = $index) {
+            <td
+              [style.width.%]="colSize * 100"
+              (click)="onCellClick($event, rowIndex, colIndex)"
+              (contextmenu)="onCellContextMenu($event, rowIndex, colIndex)"
+              [class.selected]="isCellSelected(rowIndex, colIndex)"
+            >
+              &nbsp;
+            </td>
+          }
+        </tr>
+      }
+    </tbody>
+  </table>
+
+  @for (_ of rowSizes; track $index; let rowIndex = $index) {
+    @if (rowIndex < rowSizes.length - 1) {
+      <div
+        class="table-resize-handle horizontal"
+        [style.top.%]="getRowHandleOffset(rowSizes, rowIndex)"
+        [class.resizing]="isResizing('row', rowIndex)"
+        (mousedown)="startRowResize(rowIndex, $event)"
+      ></div>
+    }
+  }
+
+  @for (_ of colSizes; track $index; let colIndex = $index) {
+    @if (colIndex < colSizes.length - 1) {
+      <div
+        class="table-resize-handle vertical"
+        [style.left.%]="getColHandleOffset(colSizes, colIndex)"
+        [class.resizing]="isResizing('col', colIndex)"
+        (mousedown)="startColResize(colIndex, $event)"
+      ></div>
+    }
+  }
+
+  @if (showContextMenu()) {
+    <div
+      class="table-context-menu"
+      [style.left.px]="contextMenuPosition().x"
+      [style.top.px]="contextMenuPosition().y"
+      (click)="$event.stopPropagation()"
+    >
+      <button class="context-item" type="button" (click)="onSplitHorizontally()">
+        Split Horizontally by "n" (default 2)
+      </button>
+      <button class="context-item" type="button" (click)="onSplitVertically()">
+        Split Vertically by "n" (default 2)
+      </button>
+    </div>
+  }
+</div>
+
+@if (showContextMenu()) {
+  <div class="table-context-menu-overlay" (click)="closeContextMenu()"></div>
+}

@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DesignerStateService } from '../../core/services/designer-state.service';
 import { CanvasElement } from '../../shared/models/schema';
+import { reconcileSizeArray, withTableSizes } from '../../shared/utils/table-utils';
 
 @Component({
   selector: 'app-property-panel',
@@ -52,18 +53,21 @@ export class PropertyPanelComponent {
     if (!el || el.type !== 'table') return;
 
     const safeValue = Math.max(1, Math.floor(this.normalizeNumber(value, 1)));
-    const currentProperties: Record<string, any> = { ...(el.properties || {}) };
-    const nextRows = property === 'rows' ? safeValue : this.tableProperty(el, 'rows');
-    const nextCols = property === 'cols' ? safeValue : this.tableProperty(el, 'cols');
+    const currentRows = this.tableProperty(el, 'rows');
+    const currentCols = this.tableProperty(el, 'cols');
 
-    if (currentProperties['rows'] === nextRows && currentProperties['cols'] === nextCols) {
+    const nextRows = property === 'rows' ? safeValue : currentRows;
+    const nextCols = property === 'cols' ? safeValue : currentCols;
+
+    if (nextRows === currentRows && nextCols === currentCols) {
       return;
     }
 
-    currentProperties['rows'] = nextRows;
-    currentProperties['cols'] = nextCols;
+    const rowSizes = reconcileSizeArray(el.properties?.['rowSizes'], nextRows);
+    const colSizes = reconcileSizeArray(el.properties?.['colSizes'], nextCols);
 
-    this.updateElement({ properties: currentProperties });
+    const properties = withTableSizes(el, rowSizes, colSizes);
+    this.updateElement({ properties });
   }
 
   tableProperty(element: CanvasElement, property: 'rows' | 'cols'): number {
