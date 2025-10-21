@@ -36,7 +36,23 @@
       <div class="element-media">🖼️ Image</div>
     }
     @case ('table') {
-      <div class="element-container">📊 Table</div>
+      <table 
+        class="element-table" 
+        aria-label="Table element">
+        <tbody>
+          @for (row of tableRows(element); track row) {
+            <tr [style.height.mm]="tableRowHeight(element)">
+              @for (col of tableCols(element); track col) {
+                <td
+                  [style.width.mm]="tableColWidth(element)"
+                  [style.height.mm]="tableRowHeight(element)">
+                  &nbsp;
+                </td>
+              }
+            </tr>
+          }
+        </tbody>
+      </table>
     }
     @case ('list') {
       <div class="element-container">📝 List</div>

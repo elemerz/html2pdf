@@ -1,8 +1,6 @@
 import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { firstValueFrom } from 'rxjs';
 import { DesignerStateService } from './core/services/designer-state.service';
-import { LayoutsApiService } from './core/services/layouts-api.service';
 import { MenuBarComponent } from './layout/menu-bar/menu-bar';
 import { StatusBarComponent } from './layout/status-bar/status-bar';
 import { ToolbarPanelComponent } from './layout/toolbar-panel/toolbar-panel';
@@ -32,7 +30,6 @@ import { ReportLayout } from './shared/models/schema';
 })
 export class App {
   protected designerState = inject(DesignerStateService);
-  private layoutsApi = inject(LayoutsApiService);
 
   // Dialog visibility signals
   protected showSaveDialog = signal(false);
@@ -87,22 +84,16 @@ export class App {
   }
 
   // Dialog handlers
-  async handleSave(name: string): Promise<void> {
+  handleSave(name: string): void {
+    const trimmedName = name.trim() || 'layout';
     try {
-      const layout: ReportLayout = {
-        name,
-        elements: this.designerState.elements(),
-        gridSize: 10,
-        canvasWidth: 210,
-        canvasHeight: 297
-      };
-
-      await firstValueFrom(this.layoutsApi.createLayout(layout));
-      this.designerState.setStatusMessage(`Layout "${name}" saved successfully`);
+      const xhtml = this.designerState.generateXhtmlDocument(trimmedName);
+      this.triggerDownload(`${trimmedName}.xhtml`, xhtml, 'application/xhtml+xml');
+      this.designerState.setStatusMessage(`Layout "${trimmedName}" exported`);
       this.showSaveDialog.set(false);
-    } catch (err) {
-      console.error('Failed to save layout:', err);
-      this.designerState.setStatusMessage('Failed to save layout');
+    } catch (error) {
+      console.error('Failed to export layout:', error);
+      this.designerState.setStatusMessage('Failed to export layout');
     }
   }
 
@@ -122,5 +113,15 @@ export class App {
 
   closeOptionsDialog(): void {
     this.showOptionsDialog.set(false);
+  }
+
+  private triggerDownload(filename: string, content: string, mimeType: string): void {
+    const blob = new Blob([content], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = filename;
+    anchor.click();
+    URL.revokeObjectURL(url);
   }
 }

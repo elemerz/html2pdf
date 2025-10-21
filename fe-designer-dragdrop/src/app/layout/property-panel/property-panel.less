@@ -10,7 +10,7 @@
 .panel-content {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
 }
 
 .panel-title {
@@ -20,28 +20,52 @@
   margin: 0 0 8px 0;
 }
 
-.property-group {
+.property-section {
+  border: 1px solid fade(@sidebar-border, 60%);
+  border-radius: @radius-sm;
+  background-color: fade(@sidebar-foreground, 4%);
+  overflow: hidden;
+}
+
+.section-header {
+  padding: 8px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: @muted-foreground;
+  background-color: fade(@sidebar-foreground, 6%);
+}
+
+.section-body {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
+  padding: 10px 12px 12px;
+}
+
+.property-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
 .property-label {
-  font-size: 12px;
-  font-weight: 500;
+  font-size: 11px;
+  font-weight: 600;
   color: @muted-foreground;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.4px;
 }
 
 .property-input {
   width: 100%;
-  padding: 8px 12px;
+  padding: 6px 8px;
   background-color: @background;
   border: 1px solid @border;
   border-radius: 4px;
   color: @foreground;
-  font-size: 14px;
+  font-size: 13px;
 
   &:focus {
     outline: none;
@@ -55,14 +79,15 @@
 }
 
 .property-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
 }
 
 .property-textarea {
   width: 100%;
-  min-height: 80px;
-  padding: 8px 12px;
+  min-height: 70px;
+  padding: 6px 8px;
   background-color: @background;
   border: 1px solid @border;
   border-radius: 4px;
@@ -77,6 +102,12 @@
   }
 }
 
+.property-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
 .delete-button {
   padding: 8px 16px;
   background-color: @destructive;
@@ -87,6 +118,8 @@
   font-weight: 500;
   cursor: pointer;
   transition: opacity @transition-fast;
+  width: 100%;
+  text-align: center;
 
   &:hover {
     opacity: 0.9;

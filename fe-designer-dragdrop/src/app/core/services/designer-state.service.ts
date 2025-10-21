@@ -252,6 +252,104 @@ export class DesignerStateService {
     }
   }
 
+  generateXhtmlDocument(title: string): string {
+    const safeTitle = this.escapeHtml(title || 'Layout');
+    const elementsMarkup = this.elementsSignal()
+      .map(element => this.serializeElementToXhtml(element))
+      .filter(Boolean)
+      .join('\n    ');
+
+    const bodyContent = elementsMarkup ? `    ${elementsMarkup}\n` : '';
+
+    return `<?xml version="1.0" encoding="UTF-8"?>\n` +
+      `<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">\n` +
+      `<html xmlns="http://www.w3.org/1999/xhtml" lang="en">\n` +
+      `  <head>\n` +
+      `    <meta http-equiv="Content-Type" content="application/xhtml+xml; charset=UTF-8" />\n` +
+      `    <title>${safeTitle}</title>\n` +
+      `    <style type="text/css">\n` +
+      `      body { position: relative; width: ${A4_WIDTH_MM}mm; height: ${A4_HEIGHT_MM}mm; margin: 0; font-family: Arial, sans-serif; }\n` +
+      `      .element { position: absolute; box-sizing: border-box; }\n` +
+      `      .element-table { border-collapse: collapse; }\n` +
+      `      .element-table td { border: 1px solid #333333; padding: 4px; }\n` +
+      `    </style>\n` +
+      `  </head>\n` +
+      `  <body>\n${bodyContent}  </body>\n</html>`;
+  }
+
+  private serializeElementToXhtml(element: CanvasElement): string {
+    const style = `left:${element.x}mm;top:${element.y}mm;width:${element.width}mm;height:${element.height}mm;`;
+
+    switch (element.type) {
+      case 'table':
+        return this.serializeTableElement(element, style);
+      case 'heading':
+        return `<h1 class="element" style="${style}">${this.formatContent(element.content)}</h1>`;
+      case 'paragraph':
+        return `<p class="element" style="${style}">${this.formatContent(element.content)}</p>`;
+      case 'text':
+        return `<div class="element" style="${style}">${this.formatContent(element.content)}</div>`;
+      case 'div':
+        return `<div class="element" style="${style}">${this.formatContent(element.content)}</div>`;
+      default:
+        return `<div class="element" style="${style}">${this.formatContent(element.content)}</div>`;
+    }
+  }
+
+  private serializeTableElement(element: CanvasElement, style: string): string {
+    const rows = this.getTableDimension(element, 'rows');
+    const cols = this.getTableDimension(element, 'cols');
+
+    const effectiveRows = rows > 0 ? rows : 1;
+    const effectiveCols = cols > 0 ? cols : 1;
+
+    const rowHeight = element.height / effectiveRows;
+    const colWidth = element.width / effectiveCols;
+    const rowHeightStr = this.formatMillimeters(rowHeight);
+    const colWidthStr = this.formatMillimeters(colWidth);
+
+    let rowsMarkup = '';
+
+    for (let r = 0; r < effectiveRows; r++) {
+      let cells = '';
+      for (let c = 0; c < effectiveCols; c++) {
+        cells += `        <td style="width:${colWidthStr}mm;height:${rowHeightStr}mm;">&nbsp;</td>\n`;
+      }
+      rowsMarkup += `      <tr style="height:${rowHeightStr}mm;">\n${cells}      </tr>\n`;
+    }
+
+    return `<table class="element element-table" style="${style}">\n` +
+      `    <tbody>\n${rowsMarkup}    </tbody>\n  </table>`;
+  }
+
+  private formatContent(content: string | undefined | null): string {
+    const escaped = this.escapeHtml(content ?? '');
+    const withBreaks = escaped.replace(/\r?\n/g, '<br />');
+    return withBreaks.length ? withBreaks : '&nbsp;';
+  }
+
+  private getTableDimension(element: CanvasElement, property: 'rows' | 'cols'): number {
+    const value = element.properties?.[property];
+    const parsed = typeof value === 'number' ? value : parseInt(value, 10);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
+  }
+
+  private escapeHtml(value: string): string {
+    return value
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  private formatMillimeters(value: number): string {
+    if (!Number.isFinite(value)) {
+      return '0';
+    }
+    return (Math.round(value * 1000) / 1000).toString();
+  }
+
   private normalizePageGutters(gutters: PageGutters): PageGutters {
     const minContent = Math.max(1, Math.round(this.logicalGridSize()));
 
@@ -329,8 +427,34 @@ export class DesignerStateService {
     const x = this.snapValueWithinBounds(element.x, minX, maxX);
     const y = this.snapValueWithinBounds(element.y, minY, maxY);
 
-    if (x !== element.x || y !== element.y || width !== element.width || height !== element.height) {
-      return { ...element, x, y, width, height };
+    let propertiesChanged = false;
+    let nextProperties = element.properties ?? {};
+
+    if (element.type === 'table') {
+      const rows = this.getTableDimension(element, 'rows');
+      const cols = this.getTableDimension(element, 'cols');
+
+      if (nextProperties['rows'] !== rows || nextProperties['cols'] !== cols) {
+        nextProperties = { ...nextProperties, rows, cols };
+        propertiesChanged = true;
+      }
+    }
+
+    if (
+      x !== element.x ||
+      y !== element.y ||
+      width !== element.width ||
+      height !== element.height ||
+      propertiesChanged
+    ) {
+      return {
+        ...element,
+        x,
+        y,
+        width,
+        height,
+        ...(propertiesChanged ? { properties: nextProperties } : {})
+      };
     }
     return element;
   }

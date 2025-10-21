@@ -283,4 +283,40 @@ export class CanvasElementComponent {
     const clampedSteps = Math.min(Math.max(rawSteps, 0), maxSteps);
     return min + clampedSteps * step;
   }
+
+  protected tableRows(element: CanvasElement): number[] {
+    const rows = this.getTableDimension(element, 'rows');
+    return Array.from({ length: rows }, (_, index) => index);
+  }
+
+  protected tableCols(element: CanvasElement): number[] {
+    const cols = this.getTableDimension(element, 'cols');
+    return Array.from({ length: cols }, (_, index) => index);
+  }
+
+  protected tableRowHeight(element: CanvasElement): number {
+    const rows = this.tableRowCount(element);
+    if (rows <= 0) return element.height;
+    return element.height / rows;
+  }
+
+  protected tableColWidth(element: CanvasElement): number {
+    const cols = this.tableColCount(element);
+    if (cols <= 0) return element.width;
+    return element.width / cols;
+  }
+
+  protected tableRowCount(element: CanvasElement): number {
+    return this.getTableDimension(element, 'rows');
+  }
+
+  protected tableColCount(element: CanvasElement): number {
+    return this.getTableDimension(element, 'cols');
+  }
+
+  private getTableDimension(element: CanvasElement, property: 'rows' | 'cols'): number {
+    const value = element.properties?.[property];
+    const parsed = typeof value === 'number' ? value : parseInt(value, 10);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
+  }
 }

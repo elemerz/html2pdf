@@ -3,59 +3,96 @@
     <div class="panel-content">
       <h3 class="panel-title">Element Properties</h3>
       
-      <div class="property-group">
-        <label class="property-label">Type</label>
-        <input class="property-input" [value]="element.type" disabled />
-      </div>
+      <section class="property-section">
+        <header class="section-header">General</header>
+        <div class="section-body">
+          <div class="property-field">
+            <label class="property-label">Type</label>
+            <input class="property-input" [value]="element.type" disabled />
+          </div>
 
-      <div class="property-group">
-        <label class="property-label">Position (mm)</label>
-        <div class="property-row">
-          <input 
-            type="number" 
-            class="property-input" 
-            [value]="element.x" 
-            (change)="updatePosition(+$any($event.target).value, element.y)"
-            placeholder="X"
-            data-testid="input-x" />
-          <input 
-            type="number" 
-            class="property-input" 
-            [value]="element.y" 
-            (change)="updatePosition(element.x, +$any($event.target).value)"
-            placeholder="Y"
-            data-testid="input-y" />
+          <div class="property-field">
+            <label class="property-label">Position (mm)</label>
+            <div class="property-row">
+              <input 
+                type="number" 
+                class="property-input" 
+                [value]="element.x" 
+                (input)="updatePosition(+$any($event.target).value, element.y)"
+                placeholder="X"
+                data-testid="input-x" />
+              <input 
+                type="number" 
+                class="property-input" 
+                [value]="element.y" 
+                (input)="updatePosition(element.x, +$any($event.target).value)"
+                placeholder="Y"
+                data-testid="input-y" />
+            </div>
+          </div>
+
+          <div class="property-field">
+            <label class="property-label">Size (mm)</label>
+            <div class="property-row">
+              <input 
+                type="number" 
+                class="property-input" 
+                [value]="element.width" 
+                (input)="updateSize(+$any($event.target).value, element.height)"
+                placeholder="Width"
+                data-testid="input-width" />
+              <input 
+                type="number" 
+                class="property-input" 
+                [value]="element.height" 
+                (input)="updateSize(element.width, +$any($event.target).value)"
+                placeholder="Height"
+                data-testid="input-height" />
+            </div>
+          </div>
+
+          <div class="property-field">
+            <label class="property-label">Content</label>
+            <textarea 
+              class="property-textarea" 
+              [value]="element.content"
+              (input)="updateContent($any($event.target).value)"
+              data-testid="input-content"></textarea>
+          </div>
         </div>
-      </div>
+      </section>
 
-      <div class="property-group">
-        <label class="property-label">Size (mm)</label>
-        <div class="property-row">
-          <input 
-            type="number" 
-            class="property-input" 
-            [value]="element.width" 
-            (change)="updateSize(+$any($event.target).value, element.height)"
-            placeholder="Width"
-            data-testid="input-width" />
-          <input 
-            type="number" 
-            class="property-input" 
-            [value]="element.height" 
-            (change)="updateSize(element.width, +$any($event.target).value)"
-            placeholder="Height"
-            data-testid="input-height" />
-        </div>
-      </div>
-
-      <div class="property-group">
-        <label class="property-label">Content</label>
-        <textarea 
-          class="property-textarea" 
-          [value]="element.content"
-          (change)="updateContent($any($event.target).value)"
-          data-testid="input-content"></textarea>
-      </div>
+      @if (isTable(element)) {
+        <section class="property-section">
+          <header class="section-header">Table</header>
+          <div class="section-body">
+            <div class="property-grid">
+              <div class="property-field">
+                <label class="property-label">Rows</label>
+                <input 
+                  type="number" 
+                  min="1"
+                  step="1"
+                  class="property-input"
+                  [value]="tableProperty(element, 'rows')"
+                  (input)="updateTableProperty('rows', +$any($event.target).value)"
+                  data-testid="input-table-rows" />
+              </div>
+              <div class="property-field">
+                <label class="property-label">Columns</label>
+                <input 
+                  type="number" 
+                  min="1"
+                  step="1"
+                  class="property-input"
+                  [value]="tableProperty(element, 'cols')"
+                  (input)="updateTableProperty('cols', +$any($event.target).value)"
+                  data-testid="input-table-cols" />
+              </div>
+            </div>
+          </div>
+        </section>
+      }
 
       <button 
         class="delete-button" 

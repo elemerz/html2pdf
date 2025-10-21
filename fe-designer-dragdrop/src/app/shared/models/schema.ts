@@ -68,14 +68,21 @@ export function createDefaultCanvasElement(
   toolbarElement?: ToolbarElement
 ): InsertCanvasElement {
   const element = toolbarElement || toolbarElements.find(e => e.type === type);
+  const properties: Record<string, any> = {};
+
+  if (type === 'table') {
+    properties['rows'] = 1;
+    properties['cols'] = 1;
+  }
+
   return {
     type,
     x,
     y,
     width: element?.defaultWidth || 100,
     height: element?.defaultHeight || 50,
-    properties: {},
-    content: `New ${type}`,
+    properties,
+    content: type === 'table' ? '' : `New ${type}`,
   };
 }
 

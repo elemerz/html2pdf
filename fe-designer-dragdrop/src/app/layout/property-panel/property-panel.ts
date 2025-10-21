@@ -1,4 +1,4 @@
-import { Component, inject, computed } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DesignerStateService } from '../../core/services/designer-state.service';
@@ -16,12 +16,6 @@ export class PropertyPanelComponent {
   
   protected selectedElement = this.designerState.selectedElement;
   
-  // Create local mutable copy for editing
-  protected editingElement = computed(() => {
-    const el = this.selectedElement();
-    return el ? { ...el } : null;
-  });
-
   updateElement(updates: Partial<CanvasElement>) {
     const el = this.selectedElement();
     if (el) {
@@ -30,15 +24,56 @@ export class PropertyPanelComponent {
   }
 
   updatePosition(x: number, y: number) {
-    this.updateElement({ x, y });
+    const el = this.selectedElement();
+    if (!el) return;
+    const safeX = this.normalizeNumber(x, el.x);
+    const safeY = this.normalizeNumber(y, el.y);
+    if (safeX === el.x && safeY === el.y) return;
+    this.updateElement({ x: safeX, y: safeY });
   }
 
   updateSize(width: number, height: number) {
-    this.updateElement({ width, height });
+    const el = this.selectedElement();
+    if (!el) return;
+    const safeWidth = Math.max(1, this.normalizeNumber(width, el.width));
+    const safeHeight = Math.max(1, this.normalizeNumber(height, el.height));
+    if (safeWidth === el.width && safeHeight === el.height) return;
+    this.updateElement({ width: safeWidth, height: safeHeight });
   }
 
   updateContent(content: string) {
+    const el = this.selectedElement();
+    if (!el || el.content === content) return;
     this.updateElement({ content });
+  }
+
+  updateTableProperty(property: 'rows' | 'cols', value: number) {
+    const el = this.selectedElement();
+    if (!el || el.type !== 'table') return;
+
+    const safeValue = Math.max(1, Math.floor(this.normalizeNumber(value, 1)));
+    const currentProperties: Record<string, any> = { ...(el.properties || {}) };
+    const nextRows = property === 'rows' ? safeValue : this.tableProperty(el, 'rows');
+    const nextCols = property === 'cols' ? safeValue : this.tableProperty(el, 'cols');
+
+    if (currentProperties['rows'] === nextRows && currentProperties['cols'] === nextCols) {
+      return;
+    }
+
+    currentProperties['rows'] = nextRows;
+    currentProperties['cols'] = nextCols;
+
+    this.updateElement({ properties: currentProperties });
+  }
+
+  tableProperty(element: CanvasElement, property: 'rows' | 'cols'): number {
+    const value = element.properties?.[property];
+    const parsed = typeof value === 'number' ? value : parseInt(value, 10);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
+  }
+
+  isTable(element: CanvasElement | null): boolean {
+    return !!element && element.type === 'table';
   }
 
   deleteElement() {
@@ -46,5 +81,12 @@ export class PropertyPanelComponent {
     if (el) {
       this.designerState.removeElement(el.id);
     }
+  }
+
+  private normalizeNumber(value: number, fallback: number = 0): number {
+    if (Number.isFinite(value)) {
+      return value;
+    }
+    return fallback;
   }
 }

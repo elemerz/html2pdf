@@ -72,6 +72,28 @@
   font-size: 24px;
 }
 
+.element-table {
+  width: 100%;
+  height: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  background-color: fade(@background, 60%);
+
+  tbody {
+    height: 100%;
+  }
+
+  tr {
+    height: auto;
+  }
+
+  td {
+    border: 1px solid fade(@foreground, 25%);
+    padding: 0;
+    text-align: center;
+  }
+}
+
 .element-link {
   color: @primary;
   text-decoration: underline;
