@@ -1,0 +1,142 @@
+@import '../../../styles/theme.less';
+
+:host {
+  position: absolute;
+  display: block;
+  border: 1px solid fade(@primary, 40%);
+  background-color: transparent;
+  cursor: move;
+  user-select: none;
+  transition: border-color @transition-fast;
+
+  &:hover {
+    border-color: fade(@primary, 80%);
+  }
+
+  &.selected {
+    border: 2px solid @primary;
+    box-shadow: 0 0 0 3px fade(@primary, 20%);
+  }
+}
+
+.element-coordinates {
+  position: absolute;
+  top: -24px;
+  left: 0;
+  padding: 2px 6px;
+  background-color: @primary;
+  color: @primary-foreground;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  border-radius: @radius-sm;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 10;
+}
+
+// Element type styles
+.element-heading {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.element-paragraph {
+  font-size: 14px;
+}
+
+.element-text {
+  font-size: 14px;
+}
+
+.element-container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px dashed fade(@muted-foreground, 30%);
+  border-radius: 4px;
+  font-size: 12px;
+  color: @muted-foreground;
+}
+
+.element-media {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: @muted;
+  border-radius: 4px;
+  font-size: 24px;
+}
+
+.element-link {
+  color: @primary;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.resize-handle {
+  position: absolute;
+  background-color: @primary;
+  border-radius: 4px;
+  opacity: 0.9;
+  box-shadow: 0 0 0 1px fade(@primary-foreground, 50%);
+  z-index: 20;
+
+  &.resize-handle-horizontal {
+    top: 50%;
+    right: -6px;
+    width: 12px;
+    height: 24px;
+    transform: translateY(-50%);
+    cursor: ew-resize;
+  }
+
+  &.resize-handle-vertical {
+    bottom: -6px;
+    left: 50%;
+    width: 24px;
+    height: 12px;
+    transform: translateX(-50%);
+    cursor: ns-resize;
+  }
+}
+
+// Context Menu
+.context-menu {
+  position: fixed;
+  min-width: 160px;
+  background-color: @popover;
+  border: 1px solid @popover-border;
+  border-radius: @radius;
+  box-shadow: @shadow-lg;
+  z-index: @z-popover;
+  overflow: hidden;
+}
+
+.context-menu-item {
+  width: 100%;
+  padding: 8px 16px;
+  background: transparent;
+  border: none;
+  color: @popover-foreground;
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color @transition-fast;
+
+  &:hover {
+    background-color: @accent;
+  }
+}
+
+.context-menu-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: @z-popover - 1;
+}

@@ -1,0 +1,103 @@
+<div class="menu-bar" data-testid="menubar">
+  <!-- File Menu -->
+  <div class="menu-item-container">
+    <button 
+      class="menu-button"
+      (click)="toggleMenu('file')"
+      data-testid="menu-file">
+      File
+    </button>
+    @if (openMenu() === 'file') {
+      <div class="dropdown-menu" (click)="$event.stopPropagation()">
+        <button class="dropdown-item" (click)="handleNew()" data-testid="menu-file-new">
+          <span>New</span>
+          <span class="shortcut">Ctrl+N</span>
+        </button>
+        <button class="dropdown-item" (click)="handleOpen()" data-testid="menu-file-open">
+          <span>Open</span>
+          <span class="shortcut">Ctrl+O</span>
+        </button>
+        <button class="dropdown-item" (click)="handleSave()" data-testid="menu-file-save">
+          <span>Save</span>
+          <span class="shortcut">Ctrl+S</span>
+        </button>
+        <button class="dropdown-item" (click)="handleClose()" data-testid="menu-file-close">
+          <span>Close</span>
+        </button>
+      </div>
+    }
+  </div>
+
+  <!-- Edit Menu -->
+  <div class="menu-item-container">
+    <button 
+      class="menu-button"
+      (click)="toggleMenu('edit')"
+      data-testid="menu-edit">
+      Edit
+    </button>
+    @if (openMenu() === 'edit') {
+      <div class="dropdown-menu" (click)="$event.stopPropagation()">
+        <button 
+          class="dropdown-item" 
+          [disabled]="!canUndo()"
+          (click)="handleUndo()" 
+          data-testid="menu-edit-undo">
+          <span>Undo</span>
+          <span class="shortcut">Ctrl+Z</span>
+        </button>
+        <button 
+          class="dropdown-item" 
+          [disabled]="!canRedo()"
+          (click)="handleRedo()" 
+          data-testid="menu-edit-redo">
+          <span>Redo</span>
+          <span class="shortcut">Ctrl+Y</span>
+        </button>
+        <button class="dropdown-item" (click)="handleOptions()" data-testid="menu-edit-options">
+          <span>Options</span>
+        </button>
+      </div>
+    }
+  </div>
+
+  <!-- View Menu -->
+  <div class="menu-item-container">
+    <button 
+      class="menu-button"
+      (click)="toggleMenu('view')"
+      data-testid="menu-view">
+      View
+    </button>
+    @if (openMenu() === 'view') {
+      <div class="dropdown-menu" (click)="$event.stopPropagation()">
+        <button 
+          class="dropdown-item" 
+          (click)="handleZoom('fit')" 
+          [class.active]="canvasZoomMode() === 'fit'"
+          data-testid="menu-view-zoom-fit">
+          <span>Zoom To Fit</span>
+        </button>
+        <button 
+          class="dropdown-item" 
+          (click)="handleZoom('width')" 
+          [class.active]="canvasZoomMode() === 'width'"
+          data-testid="menu-view-zoom-width">
+          <span>Zoom To Width</span>
+        </button>
+        <button 
+          class="dropdown-item" 
+          (click)="handleZoom('height')" 
+          [class.active]="canvasZoomMode() === 'height'"
+          data-testid="menu-view-zoom-height">
+          <span>Zoom To Height</span>
+        </button>
+      </div>
+    }
+  </div>
+</div>
+
+<!-- Click outside to close menus -->
+@if (openMenu()) {
+  <div class="menu-overlay" (click)="closeMenu()"></div>
+}

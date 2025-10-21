@@ -1,0 +1,46 @@
+@if (isOpen()) {
+  <div class="dialog-backdrop" (click)="handleBackdropClick($event)">
+    <div class="dialog-content" (click)="$event.stopPropagation()">
+      <div class="dialog-header">
+        <h2>Open Layout</h2>
+        <button class="close-btn" (click)="handleCancel()" data-testid="button-close-open-dialog">
+          ×
+        </button>
+      </div>
+      
+      <div class="dialog-body">
+        @if (loading()) {
+          <div class="loading">Loading layouts...</div>
+        } @else if (error()) {
+          <div class="error">{{ error() }}</div>
+        } @else if (layouts().length === 0) {
+          <div class="empty">No saved layouts found</div>
+        } @else {
+          <div class="layouts-list">
+            @for (layout of layouts(); track layout.id) {
+              <div 
+                class="layout-item" 
+                (click)="handleOpen(layout)"
+                [attr.data-testid]="'layout-item-' + layout.id"
+              >
+                <span class="layout-name">{{ layout.name }}</span>
+                <button 
+                  class="delete-btn"
+                  (click)="handleDelete($event, layout.id!)"
+                  [attr.data-testid]="'button-delete-' + layout.id"
+                  title="Delete layout"
+                >
+                  Delete
+                </button>
+              </div>
+            }
+          </div>
+        }
+      </div>
+      
+      <div class="dialog-footer">
+        <button (click)="handleCancel()" data-testid="button-cancel-open">Close</button>
+      </div>
+    </div>
+  </div>
+}

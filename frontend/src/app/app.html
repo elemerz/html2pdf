@@ -1,0 +1,79 @@
+<!-- Report Designer - Border Layout -->
+<div class="designer-container">
+  <!-- North: Menu Bar -->
+  <div class="north-region">
+    <app-menu-bar
+      (onNew)="onNewLayout()"
+      (onSave)="onSaveLayout()"
+      (onOpen)="onOpenLayout()"
+      (onClose)="onCloseLayout()"
+      (onUndo)="onUndo()"
+      (onRedo)="onRedo()"
+      (onOptions)="onOptions()">
+    </app-menu-bar>
+  </div>
+
+  <!-- Main Content Area (West + Center + East) -->
+  <div class="main-region">
+    <!-- West: Toolbar Panel -->
+    @if (!westCollapsed()) {
+      <div class="west-region" [style.width.px]="westWidth()">
+        <app-toolbar-panel></app-toolbar-panel>
+      </div>
+    }
+
+    <!-- Center: Canvas -->
+    <div class="center-region">
+      <app-canvas></app-canvas>
+    </div>
+
+    <!-- East: Property Panel -->
+    @if (!eastCollapsed()) {
+      <div class="east-region" [style.width.px]="eastWidth()">
+        <app-property-panel></app-property-panel>
+      </div>
+    }
+
+    <!-- West Panel Collapse Button -->
+    <button
+      class="collapse-button west-collapse"
+      [style.left.px]="westCollapsed() ? 0 : westWidth()"
+      (click)="designerState.toggleWestPanel()"
+      data-testid="button-toggle-west">
+      <span>{{ westCollapsed() ? '›' : '‹' }}</span>
+    </button>
+
+    <!-- East Panel Collapse Button -->
+    <button
+      class="collapse-button east-collapse"
+      [style.right.px]="eastCollapsed() ? 0 : eastWidth()"
+      (click)="designerState.toggleEastPanel()"
+      data-testid="button-toggle-east">
+      <span>{{ eastCollapsed() ? '‹' : '›' }}</span>
+    </button>
+  </div>
+
+  <!-- South: Status Bar -->
+  <div class="south-region">
+    <app-status-bar></app-status-bar>
+  </div>
+</div>
+
+<!-- Dialogs -->
+<app-save-dialog
+  [isOpen]="showSaveDialog()"
+  (onClose)="closeSaveDialog()"
+  (onSave)="handleSave($event)">
+</app-save-dialog>
+
+<app-open-dialog
+  [isOpen]="showOpenDialog()"
+  (onClose)="closeOpenDialog()"
+  (onOpen)="handleOpen($event)">
+</app-open-dialog>
+
+@if (showOptionsDialog()) {
+  <app-options-dialog
+    (close)="closeOptionsDialog()">
+  </app-options-dialog>
+}

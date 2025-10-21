@@ -1,0 +1,131 @@
+@import '../styles/theme.less';
+
+.designer-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+  background-color: @background;
+}
+
+// North Region - Menu Bar
+.north-region {
+  height: @menubar-height;
+  width: 100%;
+  border-bottom: 1px solid @border;
+  background-color: @sidebar;
+  z-index: @z-sticky;
+}
+
+// Main Content Area (West + Center + East)
+.main-region {
+  display: flex;
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+}
+
+// West Region - Toolbar Panel
+.west-region {
+  height: 100%;
+  border-right: 1px solid @border;
+  background-color: @sidebar;
+  overflow-y: auto;
+  overflow-x: hidden;
+  transition: width @transition-normal;
+}
+
+// Center Region - Canvas
+.center-region {
+  flex: 1;
+  height: 100%;
+  overflow: auto;
+  background-color: @background;
+  position: relative;
+}
+
+// East Region - Property Panel
+.east-region {
+  height: 100%;
+  border-left: 1px solid @border;
+  background-color: @sidebar;
+  overflow-y: auto;
+  overflow-x: hidden;
+  transition: width @transition-normal;
+}
+
+// South Region - Status Bar
+.south-region {
+  height: @statusbar-height;
+  width: 100%;
+  border-top: 1px solid @border;
+  background-color: @sidebar;
+  z-index: @z-sticky;
+}
+
+// Collapse Buttons
+.collapse-button {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 24px;
+  height: 80px;
+  background-color: @primary;
+  color: @primary-foreground;
+  border: 2px solid @primary;
+  border-radius: 0;
+  box-shadow: @shadow-lg;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: @z-fixed;
+  transition: all @transition-normal;
+  outline: none;
+  
+  &:hover {
+    background-color: @primary;
+    opacity: 0.9;
+  }
+
+  &:active {
+    opacity: 1;
+  }
+
+  span {
+    font-size: 14px;
+    font-weight: bold;
+  }
+}
+
+.west-collapse {
+  border-radius: 0 8px 8px 0;
+  border-left: none;
+}
+
+.east-collapse {
+  border-radius: 8px 0 0 8px;
+  border-right: none;
+}
+
+// Dark mode overrides
+body.dark-mode {
+  .north-region,
+  .west-region,
+  .east-region,
+  .south-region {
+    background-color: @sidebar-dark;
+    border-color: @border-dark;
+  }
+
+  .center-region {
+    background-color: @background-dark;
+  }
+
+  .collapse-button {
+    background-color: @primary-dark;
+    color: @primary-foreground-dark;
+    border-color: @primary-dark;
+  }
+}

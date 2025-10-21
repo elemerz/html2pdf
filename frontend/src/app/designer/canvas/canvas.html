@@ -1,0 +1,50 @@
+<div 
+  #workspace
+  class="canvas-workspace" 
+  (drop)="onDrop($event)" 
+  (dragover)="onDragOver($event)"
+  (click)="onCanvasClick()"
+  data-testid="canvas">
+  <div 
+    class="a4-sheet-wrapper"
+    [style.width.px]="A4_WIDTH_MM * MM_TO_PX * canvasScale()"
+    [style.height.px]="A4_HEIGHT_MM * MM_TO_PX * canvasScale()">
+    <div class="a4-sheet" 
+      #sheet
+      [style.width.mm]="A4_WIDTH_MM"
+      [style.height.mm]="A4_HEIGHT_MM"
+      [style.transform]="'scale(' + canvasScale() + ')'"
+      [style.transform-origin]="'top left'">
+      
+      <!-- Grid Background (SVG Pattern) -->
+      <svg class="grid-pattern" width="100%" height="100%" [style.color]="visualGridColor()">
+        <defs>
+          <pattern 
+            id="grid" 
+            [attr.width]="visualGridSizePx()" 
+            [attr.height]="visualGridSizePx()" 
+            patternUnits="userSpaceOnUse">
+            <rect width="100%" height="100%" fill="none" />
+            <path 
+              [attr.d]="'M ' + visualGridSizePx() + ' 0 L 0 0 0 ' + visualGridSizePx()" 
+              fill="none" 
+              [attr.stroke]="visualGridColor()" 
+              stroke-width="0.5" 
+              opacity="0.6" />
+          </pattern>
+        </defs>
+        <rect width="100%" height="100%" fill="url(#grid)" />
+      </svg>
+
+      <!-- Canvas Elements -->
+      @for (element of elements(); track element.id) {
+        <app-canvas-element
+          [element]="element"
+          [isSelected]="element.id === selectedElementId()"
+          [gridSize]="logicalGridSize()"
+          [mmToPx]="MM_TO_PX * canvasScale()">
+        </app-canvas-element>
+      }
+    </div>
+  </div>
+</div>

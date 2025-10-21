@@ -1,0 +1,126 @@
+// Import theme variables
+@import './styles/theme.less';
+
+// ============================================
+// GLOBAL STYLES
+// ============================================
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
+body {
+  font-family: @font-sans;
+  background-color: @background;
+  color: @foreground;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+// Light mode by default (BlackOnWhite theme)
+body {
+  background-color: @background-light;
+  color: @foreground-light;
+}
+
+// Dark mode override
+body.dark-mode {
+  background-color: @background-dark;
+  color: @foreground-dark;
+}
+
+// ============================================
+// UTILITY CLASSES
+// ============================================
+
+.no-select {
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
+.cursor-pointer {
+  cursor: pointer;
+}
+
+.cursor-move {
+  cursor: move;
+}
+
+.cursor-grab {
+  cursor: grab;
+}
+
+.cursor-grabbing {
+  cursor: grabbing;
+}
+
+.cursor-col-resize {
+  cursor: col-resize;
+}
+
+.cursor-row-resize {
+  cursor: row-resize;
+}
+
+// ============================================
+// SCROLLBAR STYLING
+// ============================================
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: @muted;
+}
+
+::-webkit-scrollbar-thumb {
+  background: @muted-foreground;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: @foreground;
+}
+
+// Dark mode scrollbars
+body.dark-mode {
+  ::-webkit-scrollbar-track {
+    background: @muted-dark;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: @muted-foreground-dark;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: @foreground-dark;
+  }
+}
+
+// ============================================
+// TRANSITIONS
+// ============================================
+
+.transition-fast {
+  transition: all @transition-fast;
+}
+
+.transition-normal {
+  transition: all @transition-normal;
+}
+
+.transition-slow {
+  transition: all @transition-slow;
+}

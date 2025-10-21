@@ -1,0 +1,38 @@
+@if (isOpen()) {
+  <div class="dialog-backdrop" (click)="handleBackdropClick($event)">
+    <div class="dialog-content" (click)="$event.stopPropagation()">
+      <div class="dialog-header">
+        <h2>Save Layout</h2>
+        <button class="close-btn" (click)="handleCancel()" data-testid="button-close-save-dialog">
+          ×
+        </button>
+      </div>
+      
+      <div class="dialog-body">
+        <label for="layout-name">Layout Name:</label>
+        <input
+          id="layout-name"
+          type="text"
+          [ngModel]="layoutName()"
+          (ngModelChange)="layoutName.set($event)"
+          placeholder="Enter layout name"
+          (keyup.enter)="handleSave()"
+          data-testid="input-layout-name"
+          autofocus
+        />
+      </div>
+      
+      <div class="dialog-footer">
+        <button (click)="handleCancel()" data-testid="button-cancel-save">Cancel</button>
+        <button 
+          (click)="handleSave()" 
+          [disabled]="!layoutName().trim()"
+          class="primary"
+          data-testid="button-confirm-save"
+        >
+          Save
+        </button>
+      </div>
+    </div>
+  </div>
+}

@@ -1,0 +1,152 @@
+@import '../../../styles/theme.less';
+
+.dialog-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.dialog-content {
+  background-color: @surface;
+  border-radius: @radius-md;
+  border: 1px solid @border;
+  box-shadow: @shadow-lg;
+  width: 90%;
+  max-width: 500px;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.dialog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: @spacing-md;
+  border-bottom: 1px solid @border;
+
+  h2 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: @foreground;
+  }
+
+  .close-btn {
+    background: none;
+    border: none;
+    font-size: 24px;
+    color: @muted-foreground;
+    cursor: pointer;
+    padding: 0;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    &:hover {
+      color: @foreground;
+    }
+  }
+}
+
+.dialog-body {
+  padding: @spacing-md;
+  flex: 1;
+  overflow-y: auto;
+  min-height: 200px;
+
+  .loading,
+  .error,
+  .empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: @muted-foreground;
+    font-size: 14px;
+  }
+
+  .error {
+    color: @destructive;
+  }
+
+  .layouts-list {
+    display: flex;
+    flex-direction: column;
+    gap: @spacing-xs;
+  }
+
+  .layout-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: @spacing-sm @spacing-md;
+    border: 1px solid @border;
+    border-radius: @radius-sm;
+    background-color: @background;
+    cursor: pointer;
+    transition: all 0.2s;
+
+    &:hover {
+      background-color: @accent;
+      border-color: @primary;
+    }
+
+    .layout-name {
+      flex: 1;
+      font-size: 14px;
+      color: @foreground;
+      font-weight: 500;
+    }
+
+    .delete-btn {
+      padding: 4px @spacing-sm;
+      border: 1px solid @border;
+      border-radius: @radius-sm;
+      background-color: @background;
+      color: @destructive;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+
+      &:hover {
+        background-color: @destructive;
+        color: @destructive-foreground;
+        border-color: @destructive;
+      }
+    }
+  }
+}
+
+.dialog-footer {
+  padding: @spacing-md;
+  border-top: 1px solid @border;
+  display: flex;
+  gap: @spacing-sm;
+  justify-content: flex-end;
+
+  button {
+    padding: @spacing-sm @spacing-md;
+    border: 1px solid @border;
+    border-radius: @radius-sm;
+    background-color: @secondary;
+    color: @secondary-foreground;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+
+    &:hover {
+      background-color: fadeout(@secondary-foreground, 90%);
+    }
+  }
+}

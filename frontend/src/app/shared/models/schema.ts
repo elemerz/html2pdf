@@ -1,0 +1,104 @@
+// Element types (for printed PDF reports)
+export type ElementType =
+  | "text"
+  | "heading"
+  | "paragraph"
+  | "div"
+  | "section"
+  | "article"
+  | "image"
+  | "table"
+  | "list"
+  | "link";
+
+// Canvas element on the grid
+export interface CanvasElement {
+  id: string;
+  type: ElementType;
+  x: number; // position in mm
+  y: number; // position in mm
+  width: number; // size in mm (default: 100)
+  height: number; // size in mm (default: 50)
+  properties: Record<string, any>;
+  content: string;
+}
+
+// Layout/Report design
+export interface ReportLayout {
+  id?: string;
+  name: string;
+  elements: CanvasElement[];
+  gridSize: number; // grid size in mm (default: 10)
+  canvasWidth: number; // A4 width in mm (default: 210)
+  canvasHeight: number; // A4 height in mm (default: 297)
+}
+
+// Insert types (without id)
+export type InsertCanvasElement = Omit<CanvasElement, 'id'>;
+export type InsertReportLayout = Omit<ReportLayout, 'id'>;
+
+// Toolbar element categories
+export type ToolbarCategory = "text" | "containers" | "layout";
+
+export interface ToolbarElement {
+  type: ElementType;
+  label: string;
+  icon: string;
+  defaultWidth: number; // in mm
+  defaultHeight: number; // in mm
+  category: ToolbarCategory;
+}
+
+export const toolbarElements: ToolbarElement[] = [
+  // Text Elements
+  { type: "heading", label: "Heading", icon: "heading", defaultWidth: 150, defaultHeight: 30, category: "text" },
+  { type: "paragraph", label: "Paragraph", icon: "paragraph", defaultWidth: 200, defaultHeight: 50, category: "text" },
+  { type: "text", label: "Text", icon: "text", defaultWidth: 100, defaultHeight: 20, category: "text" },
+  
+  // Container Elements
+  { type: "div", label: "Div", icon: "square", defaultWidth: 150, defaultHeight: 100, category: "containers" },
+  { type: "section", label: "Section", icon: "layout", defaultWidth: 200, defaultHeight: 150, category: "containers" },
+  { type: "article", label: "Article", icon: "file-text", defaultWidth: 200, defaultHeight: 200, category: "containers" },
+  
+  // Layout Elements
+  { type: "image", label: "Image", icon: "image", defaultWidth: 100, defaultHeight: 100, category: "layout" },
+  { type: "table", label: "Table", icon: "table", defaultWidth: 200, defaultHeight: 150, category: "layout" },
+  { type: "list", label: "List", icon: "list", defaultWidth: 150, defaultHeight: 100, category: "layout" },
+  { type: "link", label: "Link", icon: "link", defaultWidth: 100, defaultHeight: 20, category: "layout" },
+];
+
+// Helper to create default canvas element
+export function createDefaultCanvasElement(
+  type: ElementType,
+  x: number,
+  y: number,
+  toolbarElement?: ToolbarElement
+): InsertCanvasElement {
+  const element = toolbarElement || toolbarElements.find(e => e.type === type);
+  return {
+    type,
+    x,
+    y,
+    width: element?.defaultWidth || 100,
+    height: element?.defaultHeight || 50,
+    properties: {},
+    content: `New ${type}`,
+  };
+}
+
+// Helper to create default layout
+export function createDefaultLayout(name: string = "Untitled Layout"): InsertReportLayout {
+  return {
+    name,
+    elements: [],
+    gridSize: 10, // 10mm grid
+    canvasWidth: 210, // A4 width in mm
+    canvasHeight: 297, // A4 height in mm
+  };
+}
+
+// Constants
+export const MM_TO_PX = 3.7795275591; // Conversion factor: 1mm = 3.7795275591px at 96 DPI
+export const A4_WIDTH_MM = 210;
+export const A4_HEIGHT_MM = 297;
+export const DEFAULT_GRID_SIZE_MM = 10;

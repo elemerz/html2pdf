@@ -1,0 +1,76 @@
+<div 
+  class="canvas-element"
+  (click)="onClick($event)"
+  (mousedown)="onMouseDown($event)"
+  (contextmenu)="onContextMenu($event)"
+  [attr.data-testid]="'element-' + element.id">
+  
+  <!-- Coordinate Label (shown when selected) -->
+  @if (isSelected) {
+    <div class="element-coordinates">
+      {{ element.x }}mm, {{ element.y }}mm
+    </div>
+  }
+  
+  <!-- Element Content Based on Type -->
+  @switch (element.type) {
+    @case ('heading') {
+      <div class="element-heading">{{ element.content }}</div>
+    }
+    @case ('paragraph') {
+      <div class="element-paragraph">{{ element.content }}</div>
+    }
+    @case ('text') {
+      <div class="element-text">{{ element.content }}</div>
+    }
+    @case ('div') {
+      <div class="element-container">div</div>
+    }
+    @case ('section') {
+      <div class="element-container">section</div>
+    }
+    @case ('article') {
+      <div class="element-container">article</div>
+    }
+    @case ('image') {
+      <div class="element-media">🖼️ Image</div>
+    }
+    @case ('table') {
+      <div class="element-container">📊 Table</div>
+    }
+    @case ('list') {
+      <div class="element-container">📝 List</div>
+    }
+    @case ('link') {
+      <a class="element-link">{{ element.content }}</a>
+    }
+  }
+
+  @if (isSelected) {
+    <div 
+      class="resize-handle resize-handle-horizontal"
+      (mousedown)="onHorizontalResizeMouseDown($event)">
+    </div>
+    <div 
+      class="resize-handle resize-handle-vertical"
+      (mousedown)="onVerticalResizeMouseDown($event)">
+    </div>
+  }
+
+  <!-- Context Menu -->
+  @if (showContextMenu()) {
+    <div 
+      class="context-menu"
+      [style.left.px]="contextMenuPosition().x"
+      [style.top.px]="contextMenuPosition().y"
+      (click)="$event.stopPropagation()">
+      <button class="context-menu-item" (click)="onProperties()">Properties</button>
+      <button class="context-menu-item" (click)="onDelete()">Delete</button>
+    </div>
+  }
+</div>
+
+<!-- Overlay to close context menu -->
+@if (showContextMenu()) {
+  <div class="context-menu-overlay" (click)="closeContextMenu()"></div>
+}

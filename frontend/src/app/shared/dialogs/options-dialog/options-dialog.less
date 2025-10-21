@@ -1,0 +1,121 @@
+@import '../../../../styles/theme.less';
+
+.dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: fade(@background, 80%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: @z-dialog;
+}
+
+.dialog-content {
+  background-color: @card;
+  border: 1px solid @card-border;
+  border-radius: @radius;
+  box-shadow: @shadow-lg;
+  width: 90%;
+  max-width: 500px;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.dialog-title {
+  padding: @spacing-md;
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  border-bottom: 1px solid @border;
+}
+
+.dialog-body {
+  padding: @spacing-md;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.dialog-footer {
+  padding: @spacing-md;
+  border-top: 1px solid @border;
+  display: flex;
+  justify-content: flex-end;
+  gap: @spacing-sm;
+}
+
+.form-group {
+  margin-bottom: @spacing-md;
+}
+
+.form-label {
+  display: block;
+  margin-bottom: @spacing-xs;
+  font-size: 14px;
+  font-weight: 500;
+  color: @foreground;
+}
+
+.form-description {
+  margin: @spacing-xs 0;
+  font-size: 12px;
+  color: @muted-foreground;
+}
+
+.form-input {
+  width: 100%;
+  padding: @spacing-sm;
+  border: 1px solid @input-border;
+  border-radius: @radius-sm;
+  font-size: 14px;
+  background-color: @input;
+  color: @foreground;
+  
+  &:focus {
+    outline: none;
+    border-color: @primary;
+    box-shadow: 0 0 0 3px fade(@primary, 20%);
+  }
+}
+
+.color-input {
+  width: 120px;
+  padding: 0;
+  height: 36px;
+}
+
+.button {
+  padding: @spacing-sm @spacing-md;
+  border: none;
+  border-radius: @radius-sm;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all @transition-fast;
+
+  &:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px fade(@primary, 20%);
+  }
+}
+
+.button-primary {
+  background-color: @primary;
+  color: @primary-foreground;
+
+  &:hover {
+    opacity: 0.9;
+  }
+}
+
+.button-secondary {
+  background-color: @secondary;
+  color: @secondary-foreground;
+
+  &:hover {
+    opacity: 0.9;
+  }
+}
