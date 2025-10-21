@@ -14,12 +14,12 @@ export class ToolbarPanelComponent {
   private dragDropService = inject(DragDropService);
   
   protected toolbarElements = toolbarElements;
-  protected expandedCategory = signal<ToolbarCategory | null>('text');
-  
+  protected expandedCategory = signal<ToolbarCategory | null>('layout');
+
   protected categories: { id: ToolbarCategory; label: string }[] = [
-    { id: 'text', label: 'Text Elements' },
+    { id: 'layout', label: 'Layout Pane' },
     { id: 'containers', label: 'Containers' },
-    { id: 'layout', label: 'Layout' },
+    { id: 'text', label: 'Text Elements' },
   ];
 
   getElementsForCategory(category: ToolbarCategory): ToolbarElement[] {

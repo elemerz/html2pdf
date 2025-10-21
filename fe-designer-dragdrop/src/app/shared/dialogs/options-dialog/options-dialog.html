@@ -3,58 +3,137 @@
     <h2 class="dialog-title">Options</h2>
     
     <div class="dialog-body">
-      <div class="form-group">
-        <label for="visual-grid-size" class="form-label">
-          Visual Grid Size (mm)
-        </label>
-        <p class="form-description">
-          Controls the spacing of the background grid lines on the canvas.
-        </p>
-        <input
-          id="visual-grid-size"
-          type="number"
-          class="form-input"
-          [ngModel]="visualGridSize()"
-          (ngModelChange)="visualGridSize.set($event)"
-          min="1"
-          max="100"
-          step="1"
-          data-testid="input-visual-grid-size" />
-      </div>
+      <div class="accordion">
+        <div 
+          class="accordion-section"
+          [class.expanded]="isSectionExpanded('page')">
+          <button 
+            type="button"
+            class="accordion-header"
+            (click)="toggleSection('page')"
+            data-testid="toggle-section-page">
+            <span>Page</span>
+            <span class="chevron" [class.expanded]="isSectionExpanded('page')">›</span>
+          </button>
 
-      <div class="form-group">
-        <label for="visual-grid-color" class="form-label">
-          Visual Grid Color
-        </label>
-        <p class="form-description">
-          Select the stroke color used when rendering the background grid.
-        </p>
-        <input
-          id="visual-grid-color"
-          type="color"
-          class="form-input color-input"
-          [ngModel]="visualGridColor()"
-          (ngModelChange)="visualGridColor.set($event)"
-          data-testid="input-visual-grid-color" />
-      </div>
+          @if (isSectionExpanded('page')) {
+            <div class="accordion-content">
+              <div class="form-grid gutters-grid">
+                <div class="form-field">
+                  <label for="page-gutter-top" class="form-label">Top (mm)</label>
+                  <input
+                    id="page-gutter-top"
+                    type="number"
+                    class="form-input"
+                    [ngModel]="pageGutterTop()"
+                    (ngModelChange)="pageGutterTop.set(coerceNumber($event))"
+                    min="0"
+                    max="100"
+                    step="1"
+                    data-testid="input-page-gutter-top" />
+                </div>
+                <div class="form-field">
+                  <label for="page-gutter-right" class="form-label">Right (mm)</label>
+                  <input
+                    id="page-gutter-right"
+                    type="number"
+                    class="form-input"
+                    [ngModel]="pageGutterRight()"
+                    (ngModelChange)="pageGutterRight.set(coerceNumber($event))"
+                    min="0"
+                    max="100"
+                    step="1"
+                    data-testid="input-page-gutter-right" />
+                </div>
+                <div class="form-field">
+                  <label for="page-gutter-bottom" class="form-label">Bottom (mm)</label>
+                  <input
+                    id="page-gutter-bottom"
+                    type="number"
+                    class="form-input"
+                    [ngModel]="pageGutterBottom()"
+                    (ngModelChange)="pageGutterBottom.set(coerceNumber($event))"
+                    min="0"
+                    max="100"
+                    step="1"
+                    data-testid="input-page-gutter-bottom" />
+                </div>
+                <div class="form-field">
+                  <label for="page-gutter-left" class="form-label">Left (mm)</label>
+                  <input
+                    id="page-gutter-left"
+                    type="number"
+                    class="form-input"
+                    [ngModel]="pageGutterLeft()"
+                    (ngModelChange)="pageGutterLeft.set(coerceNumber($event))"
+                    min="0"
+                    max="100"
+                    step="1"
+                    data-testid="input-page-gutter-left" />
+                </div>
+              </div>
+            </div>
+          }
+        </div>
 
-      <div class="form-group">
-        <label for="logical-grid-size" class="form-label">
-          Logical Grid Size (mm)
-        </label>
-        <p class="form-description">
-          Controls the snap-to-grid quantum when dragging elements. Elements will snap to multiples of this value.
-        </p>
-        <input
-          id="logical-grid-size"
-          type="number"
-          class="form-input"
-          [ngModel]="logicalGridSize()"
-          (ngModelChange)="logicalGridSize.set($event)"
-          min="1"
-          max="100"
-          step="1"
-          data-testid="input-logical-grid-size" />
+        <div 
+          class="accordion-section"
+          [class.expanded]="isSectionExpanded('grid')">
+          <button 
+            type="button"
+            class="accordion-header"
+            (click)="toggleSection('grid')"
+            data-testid="toggle-section-grid">
+            <span>Grid</span>
+            <span class="chevron" [class.expanded]="isSectionExpanded('grid')">›</span>
+          </button>
+
+          @if (isSectionExpanded('grid')) {
+            <div class="accordion-content">
+              <div class="form-grid">
+                <div class="form-field">
+                  <label for="visual-grid-size" class="form-label">Visual Grid Size (mm)</label>
+                  <span class="form-hint">Spacing between visible grid lines.</span>
+                  <input
+                    id="visual-grid-size"
+                    type="number"
+                    class="form-input"
+                    [ngModel]="visualGridSize()"
+                    (ngModelChange)="visualGridSize.set(coerceNumber($event))"
+                    min="1"
+                    max="100"
+                    step="1"
+                    data-testid="input-visual-grid-size" />
+                </div>
+                <div class="form-field">
+                  <label for="logical-grid-size" class="form-label">Logical Grid Size (mm)</label>
+                  <span class="form-hint">Snap increment for elements.</span>
+                  <input
+                    id="logical-grid-size"
+                    type="number"
+                    class="form-input"
+                    [ngModel]="logicalGridSize()"
+                    (ngModelChange)="logicalGridSize.set(coerceNumber($event))"
+                    min="1"
+                    max="100"
+                    step="1"
+                    data-testid="input-logical-grid-size" />
+                </div>
+                <div class="form-field color-field">
+                  <label for="visual-grid-color" class="form-label">Visual Grid Color</label>
+                  <span class="form-hint">Stroke color for the canvas grid.</span>
+                  <input
+                    id="visual-grid-color"
+                    type="color"
+                    class="form-input color-input"
+                    [ngModel]="visualGridColor()"
+                    (ngModelChange)="visualGridColor.set($event)"
+                    data-testid="input-visual-grid-color" />
+                </div>
+              </div>
+            </div>
+          }
+        </div>
       </div>
     </div>
 

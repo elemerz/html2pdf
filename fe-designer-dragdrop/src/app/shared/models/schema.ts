@@ -51,20 +51,13 @@ export interface ToolbarElement {
 
 export const toolbarElements: ToolbarElement[] = [
   // Text Elements
-  { type: "heading", label: "Heading", icon: "heading", defaultWidth: 150, defaultHeight: 30, category: "text" },
-  { type: "paragraph", label: "Paragraph", icon: "paragraph", defaultWidth: 200, defaultHeight: 50, category: "text" },
-  { type: "text", label: "Text", icon: "text", defaultWidth: 100, defaultHeight: 20, category: "text" },
-  
+  { type: "text", label: "Rich Text", icon: "text", defaultWidth: 200, defaultHeight: 50, category: "text" },
+
   // Container Elements
   { type: "div", label: "Div", icon: "square", defaultWidth: 150, defaultHeight: 100, category: "containers" },
-  { type: "section", label: "Section", icon: "layout", defaultWidth: 200, defaultHeight: 150, category: "containers" },
-  { type: "article", label: "Article", icon: "file-text", defaultWidth: 200, defaultHeight: 200, category: "containers" },
-  
+
   // Layout Elements
-  { type: "image", label: "Image", icon: "image", defaultWidth: 100, defaultHeight: 100, category: "layout" },
   { type: "table", label: "Table", icon: "table", defaultWidth: 200, defaultHeight: 150, category: "layout" },
-  { type: "list", label: "List", icon: "list", defaultWidth: 150, defaultHeight: 100, category: "layout" },
-  { type: "link", label: "Link", icon: "link", defaultWidth: 100, defaultHeight: 20, category: "layout" },
 ];
 
 // Helper to create default canvas element

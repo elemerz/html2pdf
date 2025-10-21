@@ -1,5 +1,12 @@
 import { Injectable, signal, computed, effect } from '@angular/core';
-import { CanvasElement, ReportLayout, createDefaultLayout } from '../../shared/models/schema';
+import { CanvasElement, ReportLayout, createDefaultLayout, A4_WIDTH_MM, A4_HEIGHT_MM } from '../../shared/models/schema';
+
+export interface PageGutters {
+  top: number;
+  right: number;
+  bottom: number;
+  left: number;
+}
 
 export interface HistoryEntry {
   elements: CanvasElement[];
@@ -50,10 +57,16 @@ export class DesignerStateService {
 
   // Grid configuration
   readonly visualGridSize = signal(10); // Background grid display size in mm
-  readonly logicalGridSize = signal(10); // Snap-to-grid quantum in mm
+  readonly logicalGridSize = signal(1); // Snap-to-grid quantum in mm
   readonly canvasScale = signal(1);
-  readonly visualGridColor = signal('#c2c7d1');
+  readonly visualGridColor = signal('#1d4ed8');
   readonly canvasZoomMode = signal<CanvasZoomMode>('fit');
+  readonly pageGutters = signal<PageGutters>({
+    top: 10,
+    right: 10,
+    bottom: 10,
+    left: 10
+  });
 
   constructor() {
     // Initialize history with empty state
@@ -71,8 +84,9 @@ export class DesignerStateService {
   setLayout(layout: ReportLayout) {
     this.currentLayoutSignal.set(layout);
     this.elementsSignal.set(layout.elements);
+    this.clampElementsToMargins(this.pageGutters());
     this.clearHistory();
-    this.addToHistory(layout.elements);
+    this.addToHistory(this.elementsSignal());
   }
 
   updateLayoutName(name: string) {
@@ -81,14 +95,21 @@ export class DesignerStateService {
 
   // Element management
   addElement(element: CanvasElement) {
-    this.elementsSignal.update(elements => [...elements, element]);
+    const gutters = this.pageGutters();
+    const clampedElement = this.clampElementToMargins(element, gutters);
+    this.elementsSignal.update(elements => [...elements, clampedElement]);
     this.addToHistory(this.elementsSignal());
-    this.selectedElementIdSignal.set(element.id);
+    this.selectedElementIdSignal.set(clampedElement.id);
   }
 
   updateElement(id: string, updates: Partial<CanvasElement>) {
+    const gutters = this.pageGutters();
     this.elementsSignal.update(elements => 
-      elements.map(el => el.id === id ? { ...el, ...updates } : el)
+      elements.map(el => {
+        if (el.id !== id) return el;
+        const merged = { ...el, ...updates };
+        return this.clampElementToMargins(merged, gutters);
+      })
     );
     this.addToHistory(this.elementsSignal());
   }
@@ -115,6 +136,7 @@ export class DesignerStateService {
   loadLayout(layout: ReportLayout) {
     this.currentLayoutSignal.set(layout);
     this.elementsSignal.set(JSON.parse(JSON.stringify(layout.elements)));
+    this.clampElementsToMargins(this.pageGutters());
     this.selectedElementIdSignal.set(null);
     this.clearHistory();
     this.addToHistory(this.elementsSignal());
@@ -219,5 +241,114 @@ export class DesignerStateService {
 
   setCanvasZoomMode(mode: CanvasZoomMode) {
     this.canvasZoomMode.set(mode);
+  }
+
+  setPageGutters(gutters: PageGutters) {
+    const normalized = this.normalizePageGutters(gutters);
+    this.pageGutters.set(normalized);
+    const changed = this.clampElementsToMargins(normalized);
+    if (changed) {
+      this.addToHistory(this.elementsSignal());
+    }
+  }
+
+  private normalizePageGutters(gutters: PageGutters): PageGutters {
+    const minContent = Math.max(1, Math.round(this.logicalGridSize()));
+
+    const clampPair = (total: number, start: number, end: number) => {
+      let startValue = Math.max(0, start);
+      let endValue = Math.max(0, end);
+      const maxSum = Math.max(0, total - minContent);
+
+      if (startValue + endValue > maxSum) {
+        let excess = startValue + endValue - maxSum;
+        if (endValue >= excess) {
+          endValue -= excess;
+        } else {
+          excess -= endValue;
+          endValue = 0;
+          startValue = Math.max(0, startValue - excess);
+        }
+      }
+
+      return { start: startValue, end: endValue };
+    };
+
+    const horizontal = clampPair(A4_WIDTH_MM, gutters.left, gutters.right);
+    const vertical = clampPair(A4_HEIGHT_MM, gutters.top, gutters.bottom);
+
+    return {
+      top: vertical.start,
+      right: horizontal.end,
+      bottom: vertical.end,
+      left: horizontal.start
+    };
+  }
+
+  private clampElementsToMargins(gutters: PageGutters): boolean {
+    const contentWidth = Math.max(1, A4_WIDTH_MM - gutters.left - gutters.right);
+    const contentHeight = Math.max(1, A4_HEIGHT_MM - gutters.top - gutters.bottom);
+
+    const currentElements = this.elementsSignal();
+    if (!currentElements.length) return false;
+
+    let changed = false;
+    const adjusted = currentElements.map(el => {
+      const clamped = this.clampElementToMargins(el, gutters, contentWidth, contentHeight);
+      if (clamped !== el) {
+        changed = true;
+      }
+      return clamped;
+    });
+
+    if (changed) {
+      this.elementsSignal.set(adjusted);
+    }
+    return changed;
+  }
+
+  private clampElementToMargins(
+    element: CanvasElement,
+    gutters: PageGutters,
+    precomputedWidth?: number,
+    precomputedHeight?: number
+  ): CanvasElement {
+    const contentWidth =
+      precomputedWidth ?? Math.max(1, A4_WIDTH_MM - gutters.left - gutters.right);
+    const contentHeight =
+      precomputedHeight ?? Math.max(1, A4_HEIGHT_MM - gutters.top - gutters.bottom);
+
+    const width = Math.max(1, Math.min(element.width, contentWidth));
+    const height = Math.max(1, Math.min(element.height, contentHeight));
+
+    const minX = gutters.left;
+    const minY = gutters.top;
+    const maxX = gutters.left + contentWidth - width;
+    const maxY = gutters.top + contentHeight - height;
+
+    const x = this.snapValueWithinBounds(element.x, minX, maxX);
+    const y = this.snapValueWithinBounds(element.y, minY, maxY);
+
+    if (x !== element.x || y !== element.y || width !== element.width || height !== element.height) {
+      return { ...element, x, y, width, height };
+    }
+    return element;
+  }
+
+  private snapValueWithinBounds(value: number, min: number, max: number): number {
+    if (max <= min) {
+      return min;
+    }
+
+    const step = this.logicalGridSize();
+    if (step <= 0) {
+      return Math.min(Math.max(value, min), max);
+    }
+
+    const offset = value - min;
+    const rawSteps = Math.round(offset / step);
+    const maxSteps = Math.floor((max - min) / step);
+    const clampedSteps = Math.min(Math.max(rawSteps, 0), maxSteps);
+    return min + clampedSteps * step;
   }
 }

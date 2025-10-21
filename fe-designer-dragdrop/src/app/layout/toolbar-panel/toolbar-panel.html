@@ -21,16 +21,9 @@
                 [attr.data-testid]="'element-' + element.type">
                 <div class="element-preview">
                   @switch (element.type) {
-                    @case ('heading') { <h3>Heading</h3> }
-                    @case ('paragraph') { <p>Paragraph text</p> }
-                    @case ('text') { <span>Text</span> }
+                    @case ('text') { <p>Rich Text</p> }
                     @case ('div') { <div class="container-preview">Div</div> }
-                    @case ('section') { <div class="container-preview">Section</div> }
-                    @case ('article') { <div class="container-preview">Article</div> }
-                    @case ('image') { <div class="media-preview">🖼️ Image</div> }
                     @case ('table') { <div class="container-preview">Table</div> }
-                    @case ('list') { <ul><li>List</li></ul> }
-                    @case ('link') { <a href="#">Link</a> }
                   }
                 </div>
               </div>

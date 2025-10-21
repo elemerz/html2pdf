@@ -39,6 +39,52 @@
   flex: 1;
 }
 
+.accordion {
+  display: flex;
+  flex-direction: column;
+  gap: @spacing-sm;
+}
+
+.accordion-section {
+  border: 1px solid @border;
+  border-radius: @radius-sm;
+  background-color: @card;
+  overflow: hidden;
+}
+
+.accordion-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: @spacing-sm @spacing-md;
+  background: fade(@muted, 30%);
+  border: none;
+  color: @foreground;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+  transition: background-color @transition-fast;
+
+  &:hover {
+    background-color: fade(@muted, 40%);
+  }
+}
+
+.accordion-content {
+  padding: @spacing-md;
+  background-color: @card;
+}
+
+.chevron {
+  transition: transform @transition-fast;
+
+  &.expanded {
+    transform: rotate(90deg);
+  }
+}
+
 .dialog-footer {
   padding: @spacing-md;
   border-top: 1px solid @border;
@@ -47,22 +93,12 @@
   gap: @spacing-sm;
 }
 
-.form-group {
-  margin-bottom: @spacing-md;
-}
-
 .form-label {
   display: block;
   margin-bottom: @spacing-xs;
   font-size: 14px;
   font-weight: 500;
   color: @foreground;
-}
-
-.form-description {
-  margin: @spacing-xs 0;
-  font-size: 12px;
-  color: @muted-foreground;
 }
 
 .form-input {
@@ -81,10 +117,41 @@
   }
 }
 
+.form-grid {
+  display: grid;
+  gap: @spacing-md;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+}
+
+.gutters-grid {
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: @spacing-xs;
+}
+
+.form-hint {
+  font-size: 12px;
+  color: @muted-foreground;
+}
+
 .color-input {
   width: 120px;
   padding: 0;
   height: 36px;
+}
+
+.color-field {
+  grid-column: 1 / -1;
+  align-items: center;
+
+  .form-input {
+    width: 100%;
+    max-width: 160px;
+  }
 }
 
 .button {

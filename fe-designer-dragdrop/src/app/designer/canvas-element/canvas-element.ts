@@ -1,7 +1,7 @@
-import { Component, Input, Output, EventEmitter, inject, HostListener, HostBinding, ElementRef, signal } from '@angular/core';
+import { Component, Input, inject, HostListener, HostBinding, ElementRef, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { CanvasElement } from '../../shared/models/schema';
-import { DesignerStateService } from '../../core/services/designer-state.service';
+import { CanvasElement, A4_WIDTH_MM, A4_HEIGHT_MM } from '../../shared/models/schema';
+import { DesignerStateService, PageGutters } from '../../core/services/designer-state.service';
 
 @Component({
   selector: 'app-canvas-element',
@@ -18,6 +18,7 @@ export class CanvasElementComponent {
   @Input() isSelected: boolean = false;
   @Input() gridSize: number = 10;
   @Input() mmToPx: number = 3.7795275591;
+  @Input() pageGutters: PageGutters = { top: 0, right: 0, bottom: 0, left: 0 };
   
   @HostBinding('style.left') get left() { return `${this.element.x}mm`; }
   @HostBinding('style.top') get top() { return `${this.element.y}mm`; }
@@ -92,20 +93,16 @@ export class CanvasElementComponent {
   @HostListener('document:mousemove', ['$event'])
   onMouseMove(event: MouseEvent) {
     if (this.isResizingWidth || this.isResizingHeight) {
-      const parent = this.elementRef.nativeElement.parentElement;
-      if (!parent) return;
-      
-      const parentRect = parent.getBoundingClientRect();
-      const parentWidthMm = parentRect.width / this.mmToPx;
-      const parentHeightMm = parentRect.height / this.mmToPx;
-
       let updates: Partial<CanvasElement> = {};
 
       if (this.isResizingWidth) {
         const deltaPx = event.clientX - this.resizeStart.startX;
         let newWidth = this.resizeStart.width + deltaPx / this.mmToPx;
         newWidth = Math.max(this.gridSize, newWidth);
-        const maxWidth = Math.max(this.gridSize, parentWidthMm - this.element.x);
+        const maxWidth = Math.max(
+          this.gridSize,
+          this.getContentRight() - this.element.x
+        );
         newWidth = Math.min(newWidth, maxWidth);
         updates.width = this.snapToGrid(newWidth);
       }
@@ -114,7 +111,10 @@ export class CanvasElementComponent {
         const deltaPx = event.clientY - this.resizeStart.startY;
         let newHeight = this.resizeStart.height + deltaPx / this.mmToPx;
         newHeight = Math.max(this.gridSize, newHeight);
-        const maxHeight = Math.max(this.gridSize, parentHeightMm - this.element.y);
+        const maxHeight = Math.max(
+          this.gridSize,
+          this.getContentBottom() - this.element.y
+        );
         newHeight = Math.min(newHeight, maxHeight);
         updates.height = this.snapToGrid(newHeight);
       }
@@ -141,9 +141,11 @@ export class CanvasElementComponent {
     const newX = this.snapToGrid(mmX);
     const newY = this.snapToGrid(mmY);
 
+    const clamped = this.clampPosition(newX, newY, this.element.width, this.element.height);
+
     this.designerState.updateElement(this.element.id, {
-      x: Math.max(0, newX),
-      y: Math.max(0, newY),
+      x: clamped.x,
+      y: clamped.y,
     });
   }
 
@@ -177,5 +179,47 @@ export class CanvasElementComponent {
 
   private snapToGrid(value: number): number {
     return Math.round(value / this.gridSize) * this.gridSize;
+  }
+
+  private clampPosition(x: number, y: number, width: number, height: number) {
+    const availableWidth = Math.max(0, this.getContentRight() - this.pageGutters.left);
+    const availableHeight = Math.max(0, this.getContentBottom() - this.pageGutters.top);
+
+    const minX = this.pageGutters.left;
+    const minY = this.pageGutters.top;
+    const maxX = this.pageGutters.left + Math.max(availableWidth - width, 0);
+    const maxY = this.pageGutters.top + Math.max(availableHeight - height, 0);
+
+    const clampedX = this.snapWithinBounds(x, minX, maxX);
+    const clampedY = this.snapWithinBounds(y, minY, maxY);
+
+    return {
+      x: clampedX,
+      y: clampedY
+    };
+  }
+
+  private getContentRight(): number {
+    return A4_WIDTH_MM - this.pageGutters.right;
+  }
+
+  private getContentBottom(): number {
+    return A4_HEIGHT_MM - this.pageGutters.bottom;
+  }
+
+  private snapWithinBounds(value: number, min: number, max: number): number {
+    if (max <= min) {
+      return min;
+    }
+    const step = this.gridSize;
+    if (step <= 0) {
+      return Math.min(Math.max(value, min), max);
+    }
+
+    const offset = value - min;
+    const rawSteps = Math.round(offset / step);
+    const maxSteps = Math.floor((max - min) / step);
+    const clampedSteps = Math.min(Math.max(rawSteps, 0), maxSteps);
+    return min + clampedSteps * step;
   }
 }

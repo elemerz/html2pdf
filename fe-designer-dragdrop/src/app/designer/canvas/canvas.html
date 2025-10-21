@@ -17,24 +17,31 @@
       [style.transform-origin]="'top left'">
       
       <!-- Grid Background (SVG Pattern) -->
-      <svg class="grid-pattern" width="100%" height="100%" [style.color]="visualGridColor()">
-        <defs>
-          <pattern 
-            id="grid" 
-            [attr.width]="visualGridSizePx()" 
-            [attr.height]="visualGridSizePx()" 
-            patternUnits="userSpaceOnUse">
-            <rect width="100%" height="100%" fill="none" />
-            <path 
-              [attr.d]="'M ' + visualGridSizePx() + ' 0 L 0 0 0 ' + visualGridSizePx()" 
-              fill="none" 
-              [attr.stroke]="visualGridColor()" 
-              stroke-width="0.5" 
-              opacity="0.6" />
-          </pattern>
-        </defs>
-        <rect width="100%" height="100%" fill="url(#grid)" />
-      </svg>
+      <div 
+        class="page-grid" 
+        [style.left.mm]="pageGutters().left" 
+        [style.top.mm]="pageGutters().top" 
+        [style.width.mm]="pageContentMetrics().widthMm" 
+        [style.height.mm]="pageContentMetrics().heightMm">
+        <svg class="grid-pattern" width="100%" height="100%" [style.color]="visualGridColor()">
+          <defs>
+            <pattern 
+              id="grid" 
+              [attr.width]="visualGridSizePx()" 
+              [attr.height]="visualGridSizePx()" 
+              patternUnits="userSpaceOnUse">
+              <rect width="100%" height="100%" fill="none" />
+              <path 
+                [attr.d]="'M ' + visualGridSizePx() + ' 0 L 0 0 0 ' + visualGridSizePx()" 
+                fill="none" 
+                [attr.stroke]="visualGridColor()" 
+                stroke-width="0.5" 
+                opacity="0.6" />
+            </pattern>
+          </defs>
+          <rect width="100%" height="100%" fill="url(#grid)" />
+        </svg>
+      </div>
 
       <!-- Canvas Elements -->
       @for (element of elements(); track element.id) {
@@ -42,7 +49,8 @@
           [element]="element"
           [isSelected]="element.id === selectedElementId()"
           [gridSize]="logicalGridSize()"
-          [mmToPx]="MM_TO_PX * canvasScale()">
+          [mmToPx]="MM_TO_PX * canvasScale()"
+          [pageGutters]="pageGutters()">
         </app-canvas-element>
       }
     </div>

@@ -30,6 +30,23 @@ export class CanvasComponent implements AfterViewInit, OnDestroy {
   protected canvasScale = this.designerState.canvasScale;
   protected visualGridColor = this.designerState.visualGridColor;
   protected visualGridSizePx = computed(() => this.visualGridSize() * MM_TO_PX);
+  protected pageGutters = this.designerState.pageGutters;
+  protected pageContentMetrics = computed(() => {
+    const gutters = this.pageGutters();
+    const contentWidthMm = Math.max(0, this.A4_WIDTH_MM - gutters.left - gutters.right);
+    const contentHeightMm = Math.max(0, this.A4_HEIGHT_MM - gutters.top - gutters.bottom);
+    const scale = this.canvasScale();
+    const mmToPx = this.MM_TO_PX * scale;
+
+    return {
+      widthMm: contentWidthMm,
+      heightMm: contentHeightMm,
+      leftPx: gutters.left * mmToPx,
+      topPx: gutters.top * mmToPx,
+      widthPx: contentWidthMm * mmToPx,
+      heightPx: contentHeightMm * mmToPx
+    };
+  });
   
   protected readonly MM_TO_PX = MM_TO_PX;
   protected readonly A4_WIDTH_MM = A4_WIDTH_MM;
@@ -79,13 +96,36 @@ export class CanvasComponent implements AfterViewInit, OnDestroy {
     const yMm = this.dragDropService.pxToMm(y, effectiveMmToPx);
     const snappedX = this.dragDropService.snapToGrid(xMm, this.logicalGridSize());
     const snappedY = this.dragDropService.snapToGrid(yMm, this.logicalGridSize());
-    
-    this.designerState.setCursorPosition(Math.round(snappedX), Math.round(snappedY));
-    
-    if (this.dragState().isDragging) {
-      const pointerOffset = this.dragState().pointerOffset;
-      let ghostClientX = rect.left + this.dragDropService.mmToPx(snappedX, effectiveMmToPx);
-      let ghostClientY = rect.top + this.dragDropService.mmToPx(snappedY, effectiveMmToPx);
+
+    let clampedX = snappedX;
+    let clampedY = snappedY;
+
+    const dragState = this.dragState();
+    let widthForClamp = 0;
+    let heightForClamp = 0;
+
+    const draggedItem = dragState.draggedItem;
+    if (draggedItem) {
+      widthForClamp = draggedItem.defaultWidth;
+      heightForClamp = draggedItem.defaultHeight;
+    } else if (dragState.dragType === 'canvas' && dragState.draggedElementId) {
+      const element = this.elements().find(el => el.id === dragState.draggedElementId);
+      if (element) {
+        widthForClamp = element.width;
+        heightForClamp = element.height;
+      }
+    }
+
+    const clampedPosition = this.clampToContentArea(snappedX, snappedY, widthForClamp, heightForClamp);
+    clampedX = clampedPosition.x;
+    clampedY = clampedPosition.y;
+
+    this.designerState.setCursorPosition(Math.round(clampedX), Math.round(clampedY));
+
+    if (dragState.isDragging) {
+      const pointerOffset = dragState.pointerOffset;
+      let ghostClientX = rect.left + this.dragDropService.mmToPx(clampedX, effectiveMmToPx);
+      let ghostClientY = rect.top + this.dragDropService.mmToPx(clampedY, effectiveMmToPx);
       
       if (pointerOffset) {
         ghostClientX -= pointerOffset.x;
@@ -119,12 +159,9 @@ export class CanvasComponent implements AfterViewInit, OnDestroy {
       // Snap to grid using logical grid size
       xMm = this.dragDropService.snapToGrid(xMm, this.logicalGridSize());
       yMm = this.dragDropService.snapToGrid(yMm, this.logicalGridSize());
-      
-      // Ensure within bounds
-      xMm = Math.max(0, Math.min(xMm, A4_WIDTH_MM - draggedItem.defaultWidth));
-      yMm = Math.max(0, Math.min(yMm, A4_HEIGHT_MM - draggedItem.defaultHeight));
-      
-      const newElement = createDefaultCanvasElement(draggedItem.type, xMm, yMm, draggedItem);
+
+      const clampedPosition = this.clampToContentArea(xMm, yMm, draggedItem.defaultWidth, draggedItem.defaultHeight);
+      const newElement = createDefaultCanvasElement(draggedItem.type, clampedPosition.x, clampedPosition.y, draggedItem);
       this.designerState.addElement({
         ...newElement,
         id: `el-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
@@ -183,5 +220,46 @@ export class CanvasComponent implements AfterViewInit, OnDestroy {
     if (!isFinite(scale) || scale <= 0) return;
 
     this.designerState.setCanvasScale(scale);
+  }
+
+  private clampToContentArea(x: number, y: number, width: number, height: number) {
+    const gutters = this.pageGutters();
+    const contentWidth = Math.max(0, this.A4_WIDTH_MM - gutters.left - gutters.right);
+    const contentHeight = Math.max(0, this.A4_HEIGHT_MM - gutters.top - gutters.bottom);
+
+    const adjustedWidth = Math.min(Math.max(width, 0), contentWidth);
+    const adjustedHeight = Math.min(Math.max(height, 0), contentHeight);
+
+    const minX = gutters.left;
+    const minY = gutters.top;
+    const maxX = gutters.left + Math.max(contentWidth - adjustedWidth, 0);
+    const maxY = gutters.top + Math.max(contentHeight - adjustedHeight, 0);
+
+    let clampedX = Math.min(Math.max(x, minX), maxX);
+    let clampedY = Math.min(Math.max(y, minY), maxY);
+
+    clampedX = this.snapWithinBounds(clampedX, minX, maxX);
+    clampedY = this.snapWithinBounds(clampedY, minY, maxY);
+
+    return {
+      x: clampedX,
+      y: clampedY
+    };
+  }
+
+  private snapWithinBounds(value: number, min: number, max: number): number {
+    const step = this.logicalGridSize();
+    if (max <= min) {
+      return min;
+    }
+    if (step <= 0) {
+      return Math.min(Math.max(value, min), max);
+    }
+
+    const offset = value - min;
+    const rawSteps = Math.round(offset / step);
+    const maxSteps = Math.floor((max - min) / step);
+    const clampedSteps = Math.min(Math.max(rawSteps, 0), maxSteps);
+    return min + clampedSteps * step;
   }
 }
