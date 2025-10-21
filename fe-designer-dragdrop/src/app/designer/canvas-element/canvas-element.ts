@@ -3,6 +3,16 @@ import { CommonModule } from '@angular/common';
 import { CanvasElement, A4_WIDTH_MM, A4_HEIGHT_MM } from '../../shared/models/schema';
 import { DesignerStateService, PageGutters } from '../../core/services/designer-state.service';
 
+type ResizeHandle =
+  | 'top'
+  | 'right'
+  | 'bottom'
+  | 'left'
+  | 'top-right'
+  | 'top-left'
+  | 'bottom-right'
+  | 'bottom-left';
+
 @Component({
   selector: 'app-canvas-element',
   imports: [CommonModule],
@@ -33,9 +43,8 @@ export class CanvasElementComponent {
   
   private isDragging = false;
   private dragStart = { x: 0, y: 0 };
-  private isResizingWidth = false;
-  private isResizingHeight = false;
-  private resizeStart = { startX: 0, startY: 0, width: 0, height: 0 };
+  private activeResizeHandle: ResizeHandle | null = null;
+  private resizeStart = { startX: 0, startY: 0, x: 0, y: 0, width: 0, height: 0 };
 
   onClick(event: MouseEvent) {
     event.stopPropagation();
@@ -48,6 +57,7 @@ export class CanvasElementComponent {
     
     this.designerState.selectElement(this.element.id);
     this.isDragging = true;
+    this.activeResizeHandle = null;
     
     const rect = this.elementRef.nativeElement.getBoundingClientRect();
     this.dragStart = {
@@ -56,35 +66,19 @@ export class CanvasElementComponent {
     };
   }
 
-  onHorizontalResizeMouseDown(event: MouseEvent) {
+  onResizeMouseDown(handle: ResizeHandle, event: MouseEvent) {
     if (event.button !== 0) return;
     event.stopPropagation();
     event.preventDefault();
-    
-    this.designerState.selectElement(this.element.id);
-    this.isDragging = false;
-    this.isResizingWidth = true;
-    this.isResizingHeight = false;
-    this.resizeStart = {
-      startX: event.clientX,
-      startY: event.clientY,
-      width: this.element.width,
-      height: this.element.height
-    };
-  }
 
-  onVerticalResizeMouseDown(event: MouseEvent) {
-    if (event.button !== 0) return;
-    event.stopPropagation();
-    event.preventDefault();
-    
     this.designerState.selectElement(this.element.id);
     this.isDragging = false;
-    this.isResizingHeight = true;
-    this.isResizingWidth = false;
+    this.activeResizeHandle = handle;
     this.resizeStart = {
       startX: event.clientX,
       startY: event.clientY,
+      x: this.element.x,
+      y: this.element.y,
       width: this.element.width,
       height: this.element.height
     };
@@ -92,37 +86,13 @@ export class CanvasElementComponent {
 
   @HostListener('document:mousemove', ['$event'])
   onMouseMove(event: MouseEvent) {
-    if (this.isResizingWidth || this.isResizingHeight) {
-      let updates: Partial<CanvasElement> = {};
-
-      if (this.isResizingWidth) {
-        const deltaPx = event.clientX - this.resizeStart.startX;
-        let newWidth = this.resizeStart.width + deltaPx / this.mmToPx;
-        newWidth = Math.max(this.gridSize, newWidth);
-        const maxWidth = Math.max(
-          this.gridSize,
-          this.getContentRight() - this.element.x
-        );
-        newWidth = Math.min(newWidth, maxWidth);
-        updates.width = this.snapToGrid(newWidth);
-      }
-
-      if (this.isResizingHeight) {
-        const deltaPx = event.clientY - this.resizeStart.startY;
-        let newHeight = this.resizeStart.height + deltaPx / this.mmToPx;
-        newHeight = Math.max(this.gridSize, newHeight);
-        const maxHeight = Math.max(
-          this.gridSize,
-          this.getContentBottom() - this.element.y
-        );
-        newHeight = Math.min(newHeight, maxHeight);
-        updates.height = this.snapToGrid(newHeight);
-      }
-
-      if (Object.keys(updates).length) {
+    if (this.activeResizeHandle) {
+      const deltaX = (event.clientX - this.resizeStart.startX) / this.mmToPx;
+      const deltaY = (event.clientY - this.resizeStart.startY) / this.mmToPx;
+      const updates = this.calculateResizeUpdates(this.activeResizeHandle, deltaX, deltaY);
+      if (updates) {
         this.designerState.updateElement(this.element.id, updates);
       }
-
       return;
     }
 
@@ -152,8 +122,7 @@ export class CanvasElementComponent {
   @HostListener('document:mouseup')
   onMouseUp() {
     this.isDragging = false;
-    this.isResizingWidth = false;
-    this.isResizingHeight = false;
+    this.activeResizeHandle = null;
   }
 
   onContextMenu(event: MouseEvent) {
@@ -179,6 +148,98 @@ export class CanvasElementComponent {
 
   private snapToGrid(value: number): number {
     return Math.round(value / this.gridSize) * this.gridSize;
+  }
+
+  private calculateResizeUpdates(handle: ResizeHandle, deltaX: number, deltaY: number): Partial<CanvasElement> | null {
+    const resizeLeft = handle === 'left' || handle === 'top-left' || handle === 'bottom-left';
+    const resizeRight = handle === 'right' || handle === 'top-right' || handle === 'bottom-right';
+    const resizeTop = handle === 'top' || handle === 'top-left' || handle === 'top-right';
+    const resizeBottom = handle === 'bottom' || handle === 'bottom-left' || handle === 'bottom-right';
+
+    const start = this.resizeStart;
+    const minSize = this.gridSize;
+
+    const contentLeft = this.pageGutters.left;
+    const contentTop = this.pageGutters.top;
+    const contentRight = this.getContentRight();
+    const contentBottom = this.getContentBottom();
+
+    const maxWidthToRight = Math.max(minSize, contentRight - start.x);
+    const maxWidthToLeft = Math.max(minSize, start.x + start.width - contentLeft);
+    const maxHeightToBottom = Math.max(minSize, contentBottom - start.y);
+    const maxHeightToTop = Math.max(minSize, start.y + start.height - contentTop);
+
+    let newX = start.x;
+    let newY = start.y;
+    let newWidth = start.width;
+    let newHeight = start.height;
+
+    if (resizeRight) {
+      newWidth = start.width + deltaX;
+    }
+    if (resizeLeft) {
+      newWidth = start.width - deltaX;
+    }
+    if (resizeBottom) {
+      newHeight = start.height + deltaY;
+    }
+    if (resizeTop) {
+      newHeight = start.height - deltaY;
+    }
+
+    if (resizeRight && !resizeLeft) {
+      newWidth = Math.min(newWidth, maxWidthToRight);
+    }
+    if (resizeLeft) {
+      newWidth = Math.min(newWidth, maxWidthToLeft);
+    }
+    if (resizeBottom && !resizeTop) {
+      newHeight = Math.min(newHeight, maxHeightToBottom);
+    }
+    if (resizeTop) {
+      newHeight = Math.min(newHeight, maxHeightToTop);
+    }
+
+    newWidth = Math.max(minSize, newWidth);
+    newHeight = Math.max(minSize, newHeight);
+
+    newWidth = Math.max(minSize, this.snapToGrid(newWidth));
+    newHeight = Math.max(minSize, this.snapToGrid(newHeight));
+
+    const rightEdge = start.x + start.width;
+    const bottomEdge = start.y + start.height;
+
+    if (resizeLeft) {
+      newX = rightEdge - newWidth;
+    } else if (resizeRight) {
+      newX = start.x;
+    }
+
+    if (resizeTop) {
+      newY = bottomEdge - newHeight;
+    } else if (resizeBottom) {
+      newY = start.y;
+    }
+
+    const clamped = this.clampPosition(newX, newY, newWidth, newHeight);
+    newX = clamped.x;
+    newY = clamped.y;
+
+    const updates: Partial<CanvasElement> = {};
+    if (resizeLeft || resizeRight) {
+      updates.x = newX;
+      updates.width = newWidth;
+    }
+    if (resizeTop || resizeBottom) {
+      updates.y = newY;
+      updates.height = newHeight;
+    }
+
+    if (Object.keys(updates).length === 0) {
+      return null;
+    }
+
+    return updates;
   }
 
   private clampPosition(x: number, y: number, width: number, height: number) {

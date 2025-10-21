@@ -47,14 +47,15 @@
   }
 
   @if (isSelected) {
-    <div 
-      class="resize-handle resize-handle-horizontal"
-      (mousedown)="onHorizontalResizeMouseDown($event)">
-    </div>
-    <div 
-      class="resize-handle resize-handle-vertical"
-      (mousedown)="onVerticalResizeMouseDown($event)">
-    </div>
+    <div class="resize-handle resize-handle-top" (mousedown)="onResizeMouseDown('top', $event)"></div>
+    <div class="resize-handle resize-handle-right" (mousedown)="onResizeMouseDown('right', $event)"></div>
+    <div class="resize-handle resize-handle-bottom" (mousedown)="onResizeMouseDown('bottom', $event)"></div>
+    <div class="resize-handle resize-handle-left" (mousedown)="onResizeMouseDown('left', $event)"></div>
+
+    <div class="resize-handle resize-handle-top-left" (mousedown)="onResizeMouseDown('top-left', $event)"></div>
+    <div class="resize-handle resize-handle-top-right" (mousedown)="onResizeMouseDown('top-right', $event)"></div>
+    <div class="resize-handle resize-handle-bottom-left" (mousedown)="onResizeMouseDown('bottom-left', $event)"></div>
+    <div class="resize-handle resize-handle-bottom-right" (mousedown)="onResizeMouseDown('bottom-right', $event)"></div>
   }
 
   <!-- Context Menu -->
