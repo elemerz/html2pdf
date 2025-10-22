@@ -1,7 +1,8 @@
 /*** Page-level definitions ***/
 @page {
   size: A4 portrait;
-  margin: 10mm 10mm 10mm 15mm; /* defaut top right bottom left margins. To be replaced dynamically with values from Options dialog!!!*/
+  /* MARGINS: __TOP__ __RIGHT__ __BOTTOM__ __LEFT__ */
+  margin: __TOP__ __RIGHT__ __BOTTOM__ __LEFT__;
 }
 .page { position: relative; min-height: 276.7mm; }
 .page + .page { page-break-before: page; break-before: page; }

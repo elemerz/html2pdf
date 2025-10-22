@@ -342,11 +342,20 @@ export class DesignerStateService {
 
     const bodyContent = elementsMarkup ? `    ${elementsMarkup}\n` : '';
 
+    const margins = this.pageGutters();
+    const commonStylesRaw = this.getA4CommonStyles();
+    const commonStyles = commonStylesRaw
+      .replace(/__TOP__/g, `${margins.top}mm`)
+      .replace(/__RIGHT__/g, `${margins.right}mm`)
+      .replace(/__BOTTOM__/g, `${margins.bottom}mm`)
+      .replace(/__LEFT__/g, `${margins.left}mm`);
+
     return `<html lang="en">\n` +
       `  <head>\n` +
       `    <meta charset="UTF-8" />\n` +
       `    <title>${safeTitle}</title>\n` +
       `    <style>\n` +
+      `${commonStyles}\n` +
       `      body { position: relative; width: ${A4_WIDTH_MM}mm; height: ${A4_HEIGHT_MM}mm; margin: 0; font-family: Arial, sans-serif; }\n` +
       `      .element { position: absolute; box-sizing: border-box; }\n` +
       `      .element-table { border-collapse: collapse; }\n` +
@@ -354,6 +363,11 @@ export class DesignerStateService {
       `    </style>\n` +
       `  </head>\n` +
       `  <body>\n${bodyContent}  </body>\n</html>`;
+  }
+
+  private getA4CommonStyles(): string {
+    // Embedded at export time; keep lightweight (no file system access in browser environment)
+    return `/*** Page-level definitions ***/\n@page {\n  size: A4 portrait;\n  /* MARGINS: __TOP__ __RIGHT__ __BOTTOM__ __LEFT__ */\n  margin: __TOP__ __RIGHT__ __BOTTOM__ __LEFT__;\n}\n.page { position: relative; min-height: 276.7mm; }\n.page + .page { page-break-before: page; break-before: page; }\n\n.pagebreak {break-before: always; page-break-after: always; }\n\n/*** Custom font Definitions ***/\n@font-face {\n  font-family: 'Roboto';\n  font-weight: normal;\n  font-style: normal;\n  font-display: swap;\n  -fs-pdf-font-embed: embed;\n  -fs-pdf-font-encoding: Identity-H;\n}\n@font-face {\n  font-family: 'KIX Barcode';\n  font-weight: normal;\n  font-style: normal;\n  font-display: swap;\n  -fs-pdf-font-embed: embed;\n  -fs-pdf-font-encoding: Identity-H;\n}\n\n/*** standard element commons ***/\nhtml, html * {\n  box-sizing: border-box;\n  margin: 0;\n}\nhtml,body {\n  position: relative;\n  width: 100%;\n  height: 100%;\n  margin: 0;\n  padding:0;\n  border:0 none;\n  font-family: 'Roboto';\n  font-size: 9pt;\n}\n.table {\n  border-collapse: collapse;\n}`;
   }
 
   private serializeElementToXhtml(element: CanvasElement): string {
