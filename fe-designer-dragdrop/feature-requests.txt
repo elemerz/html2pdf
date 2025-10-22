@@ -1,0 +1,32 @@
+- Current Situation:
+ - I can drag a table component from the Toolbar to the canvas.
+ - I also can visually select a cell in the table by clicking it with the mouse.
+- New feature request:
+ - When a cell gets selected show a floating "cell actions" toolbar above the selected cell, 
+   containing an "edit content" (pencil) icon. Align the bottom of the toolbar with the top of the selected cell.
+===============================
+1-st improvement:
+- Align the "cell actions" toolbar horizontally to the "middle" of the top border of the cell.
+- I see the entered content being reflected in .property-textarea inside Element properties Pane. This Ok,
+  but please reflect it inside the edited cell itself. Be sure to:
+   - support HTML content as well.
+   - preserve formatting (like white-space, newLine, etc)
+===============================
+2-nd improvement:
+- The content now reflects inside the edited table cell, which is Ok.
+- But: When I save the file (Menu/File/Save), open the downloaded file with Notepad++, I see only &nbsp; inside the cell,
+  so the content I entered in the cell, is NOT saved together with the file!
+===============================
+3-rd Improvement:
+- When saving the (X)HTML doxument, please strip ALL the following lines from the beginning of the document:
+- <?xml version="1.0" encoding="UTF-8"?>
+- <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+===============================
+4-th Improvement:
+In dropped a 2x2 table (4 cells) to the canvas. I entered in the 4 cells the following strings:
+-Row1Col1: R1C1
+-Row1Col2: R1C2
+-Row2Col1: R2C1
+-Row2Col2: R2C2
+On the screen the information is correctly reflected in the appropriate cells of the dropped table, => Ok.
+But: In the saved file, if I open it with Notepad++, I see the same R1C1 in all 4 cells!

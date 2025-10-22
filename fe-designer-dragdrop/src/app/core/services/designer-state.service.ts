@@ -342,13 +342,11 @@ export class DesignerStateService {
 
     const bodyContent = elementsMarkup ? `    ${elementsMarkup}\n` : '';
 
-    return `<?xml version="1.0" encoding="UTF-8"?>\n` +
-      `<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">\n` +
-      `<html xmlns="http://www.w3.org/1999/xhtml" lang="en">\n` +
+    return `<html lang="en">\n` +
       `  <head>\n` +
-      `    <meta http-equiv="Content-Type" content="application/xhtml+xml; charset=UTF-8" />\n` +
+      `    <meta charset="UTF-8" />\n` +
       `    <title>${safeTitle}</title>\n` +
-      `    <style type="text/css">\n` +
+      `    <style>\n` +
       `      body { position: relative; width: ${A4_WIDTH_MM}mm; height: ${A4_HEIGHT_MM}mm; margin: 0; font-family: Arial, sans-serif; }\n` +
       `      .element { position: absolute; box-sizing: border-box; }\n` +
       `      .element-table { border-collapse: collapse; }\n` +
@@ -385,15 +383,19 @@ export class DesignerStateService {
     const effectiveColSizes = colSizes.length ? colSizes : [1];
 
     const rowsMarkup = effectiveRowSizes
-      .map(rowRatio => {
+      .map((rowRatio, rowIndex) => {
         const rowHeightMm = element.height * rowRatio;
         const rowHeightStr = this.formatMillimeters(rowHeightMm);
 
         const cells = effectiveColSizes
-          .map(colRatio => {
+          .map((colRatio, colIndex) => {
             const colWidthMm = element.width * colRatio;
             const colWidthStr = this.formatMillimeters(colWidthMm);
-            return `        <td style="width:${colWidthStr}mm;height:${rowHeightStr}mm;">&nbsp;</td>`;
+            const contents = (element.properties?.['tableCellContents'] as Record<string, string> | undefined) || {};
+            const key = `${rowIndex}_${colIndex}`; // use explicit indices to avoid indexOf duplication
+            const raw = contents[key];
+            const cellContent = raw && raw.length ? raw : '&nbsp;';
+            return `        <td style="width:${colWidthStr}mm;height:${rowHeightStr}mm;">${cellContent}</td>`;
           })
           .join('\n');
 

@@ -47,6 +47,55 @@ export class TableElementComponent {
     return selection.row === row && selection.col === col;
   }
 
+  protected getSelectedCellOffsets(): { left: number; top: number; width: number } | null {
+    const selection = this.designerState.selectedTableCell();
+    if (!selection || selection.elementId !== this.element.id) return null;
+
+    const rowSizes = this.getRowSizes();
+    const colSizes = this.getColSizes();
+    if (!rowSizes.length || !colSizes.length) return null;
+
+    let top = 0;
+    for (let r = 0; r < selection.row; r++) {
+      top += rowSizes[r] * this.element.height;
+    }
+
+    let left = 0;
+    for (let c = 0; c < selection.col; c++) {
+      left += colSizes[c] * this.element.width;
+    }
+
+    const width = colSizes[selection.col] * this.element.width;
+    return { left, top, width };
+  }
+
+  protected getCellContent(row: number, col: number): string {
+    const contents = this.element.properties?.['tableCellContents'];
+    if (contents && typeof contents === 'object') {
+      const key = `${row}_${col}`;
+      const value = (contents as Record<string, unknown>)[key];
+      if (typeof value === 'string' && value.length) {
+        return value;
+      }
+    }
+    return '&nbsp;';
+  }
+
+  protected onEditCellContent(): void {
+    const selection = this.designerState.selectedTableCell();
+    if (!selection || selection.elementId !== this.element.id) return;
+    const key = `${selection.row}_${selection.col}`;
+    const existing = this.element.properties?.['tableCellContents']?.[key] || '';
+    const response = window.prompt('Edit cell content (HTML allowed)', existing as string);
+    if (response === null) return;
+    const existingContents = (this.element.properties?.['tableCellContents'] as Record<string, string>) || {};
+    const updatedProperties = {
+      ...(this.element.properties || {}),
+      tableCellContents: { ...existingContents, [key]: response }
+    } as Record<string, any>;
+    this.designerState.updateElement(this.element.id, { properties: updatedProperties });
+  }
+
   protected onCellClick(event: MouseEvent, row: number, col: number): void {
     event.stopPropagation();
     event.preventDefault();

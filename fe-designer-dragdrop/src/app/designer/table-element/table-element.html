@@ -14,7 +14,7 @@
               (contextmenu)="onCellContextMenu($event, rowIndex, colIndex)"
               [class.selected]="isCellSelected(rowIndex, colIndex)"
             >
-              &nbsp;
+              <div class="cell-content" [innerHTML]="getCellContent(rowIndex, colIndex)"></div>
             </td>
           }
         </tr>
@@ -57,6 +57,18 @@
       <button class="context-item" type="button" (click)="onSplitVertically()">
         Split Vertically by "n" (default 2)
       </button>
+    </div>
+  }
+
+  @let cellOffsets = getSelectedCellOffsets();
+  @if (cellOffsets) {
+    <div
+      class="cell-actions-toolbar"
+      [style.left.mm]="cellOffsets.left + cellOffsets.width / 2"
+      [style.top.mm]="cellOffsets.top"
+      (click)="$event.stopPropagation()"
+    >
+      <button class="cell-action" type="button" (click)="onEditCellContent()" title="Edit Cell Content">✏</button>
     </div>
   }
 </div>
