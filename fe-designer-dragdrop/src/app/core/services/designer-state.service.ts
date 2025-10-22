@@ -365,7 +365,7 @@ export class DesignerStateService {
       `  <body>\n${bodyContent}  </body>\n</html>`;
   }
 
-  private a4StylesCache: string | null = null;
+  private a4StylesCache: string | null = null; // Set by preload provider
   private getA4CommonStyles(): string {
     if (this.a4StylesCache) {
       return this.a4StylesCache;
