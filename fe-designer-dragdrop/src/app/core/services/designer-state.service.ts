@@ -345,10 +345,10 @@ export class DesignerStateService {
     const margins = this.pageGutters();
     const commonStylesRaw = this.getA4CommonStyles();
     const commonStyles = commonStylesRaw
-      .replace(/__PAGE_MARGIN_TOP__/g, `${margins.top}mm`)
-      .replace(/__PAGE_MARGIN_RIGHT__/g, `${margins.right}mm`)
-      .replace(/__PAGE_MARGIN_BOTTOM__/g, `${margins.bottom}mm`)
-      .replace(/__PAGE_MARGIN_LEFT__/g, `${margins.left}mm`);
+      .replace(/__TOP__/g, `${margins.top}mm`)
+      .replace(/__RIGHT__/g, `${margins.right}mm`)
+      .replace(/__BOTTOM__/g, `${margins.bottom}mm`)
+      .replace(/__LEFT__/g, `${margins.left}mm`);
 
     return `<html lang="en">\n` +
       `  <head>\n` +
@@ -370,17 +370,8 @@ export class DesignerStateService {
     if (this.a4StylesCache) {
       return this.a4StylesCache;
     }
-    // Dynamic fetch from public folder (works in browser build). Fallback to inline minimal CSS.
-    try {
-      const xhr = new XMLHttpRequest();
-      xhr.open('GET', 'a4-common-styles.css', false); // synchronous fetch (small file)
-      xhr.send();
-      if (xhr.status >= 200 && xhr.status < 300 && xhr.responseText) {
-        this.a4StylesCache = xhr.responseText;
-        return this.a4StylesCache;
-      }
-    } catch {}
-    this.a4StylesCache = `/*** Page-level definitions ***/\n@page {\n  size: A4 portrait;\n  /* MARGINS: __TOP__ __RIGHT__ __BOTTOM__ __LEFT__ */\n  margin: __TOP__ __RIGHT__ __BOTTOM__ __LEFT__;\n}`;
+    // Fallback minimal if not preloaded by startup APP_INITIALIZER
+    this.a4StylesCache = this.a4StylesCache || `/*** Page-level definitions ***/\n@page {\n  size: A4 portrait;\n  /* MARGINS: __TOP__ __RIGHT__ __BOTTOM__ __LEFT__ */\n  margin: __TOP__ __RIGHT__ __BOTTOM__ __LEFT__;\n}`;
     return this.a4StylesCache;
   }
 
