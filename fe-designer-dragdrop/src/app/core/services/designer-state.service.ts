@@ -350,9 +350,8 @@ export class DesignerStateService {
       .replace(/__BOTTOM__/g, `${margins.bottom}mm`)
       .replace(/__LEFT__/g, `${margins.left}mm`);
 
-    return `<html lang="en">\n` +
+    return `<html xmlns="http://www.w3.org/1999/xhtml">\n` +
       `  <head>\n` +
-      `    <meta charset="UTF-8" />\n` +
       `    <title>${safeTitle}</title>\n` +
       `    <style type="text/css" media="all">\n` +
       `${commonStyles}\n` +
