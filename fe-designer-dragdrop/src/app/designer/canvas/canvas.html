@@ -1,6 +1,7 @@
 <div 
   #workspace
   class="canvas-workspace" 
+  [class.canvas-workspace--centered]="shouldCenterCanvas()"
   (drop)="onDrop($event)" 
   (dragover)="onDragOver($event)"
   (click)="onCanvasClick()"

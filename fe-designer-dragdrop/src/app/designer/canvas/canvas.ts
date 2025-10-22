@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, ElementRef, HostListener, OnDestroy, ViewChild, computed, effect, inject } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, HostListener, OnDestroy, ViewChild, computed, effect, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DesignerStateService } from '../../core/services/designer-state.service';
 import { DragDropService } from '../../core/services/drag-drop.service';
@@ -51,6 +51,7 @@ export class CanvasComponent implements AfterViewInit, OnDestroy {
   protected readonly MM_TO_PX = MM_TO_PX;
   protected readonly A4_WIDTH_MM = A4_WIDTH_MM;
   protected readonly A4_HEIGHT_MM = A4_HEIGHT_MM;
+  protected readonly shouldCenterCanvas = signal(true);
 
   private viewInitialized = false;
   private stopZoomEffect = effect(() => {
@@ -218,6 +219,9 @@ export class CanvasComponent implements AfterViewInit, OnDestroy {
     }
 
     if (!isFinite(scale) || scale <= 0) return;
+
+    const scaledHeight = baseHeight * scale;
+    this.shouldCenterCanvas.set(scaledHeight <= workspaceHeight);
 
     this.designerState.setCanvasScale(scale);
   }
