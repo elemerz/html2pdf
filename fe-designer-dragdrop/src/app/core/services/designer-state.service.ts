@@ -39,7 +39,7 @@ export class DesignerStateService {
   readonly selectedElementId = this.selectedElementIdSignal.asReadonly();
   private selectedTableCellSignal = signal<TableCellSelection | null>(null);
   readonly selectedTableCell = this.selectedTableCellSignal.asReadonly();
-  
+
   // Computed: selected element object
   readonly selectedElement = computed(() => {
     const id = this.selectedElementIdSignal();
@@ -50,7 +50,7 @@ export class DesignerStateService {
   // History for undo/redo
   private historySignal = signal<HistoryEntry[]>([]);
   private historyIndexSignal = signal<number>(-1);
-  
+
   readonly canUndo = computed(() => this.historyIndexSignal() > 0);
   readonly canRedo = computed(() => this.historyIndexSignal() < this.historySignal().length - 1);
 
@@ -80,7 +80,7 @@ export class DesignerStateService {
   constructor() {
     // Initialize history with empty state
     this.addToHistory([]);
-    
+
     // Auto-save to localStorage on element changes
     effect(() => {
       const layout = this.currentLayoutSignal();
@@ -115,7 +115,7 @@ export class DesignerStateService {
 
   updateElement(id: string, updates: Partial<CanvasElement>) {
     const gutters = this.pageGutters();
-    this.elementsSignal.update(elements => 
+    this.elementsSignal.update(elements =>
       elements.map(el => {
         if (el.id !== id) return el;
         const merged = { ...el, ...updates };
@@ -206,12 +206,12 @@ export class DesignerStateService {
   private addToHistory(elements: CanvasElement[]) {
     const currentIndex = this.historyIndexSignal();
     const history = this.historySignal().slice(0, currentIndex + 1);
-    
+
     const newEntry: HistoryEntry = {
       elements: JSON.parse(JSON.stringify(elements)), // Deep clone
       timestamp: Date.now()
     };
-    
+
     this.historySignal.set([...history, newEntry]);
     this.historyIndexSignal.set(history.length);
   }
@@ -251,10 +251,10 @@ export class DesignerStateService {
 
   undo() {
     if (!this.canUndo()) return;
-    
+
     const newIndex = this.historyIndexSignal() - 1;
     this.historyIndexSignal.set(newIndex);
-    
+
     const entry = this.historySignal()[newIndex];
     this.elementsSignal.set(JSON.parse(JSON.stringify(entry.elements)));
     this.selectedElementIdSignal.set(null);
@@ -263,10 +263,10 @@ export class DesignerStateService {
 
   redo() {
     if (!this.canRedo()) return;
-    
+
     const newIndex = this.historyIndexSignal() + 1;
     this.historyIndexSignal.set(newIndex);
-    
+
     const entry = this.historySignal()[newIndex];
     this.elementsSignal.set(JSON.parse(JSON.stringify(entry.elements)));
     this.selectedElementIdSignal.set(null);
@@ -345,16 +345,16 @@ export class DesignerStateService {
     const margins = this.pageGutters();
     const commonStylesRaw = this.getA4CommonStyles();
     const commonStyles = commonStylesRaw
-      .replace(/__TOP__/g, `${margins.top}mm`)
-      .replace(/__RIGHT__/g, `${margins.right}mm`)
-      .replace(/__BOTTOM__/g, `${margins.bottom}mm`)
-      .replace(/__LEFT__/g, `${margins.left}mm`);
+      .replace(/__PAGE_MARGIN_TOP__/g, `${margins.top}mm`)
+      .replace(/__PAGE_MARGIN_RIGHT__/g, `${margins.right}mm`)
+      .replace(/__PAGE_MARGIN_BOTTOM__/g, `${margins.bottom}mm`)
+      .replace(/__PAGE_MARGIN_LEFT__/g, `${margins.left}mm`);
 
     return `<html lang="en">\n` +
       `  <head>\n` +
       `    <meta charset="UTF-8" />\n` +
       `    <title>${safeTitle}</title>\n` +
-      `    <style>\n` +
+      `    <style type="text/css" media="all">\n` +
       `${commonStyles}\n` +
       `      body { position: relative; width: ${A4_WIDTH_MM}mm; height: ${A4_HEIGHT_MM}mm; margin: 0; font-family: Arial, sans-serif; }\n` +
       `      .element { position: absolute; box-sizing: border-box; }\n` +
@@ -365,9 +365,23 @@ export class DesignerStateService {
       `  <body>\n${bodyContent}  </body>\n</html>`;
   }
 
+  private a4StylesCache: string | null = null;
   private getA4CommonStyles(): string {
-    // Embedded at export time; keep lightweight (no file system access in browser environment)
-    return `/*** Page-level definitions ***/\n@page {\n  size: A4 portrait;\n  /* MARGINS: __TOP__ __RIGHT__ __BOTTOM__ __LEFT__ */\n  margin: __TOP__ __RIGHT__ __BOTTOM__ __LEFT__;\n}\n.page { position: relative; min-height: 276.7mm; }\n.page + .page { page-break-before: page; break-before: page; }\n\n.pagebreak {break-before: always; page-break-after: always; }\n\n/*** Custom font Definitions ***/\n@font-face {\n  font-family: 'Roboto';\n  font-weight: normal;\n  font-style: normal;\n  font-display: swap;\n  -fs-pdf-font-embed: embed;\n  -fs-pdf-font-encoding: Identity-H;\n}\n@font-face {\n  font-family: 'KIX Barcode';\n  font-weight: normal;\n  font-style: normal;\n  font-display: swap;\n  -fs-pdf-font-embed: embed;\n  -fs-pdf-font-encoding: Identity-H;\n}\n\n/*** standard element commons ***/\nhtml, html * {\n  box-sizing: border-box;\n  margin: 0;\n}\nhtml,body {\n  position: relative;\n  width: 100%;\n  height: 100%;\n  margin: 0;\n  padding:0;\n  border:0 none;\n  font-family: 'Roboto';\n  font-size: 9pt;\n}\n.table {\n  border-collapse: collapse;\n}`;
+    if (this.a4StylesCache) {
+      return this.a4StylesCache;
+    }
+    // Dynamic fetch from public folder (works in browser build). Fallback to inline minimal CSS.
+    try {
+      const xhr = new XMLHttpRequest();
+      xhr.open('GET', 'a4-common-styles.css', false); // synchronous fetch (small file)
+      xhr.send();
+      if (xhr.status >= 200 && xhr.status < 300 && xhr.responseText) {
+        this.a4StylesCache = xhr.responseText;
+        return this.a4StylesCache;
+      }
+    } catch {}
+    this.a4StylesCache = `/*** Page-level definitions ***/\n@page {\n  size: A4 portrait;\n  /* MARGINS: __TOP__ __RIGHT__ __BOTTOM__ __LEFT__ */\n  margin: __TOP__ __RIGHT__ __BOTTOM__ __LEFT__;\n}`;
+    return this.a4StylesCache;
   }
 
   private serializeElementToXhtml(element: CanvasElement): string {
