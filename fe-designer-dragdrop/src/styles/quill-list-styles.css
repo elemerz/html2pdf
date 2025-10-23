@@ -42,3 +42,7 @@
 /* Ensure picker items have consistent height to avoid overlap */
 .ql-snow .ql-picker.ql-lineheight .ql-picker-item,
 .ql-snow .ql-picker.ql-lineheight .ql-picker-label { line-height: 1.2; }
+
+/* Force size dropdown to show numeric labels instead of 'Normal' */
+.ql-snow .ql-picker.ql-size .ql-picker-item[data-value]::before,
+.ql-snow .ql-picker.ql-size .ql-picker-label[data-value]::before { content: attr(data-value) !important; }
