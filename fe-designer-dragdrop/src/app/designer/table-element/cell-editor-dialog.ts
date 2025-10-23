@@ -1,4 +1,5 @@
 import { Component, Input, Output, EventEmitter } from '@angular/core';
+import Quill from 'quill';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { QuillModule } from 'ngx-quill';
@@ -20,8 +21,8 @@ export class CellEditorDialogComponent {
   quillModules = {
     toolbar: [
       ['bold', 'italic', 'underline'],
-      [{ 'font': ['Arial','Helvetica','Verdana','Tahoma','Trebuchet MS','Times New Roman','Georgia','Roboto','Open Sans','Lato','Montserrat','Poppins','sans-serif','serif','monospace'] }],
-      [{ 'size': ['6pt','7pt','8pt','9pt','10pt','11pt','12pt','13pt','14pt','15pt','16pt','17pt','18pt','20pt','24pt','28pt','32pt'] }],
+      [{ 'font': ['arial','helvetica','verdana','tahoma','trebuchet','times-new-roman','georgia','roboto','open-sans','lato','montserrat','poppins'] }],
+      [{ 'size': ['6','7','8','9','10','11','12','13','14','15','16','17','18','20','24','28','32'] }],
       [{ 'color': [] }, { 'background': [] }],
       [{ 'lineheight': ['1','1.15','1.25','1.5','1.75','2','2.25','2.5'] }],
       ['link', 'image']
