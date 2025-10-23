@@ -16,6 +16,7 @@ export class PropertyPanelComponent {
   private designerState = inject(DesignerStateService);
   
   protected selectedElement = this.designerState.selectedElement;
+  protected selectedTableCell = this.designerState.selectedTableCell;
   
   updateElement(updates: Partial<CanvasElement>) {
     const el = this.selectedElement();
@@ -78,6 +79,71 @@ export class PropertyPanelComponent {
 
   isTable(element: CanvasElement | null): boolean {
     return !!element && element.type === 'table';
+  }
+
+  // Cell properties helpers
+  private cellKey(row: number, col: number): string { return `${row}_${col}`; }
+
+  getSelectedCellPadding(): { top: number; right: number; bottom: number; left: number } | null {
+    const selection = this.selectedTableCell();
+    const el = this.selectedElement();
+    if (!selection || !el || el.id !== selection.elementId) return null;
+    const map = el.properties?.['tableCellPadding'] as Record<string, number[]> | undefined;
+    const raw = map?.[this.cellKey(selection.row, selection.col)];
+    if (Array.isArray(raw) && raw.length === 4) {
+      const [top, right, bottom, left] = raw.map(v => (Number.isFinite(v) ? v : 0));
+      return { top, right, bottom, left };
+    }
+    return { top: 0, right: 0, bottom: 0, left: 0 };
+  }
+
+  getSelectedCellHAlign(): 'left' | 'center' | 'right' | null {
+    const selection = this.selectedTableCell();
+    const el = this.selectedElement();
+    if (!selection || !el || el.id !== selection.elementId) return null;
+    const map = el.properties?.['tableCellHAlign'] as Record<string, string> | undefined;
+    const value = map?.[this.cellKey(selection.row, selection.col)];
+    return value === 'center' || value === 'right' ? value : 'left';
+  }
+
+  getSelectedCellVAlign(): 'top' | 'middle' | 'bottom' | null {
+    const selection = this.selectedTableCell();
+    const el = this.selectedElement();
+    if (!selection || !el || el.id !== selection.elementId) return null;
+    const map = el.properties?.['tableCellVAlign'] as Record<string, string> | undefined;
+    const value = map?.[this.cellKey(selection.row, selection.col)];
+    return value === 'middle' || value === 'bottom' ? value : 'top';
+  }
+
+  updateSelectedCellPadding(side: 'top' | 'right' | 'bottom' | 'left', value: number) {
+    const selection = this.selectedTableCell();
+    const el = this.selectedElement();
+    if (!selection || !el || el.id !== selection.elementId) return;
+    const key = this.cellKey(selection.row, selection.col);
+    const existing = (el.properties?.['tableCellPadding'] as Record<string, number[]>) || {};
+    const current = existing[key] || [0,0,0,0];
+    const indexMap: Record<string, number> = { top:0, right:1, bottom:2, left:3 };
+    const next = [...current];
+    next[indexMap[side]] = Math.max(0, Number.isFinite(value) ? value : 0);
+    const updated = { ...(el.properties||{}), tableCellPadding: { ...existing, [key]: next } };
+    this.updateElement({ properties: updated });
+  }
+
+  updateSelectedCellAlignment(kind: 'h' | 'v', value: string) {
+    const selection = this.selectedTableCell();
+    const el = this.selectedElement();
+    if (!selection || !el || el.id !== selection.elementId) return;
+    const key = this.cellKey(selection.row, selection.col);
+    const propName = kind === 'h' ? 'tableCellHAlign' : 'tableCellVAlign';
+    const existing = (el.properties?.[propName] as Record<string, string>) || {};
+    const updated = { ...(el.properties||{}), [propName]: { ...existing, [key]: value } };
+    this.updateElement({ properties: updated });
+  }
+
+  hasSelectedCell(): boolean {
+    const selection = this.selectedTableCell();
+    const el = this.selectedElement();
+    return !!selection && !!el && selection.elementId === el.id && el.type === 'table';
   }
 
   deleteElement() {

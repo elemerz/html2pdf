@@ -94,6 +94,58 @@
         </section>
       }
 
+      @if (hasSelectedCell()) {
+        @let padding = getSelectedCellPadding();
+        <section class="property-section">
+          <header class="section-header">Cell</header>
+          <div class="section-body">
+            <div class="property-grid">
+              <div class="property-field">
+                <label class="property-label">Pad Top (mm)</label>
+                <input type="number" min="0" step="1" class="property-input"
+                       [value]="padding?.top"
+                       (input)="updateSelectedCellPadding('top', +$any($event.target).value)" />
+              </div>
+              <div class="property-field">
+                <label class="property-label">Pad Right (mm)</label>
+                <input type="number" min="0" step="1" class="property-input"
+                       [value]="padding?.right"
+                       (input)="updateSelectedCellPadding('right', +$any($event.target).value)" />
+              </div>
+              <div class="property-field">
+                <label class="property-label">Pad Bottom (mm)</label>
+                <input type="number" min="0" step="1" class="property-input"
+                       [value]="padding?.bottom"
+                       (input)="updateSelectedCellPadding('bottom', +$any($event.target).value)" />
+              </div>
+              <div class="property-field">
+                <label class="property-label">Pad Left (mm)</label>
+                <input type="number" min="0" step="1" class="property-input"
+                       [value]="padding?.left"
+                       (input)="updateSelectedCellPadding('left', +$any($event.target).value)" />
+              </div>
+            </div>
+
+            <div class="property-field">
+              <label class="property-label">Horizontal Align</label>
+              <div class="align-buttons-row">
+                <button type="button" class="align-btn" [class.active]="getSelectedCellHAlign()==='left'" (click)="updateSelectedCellAlignment('h','left')"><span class="ico-align_horizontal_left"></span></button>
+                <button type="button" class="align-btn" [class.active]="getSelectedCellHAlign()==='center'" (click)="updateSelectedCellAlignment('h','center')"><span class="ico-align_horizontal_center"></span></button>
+                <button type="button" class="align-btn" [class.active]="getSelectedCellHAlign()==='right'" (click)="updateSelectedCellAlignment('h','right')"><span class="ico-align_horizontal_right"></span></button>
+              </div>
+            </div>
+            <div class="property-field">
+              <label class="property-label">Vertical Align</label>
+              <div class="align-buttons-row">
+                <button type="button" class="align-btn" [class.active]="getSelectedCellVAlign()==='top'" (click)="updateSelectedCellAlignment('v','top')"><span class="ico-align_vertical_top"></span></button>
+                <button type="button" class="align-btn" [class.active]="getSelectedCellVAlign()==='middle'" (click)="updateSelectedCellAlignment('v','middle')"><span class="ico-align_vertical_center"></span></button>
+                <button type="button" class="align-btn" [class.active]="getSelectedCellVAlign()==='bottom'" (click)="updateSelectedCellAlignment('v','bottom')"><span class="ico-align_vertical_bottom"></span></button>
+              </div>
+            </div>
+          </div>
+        </section>
+      }
+
       <button 
         class="delete-button" 
         (click)="deleteElement()"

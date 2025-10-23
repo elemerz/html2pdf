@@ -108,6 +108,39 @@
   gap: 12px;
 }
 
+.align-buttons-row {
+  display: flex;
+  gap: 4px;
+}
+
+.align-btn {
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  background-color: @background;
+  border: 1px solid @border;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+  color: @foreground;
+  transition: background-color @transition-fast, border-color @transition-fast;
+
+  &.active {
+    background-color: @primary;
+    color: @primary-foreground;
+    border-color: @primary;
+  }
+
+  &:hover:not(.active) {
+    background-color: fade(@foreground, 10%);
+  }
+
+  span { line-height: 1; }
+}
+
 .delete-button {
   padding: 8px 16px;
   background-color: @destructive;

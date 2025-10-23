@@ -29,12 +29,11 @@
 
   td {
     border: 1px solid fade(@foreground, 25%);
-    padding: 0;
-    text-align: center;
+    /* padding now controlled per-cell via inline styles */
     position: relative;
     transition: background-color @transition-fast, box-shadow @transition-fast;
     user-select: none;
-    vertical-align: top;
+    /* vertical/horizontal alignment handled via inline styles */
 
     &.selected {
       background-color: fade(@primary, 12%);
@@ -44,9 +43,7 @@
     .cell-content {
       width: 100%;
       height: 100%;
-      padding: 2px 4px;
       box-sizing: border-box;
-      text-align: left;
       font-size: 12px;
       line-height: 1.3;
       white-space: pre-wrap; // preserve whitespace & newlines

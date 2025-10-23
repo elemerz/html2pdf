@@ -359,4 +359,35 @@ export class TableElementComponent {
 
     return Math.min(parsed, 20);
   }
+
+  // Cell style helpers (padding & alignment)
+  private cellKey(row: number, col: number): string {
+    return `${row}_${col}`;
+  }
+
+  protected getCellPadding(row: number, col: number): { top: number; right: number; bottom: number; left: number } {
+    const key = this.cellKey(row, col);
+    const paddingMap = this.element.properties?.['tableCellPadding'] as Record<string, number[]> | undefined;
+    const raw = paddingMap?.[key];
+    if (Array.isArray(raw) && raw.length === 4) {
+      const [top, right, bottom, left] = raw.map(v => (Number.isFinite(v) ? v : 0));
+      return { top, right, bottom, left };
+    }
+    return { top: 0, right: 0, bottom: 0, left: 0 };
+  }
+
+  protected getCellHAlign(row: number, col: number): 'left' | 'center' | 'right' {
+    const key = this.cellKey(row, col);
+    const map = this.element.properties?.['tableCellHAlign'] as Record<string, string> | undefined;
+    const value = map?.[key];
+    return value === 'center' || value === 'right' ? value : 'left';
+  }
+
+  protected getCellVAlign(row: number, col: number): 'top' | 'middle' | 'bottom' {
+    const key = this.cellKey(row, col);
+    const map = this.element.properties?.['tableCellVAlign'] as Record<string, string> | undefined;
+    const value = map?.[key];
+    return value === 'middle' || value === 'bottom' ? value : 'top';
+  }
 }
+

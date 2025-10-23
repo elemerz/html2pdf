@@ -13,6 +13,12 @@
               (click)="onCellClick($event, rowIndex, colIndex)"
               (contextmenu)="onCellContextMenu($event, rowIndex, colIndex)"
               [class.selected]="isCellSelected(rowIndex, colIndex)"
+              [style.padding-top.mm]="getCellPadding(rowIndex,colIndex).top"
+              [style.padding-right.mm]="getCellPadding(rowIndex,colIndex).right"
+              [style.padding-bottom.mm]="getCellPadding(rowIndex,colIndex).bottom"
+              [style.padding-left.mm]="getCellPadding(rowIndex,colIndex).left"
+              [style.text-align]="getCellHAlign(rowIndex,colIndex)"
+              [style.vertical-align]="getCellVAlign(rowIndex,colIndex)"
             >
               <div class="cell-content" [innerHTML]="getCellContent(rowIndex, colIndex)"></div>
             </td>
