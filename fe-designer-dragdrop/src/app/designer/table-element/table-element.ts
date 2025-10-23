@@ -389,5 +389,12 @@ export class TableElementComponent {
     const value = map?.[key];
     return value === 'middle' || value === 'bottom' ? value : 'top';
   }
+
+  protected getCellVAlignFlex(row: number, col: number): 'flex-start' | 'center' | 'flex-end' {
+    const v = this.getCellVAlign(row, col);
+    if (v === 'middle') return 'center';
+    if (v === 'bottom') return 'flex-end';
+    return 'flex-start';
+  }
 }
 

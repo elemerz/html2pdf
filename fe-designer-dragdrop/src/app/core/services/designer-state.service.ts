@@ -419,7 +419,15 @@ export class DesignerStateService {
             const key = `${rowIndex}_${colIndex}`; // use explicit indices to avoid indexOf duplication
             const raw = contents[key];
             const cellContent = raw && raw.length ? raw : '&nbsp;';
-            return `        <td style="width:${colWidthStr}mm;height:${rowHeightStr}mm;">${cellContent}</td>`;
+            const padMap = element.properties?.['tableCellPadding'] as Record<string, number[]> | undefined;
+            const paddings = padMap?.[key];
+            const [pt, pr, pb, pl] = Array.isArray(paddings) && paddings.length === 4 ? paddings : [0,0,0,0];
+            const hAlignMap = element.properties?.['tableCellHAlign'] as Record<string, string> | undefined;
+            const vAlignMap = element.properties?.['tableCellVAlign'] as Record<string, string> | undefined;
+            const hAlign = (hAlignMap?.[key] === 'center' || hAlignMap?.[key] === 'right') ? hAlignMap?.[key] : 'left';
+            const vAlignRaw = (vAlignMap?.[key] === 'middle' || vAlignMap?.[key] === 'bottom') ? vAlignMap?.[key] : 'top';
+            const vAlign = vAlignRaw === 'middle' ? 'middle' : vAlignRaw; // 'top' | 'middle' | 'bottom'
+            return `        <td style="width:${colWidthStr}mm;height:${rowHeightStr}mm;padding:${pt}mm ${pr}mm ${pb}mm ${pl}mm;text-align:${hAlign};vertical-align:${vAlign};">${cellContent}</td>`;
           })
           .join('\n');
 

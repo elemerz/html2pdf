@@ -20,7 +20,12 @@
               [style.text-align]="getCellHAlign(rowIndex,colIndex)"
               [style.vertical-align]="getCellVAlign(rowIndex,colIndex)"
             >
-              <div class="cell-content" [innerHTML]="getCellContent(rowIndex, colIndex)"></div>
+              <div class="cell-content"
+                   [style.display]="'flex'"
+                   [style.flexDirection]="'column'"
+                   [style.justifyContent]="getCellVAlignFlex(rowIndex,colIndex)"
+                   [style.textAlign]="getCellHAlign(rowIndex,colIndex)"
+                   [innerHTML]="getCellContent(rowIndex, colIndex)"></div>
             </td>
           }
         </tr>
