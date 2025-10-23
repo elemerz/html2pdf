@@ -87,3 +87,11 @@
 @if (showContextMenu()) {
   <div class="table-context-menu-overlay" (click)="closeContextMenu()"></div>
 }
+
+@if (showCellEditor()) {
+  <app-cell-editor-dialog
+    [initialContent]="getCellContent(designerState.selectedTableCell()!.row, designerState.selectedTableCell()!.col)"
+    (saved)="onCellEditorSaved($event)"
+    (closed)="onCellEditorClosed()"
+  ></app-cell-editor-dialog>
+}

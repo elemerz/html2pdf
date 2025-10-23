@@ -1,0 +1,18 @@
+<div class="cell-editor-backdrop" (click)="close()"></div>
+<div class="cell-editor-dialog" (mousedown)="$event.stopPropagation()" (click)="$event.stopPropagation()">
+  <div class="dialog-header">
+    <span>Cell Content</span>
+    <button type="button" class="close-btn" (click)="close()">✕</button>
+  </div>
+  <quill-editor
+    [(ngModel)]="contentValue"
+    [modules]="quillModules"
+    format="html"
+    [styles]="{height: '480px'}"
+    placeholder="Enter cell content..."
+  ></quill-editor>
+  <div class="dialog-actions">
+    <button type="button" (click)="save()" class="primary">Save</button>
+    <button type="button" (click)="close()">Cancel</button>
+  </div>
+</div>

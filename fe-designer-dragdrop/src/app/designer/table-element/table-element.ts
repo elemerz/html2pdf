@@ -1,4 +1,5 @@
 import { Component, HostListener, Input, signal, inject, ElementRef } from '@angular/core';
+import { CellEditorDialogComponent } from './cell-editor-dialog';
 import { CommonModule } from '@angular/common';
 import { CanvasElement } from '../../shared/models/schema';
 import { DesignerStateService } from '../../core/services/designer-state.service';
@@ -16,7 +17,7 @@ interface ContextMenuCell {
 @Component({
   selector: 'app-table-element',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, CellEditorDialogComponent],
   templateUrl: './table-element.html',
   styleUrl: './table-element.less',
 })
@@ -81,19 +82,29 @@ export class TableElementComponent {
     return '&nbsp;';
   }
 
+  protected showCellEditor = signal(false);
+
   protected onEditCellContent(): void {
     const selection = this.designerState.selectedTableCell();
     if (!selection || selection.elementId !== this.element.id) return;
+    this.showCellEditor.set(true);
+  }
+
+  protected onCellEditorSaved(html: string): void {
+    const selection = this.designerState.selectedTableCell();
+    if (!selection || selection.elementId !== this.element.id) return;
     const key = `${selection.row}_${selection.col}`;
-    const existing = this.element.properties?.['tableCellContents']?.[key] || '';
-    const response = window.prompt('Edit cell content (HTML allowed)', existing as string);
-    if (response === null) return;
     const existingContents = (this.element.properties?.['tableCellContents'] as Record<string, string>) || {};
     const updatedProperties = {
       ...(this.element.properties || {}),
-      tableCellContents: { ...existingContents, [key]: response }
+      tableCellContents: { ...existingContents, [key]: html }
     } as Record<string, any>;
     this.designerState.updateElement(this.element.id, { properties: updatedProperties });
+    this.showCellEditor.set(false);
+  }
+
+  protected onCellEditorClosed(): void {
+    this.showCellEditor.set(false);
   }
 
   protected onCellClick(event: MouseEvent, row: number, col: number): void {
