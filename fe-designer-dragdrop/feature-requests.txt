@@ -30,3 +30,17 @@ In dropped a 2x2 table (4 cells) to the canvas. I entered in the 4 cells the fol
 -Row2Col2: R2C2
 On the screen the information is correctly reflected in the appropriate cells of the dropped table, => Ok.
 But: In the saved file, if I open it with Notepad++, I see the same R1C1 in all 4 cells!
+============== Support Cell padding and alignment=================
+Current Situation:
+- When a Table cell is selected, it is "marked" by a blue-ish color, but on the right pane (Element Properties)
+  Still the properties of the "parent table" are shown.
+1-st Improvement request:
+- When a Table cell is selected, the Properties Pane should display the selected cell-s own properties:
+  - Padding: top, right, bottom, left (use small, compact number spinners. Default values:0mm)
+  - Content alignments (text-align, vertical-align): use 2 rows of small square icons: 
+    - 1-st icon row for Horizontal alignments: Left, Center, Right
+    - 2-nd icon row for Vertical alignments: Top,Middle,Bottom
+-For Content alignment buttons please use the ".ico-align_*" classes defined in: @src/app/styles/alignment-icons.less
+The 4 "Padding" spinners set the Top/Right/Bottom/Left padding of the selected cell in millimeters.
+The 3 "H-Alignment"-buttons set the text-align: left/center/right of the selected cell.
+The 3 "V-Alignment"-buttons set the vertical-align: top/middle/bottom of the selected cell.
