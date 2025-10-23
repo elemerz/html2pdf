@@ -46,3 +46,17 @@
 /* Force size dropdown to show numeric labels instead of 'Normal' */
 .ql-snow .ql-picker.ql-size .ql-picker-item[data-value]::before,
 .ql-snow .ql-picker.ql-size .ql-picker-label[data-value]::before { content: attr(data-value) !important; }
+
+/* Apply font families in editor for custom font whitelist */
+.ql-editor .ql-font-arial { font-family: Arial, sans-serif; }
+.ql-editor .ql-font-helvetica { font-family: Helvetica, Arial, sans-serif; }
+.ql-editor .ql-font-verdana { font-family: Verdana, Geneva, sans-serif; }
+.ql-editor .ql-font-tahoma { font-family: Tahoma, Geneva, sans-serif; }
+.ql-editor .ql-font-trebuchet { font-family: 'Trebuchet MS', Helvetica, sans-serif; }
+.ql-editor .ql-font-times-new-roman { font-family: 'Times New Roman', Times, serif; }
+.ql-editor .ql-font-georgia { font-family: Georgia, serif; }
+.ql-editor .ql-font-roboto { font-family: Roboto, Arial, sans-serif; }
+.ql-editor .ql-font-open-sans { font-family: 'Open Sans', Arial, sans-serif; }
+.ql-editor .ql-font-lato { font-family: Lato, Arial, sans-serif; }
+.ql-editor .ql-font-montserrat { font-family: Montserrat, Arial, sans-serif; }
+.ql-editor .ql-font-poppins { font-family: Poppins, Arial, sans-serif; }
