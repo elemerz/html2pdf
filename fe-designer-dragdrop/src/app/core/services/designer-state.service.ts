@@ -335,8 +335,23 @@ export class DesignerStateService {
 
   generateXhtmlDocument(title: string): string {
     const safeTitle = this.escapeHtml(title || 'Layout');
-    const elementsMarkup = this.elementsSignal()
-      .map(element => this.serializeElementToXhtml(element))
+    const elements = [...this.elementsSignal()];
+
+    // Flow layout for tables (no absolute positioning). Non-table elements keep absolute for now.
+    let lastFlowBottom = 0;
+    let firstFlow = true;
+    const elementsMarkup = elements
+      .map(el => {
+        if (el.type === 'table') {
+          const topMargin = firstFlow ? el.y : Math.max(0, el.y - lastFlowBottom);
+            const leftMargin = el.x;
+            lastFlowBottom = el.y + el.height;
+            firstFlow = false;
+            const tableHtml = this.serializeTableElement(el, '');
+            return `<div class="flow-wrapper" style="margin-top:${this.formatMillimeters(topMargin)}mm;margin-left:${this.formatMillimeters(leftMargin)}mm;width:${this.formatMillimeters(el.width)}mm;">\n${tableHtml}\n      </div>`;
+        }
+        return this.serializeElementToXhtml(el);
+      })
       .filter(Boolean)
       .join('\n    ');
 
@@ -355,6 +370,7 @@ export class DesignerStateService {
       `    <title>${safeTitle}</title>\n` +
       `    <style type="text/css" media="all">\n` +
       `${commonStyles}\n` +
+      `      .flow-wrapper { position: static; box-sizing: border-box; }\n` +
       `    </style>\n` +
       `  </head>\n` +
       `  <body>\n${bodyContent}  </body>\n</html>`;
