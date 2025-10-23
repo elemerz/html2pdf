@@ -28,7 +28,7 @@
 :root { --size-label-suffix: "pt"; }
 .ql-snow .ql-picker.ql-size .ql-picker-item::before,
 .ql-snow .ql-picker.ql-size .ql-picker-label::before {
-  content: attr(data-value) var(--size-label-suffix);
+  content: attr(data-value);
 }
 
 /* Line-height dropdown shows the numeric value */

@@ -22,9 +22,9 @@ export class CellEditorDialogComponent {
     toolbar: [
       ['bold', 'italic', 'underline'],
       [{ 'font': ['arial','helvetica','verdana','tahoma','trebuchet','times-new-roman','georgia','roboto','open-sans','lato','montserrat','poppins'] }],
-      [{ 'size': ['6','7','8','9','10','11','12','13','14','15','16','17','18','20','24','28','32'] }],
+      [{ 'size': ['6pt','7pt','8pt','9pt','10pt','11pt','12pt','13pt','14pt','15pt','16pt','17pt','18pt','20pt','24pt','28pt','32pt'] }],
       [{ 'color': [] }, { 'background': [] }],
-      [{ 'lineheight': ['1','1.15','1.25','1.5','1.75','2','2.25','2.5'] }],
+      // lineheight pending proper custom toolbar module, removed for now
       ['link', 'image']
     ]
   };
@@ -32,16 +32,18 @@ export class CellEditorDialogComponent {
   ngOnInit(): void {
     // Dynamic registration (in case global setup not loaded)
     try {
-      const Font = Quill.import('formats/font');
-      Font.whitelist = ['arial','helvetica','verdana','tahoma','trebuchet','times-new-roman','georgia','roboto','open-sans','lato','montserrat','poppins'];
-      Quill.register(Font, true);
-      const SizeStyle = Quill.import('attributors/style/size');
-      SizeStyle.whitelist = ['6pt','7pt','8pt','9pt','10pt','11pt','12pt','13pt','14pt','15pt','16pt','17pt','18pt','20pt','24pt','28pt','32pt'];
-      Quill.register(SizeStyle, true);
-      const Parchment: any = Quill.import('parchment');
-      const LineHeightStyle = new Parchment.Attributor.Style('lineheight','line-height',{ scope: Parchment.Scope.INLINE, whitelist: ['1','1.15','1.25','1.5','1.75','2','2.25','2.5'] });
-      Quill.register(LineHeightStyle, true);
+      const Font: any = Quill.import('formats/font');
+      if (Font && Font.whitelist) {
+        Font.whitelist = ['arial','helvetica','verdana','tahoma','trebuchet','times-new-roman','georgia','roboto','open-sans','lato','montserrat','poppins'];
+        Quill.register(Font, true);
+      }
+      const SizeStyle: any = Quill.import('attributors/style/size');
+      if (SizeStyle && SizeStyle.whitelist) {
+        SizeStyle.whitelist = ['6pt','7pt','8pt','9pt','10pt','11pt','12pt','13pt','14pt','15pt','16pt','17pt','18pt','20pt','24pt','28pt','32pt'];
+        Quill.register(SizeStyle, true);
+      }
     } catch {}
+
 
     this.contentValue = this.initialContent && this.initialContent !== '&nbsp;' ? this.initialContent : '';
   }
