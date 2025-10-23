@@ -26,7 +26,7 @@ export class TableElementComponent {
   @Input() mmToPx = 3.7795275591;
   @Input() gridSize = 10;
 
-  private designerState = inject(DesignerStateService);
+  protected designerState = inject(DesignerStateService);
   private hostRef = inject(ElementRef<HTMLElement>);
   private activeResize: ResizeMode | null = null;
 
