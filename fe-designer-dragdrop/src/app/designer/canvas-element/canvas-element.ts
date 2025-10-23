@@ -112,7 +112,9 @@ export class CanvasElementComponent {
     const newX = this.snapToGrid(mmX);
     const newY = this.snapToGrid(mmY);
 
-    const clamped = this.clampPosition(newX, newY, this.element.width, this.element.height);
+    // Apply snapping to nearby elements (edge snap) & prevent overlap
+    const snapped = this.applyElementSnapping(newX, newY, this.element.width, this.element.height);
+    const clamped = this.clampPosition(snapped.x, snapped.y, this.element.width, this.element.height);
 
     this.designerState.updateElement(this.element.id, {
       x: clamped.x,
@@ -285,4 +287,87 @@ export class CanvasElementComponent {
     return min + clampedSteps * step;
   }
 
+  // Snap element edges to nearby other element edges if within threshold; prevent overlap.
+  private applyElementSnapping(x: number, y: number, width: number, height: number): { x: number; y: number } {
+    const threshold = Math.max(1, this.gridSize); // snap threshold in mm
+    const elements = this.designerState.elements();
+    const currentId = this.element.id;
+
+    let snapX = x;
+    let snapY = y;
+
+    // Compute proposed bounds
+    const proposedLeft = x;
+    const proposedTop = y;
+    const proposedRight = x + width;
+    const proposedBottom = y + height;
+
+    // Iterate existing elements for snapping & overlap prevention
+    for (const el of elements) {
+      if (el.id === currentId) continue;
+      const left = el.x;
+      const top = el.y;
+      const right = el.x + el.width;
+      const bottom = el.y + el.height;
+
+      // Horizontal snapping: align left/right edges
+      if (Math.abs(proposedLeft - right) <= threshold) {
+        snapX = right; // snap left edge to other's right edge
+      } else if (Math.abs(proposedRight - left) <= threshold) {
+        snapX = left - width; // snap right edge to other's left edge
+      } else if (Math.abs(proposedLeft - left) <= threshold) {
+        snapX = left; // align left edges
+      } else if (Math.abs(proposedRight - right) <= threshold) {
+        snapX = right - width; // align right edges
+      }
+
+      // Vertical snapping: align top/bottom edges
+      if (Math.abs(proposedTop - bottom) <= threshold) {
+        snapY = bottom; // snap top to other's bottom
+      } else if (Math.abs(proposedBottom - top) <= threshold) {
+        snapY = top - height; // snap bottom to other's top
+      } else if (Math.abs(proposedTop - top) <= threshold) {
+        snapY = top; // align top edges
+      } else if (Math.abs(proposedBottom - bottom) <= threshold) {
+        snapY = bottom - height; // align bottom edges
+      }
+
+      // Update proposed bounds after snapping for overlap check
+      const newLeft = snapX;
+      const newTop = snapY;
+      const newRight = snapX + width;
+      const newBottom = snapY + height;
+
+      const horizontalOverlap = newLeft < right && newRight > left;
+      const verticalOverlap = newTop < bottom && newBottom > top;
+      if (horizontalOverlap && verticalOverlap) {
+        // Resolve overlap by pushing out minimally based on which side we approached
+        // Prefer preserving original movement direction (simple heuristic)
+        if (x >= right) {
+          snapX = right; // place to the right
+        } else if (x + width <= left) {
+          snapX = left - width; // place to left
+        } else if (y >= bottom) {
+          snapY = bottom; // place below
+        } else if (y + height <= top) {
+          snapY = top - height; // place above
+        } else {
+          // Fallback: choose side with smallest penetration
+          const overlapLeft = right - newLeft;
+          const overlapRight = newRight - left;
+          const overlapTop = bottom - newTop;
+          const overlapBottom = newBottom - top;
+          const minOverlap = Math.min(overlapLeft, overlapRight, overlapTop, overlapBottom);
+          if (minOverlap === overlapLeft) snapX = right;
+          else if (minOverlap === overlapRight) snapX = left - width;
+          else if (minOverlap === overlapTop) snapY = bottom;
+          else snapY = top - height;
+        }
+      }
+    }
+
+    return { x: snapX, y: snapY };
+  }
+
 }
+
