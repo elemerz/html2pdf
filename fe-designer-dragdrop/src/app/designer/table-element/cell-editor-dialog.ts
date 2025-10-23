@@ -20,7 +20,7 @@ export class CellEditorDialogComponent {
   quillModules = {
     toolbar: [
       ['bold', 'italic', 'underline'],
-      [{ 'font': ['Arial','Helvetica','Verdana','Tahoma','Trebuchet MS','Times New Roman','Georgia','Roboto','Open Sans','Lato','Montserrat','Poppins'] }],
+      [{ 'font': ['Arial','Helvetica','Verdana','Tahoma','Trebuchet MS','Times New Roman','Georgia','Roboto','Open Sans','Lato','Montserrat','Poppins','sans-serif','serif','monospace'] }],
       [{ 'size': ['6pt','7pt','8pt','9pt','10pt','11pt','12pt','13pt','14pt','15pt','16pt','17pt','18pt','20pt','24pt','28pt','32pt'] }],
       [{ 'color': [] }, { 'background': [] }],
       [{ 'lineheight': ['1','1.15','1.25','1.5','1.75','2','2.25','2.5'] }],
