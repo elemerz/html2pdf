@@ -355,10 +355,6 @@ export class DesignerStateService {
       `    <title>${safeTitle}</title>\n` +
       `    <style type="text/css" media="all">\n` +
       `${commonStyles}\n` +
-      `      body { position: relative; width: ${A4_WIDTH_MM}mm; height: ${A4_HEIGHT_MM}mm; margin: 0; font-family: Arial, sans-serif; }\n` +
-      `      .element { position: absolute; box-sizing: border-box; }\n` +
-      `      .element-table { border-collapse: collapse; }\n` +
-      `      .element-table td { border: 1px solid #333333; padding: 4px; }\n` +
       `    </style>\n` +
       `  </head>\n` +
       `  <body>\n${bodyContent}  </body>\n</html>`;
