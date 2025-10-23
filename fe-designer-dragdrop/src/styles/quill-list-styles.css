@@ -1,0 +1,52 @@
+/* Make dropdown items preview their font family */
+.ql-snow .ql-picker.ql-font .ql-picker-item[data-value="Arial"]::before,
+.ql-snow .ql-picker.ql-font .ql-picker-label[data-value="Arial"]::before { font-family: Arial, sans-serif; content: "Arial"; }
+
+.ql-snow .ql-picker.ql-font .ql-picker-item[data-value="Helvetica"]::before,
+.ql-snow .ql-picker.ql-font .ql-picker-label[data-value="Helvetica"]::before { font-family: Helvetica, Arial, sans-serif; content: "Helvetica"; }
+
+.ql-snow .ql-picker.ql-font .ql-picker-item[data-value="Verdana"]::before,
+.ql-snow .ql-picker.ql-font .ql-picker-label[data-value="Verdana"]::before { font-family: Verdana, Geneva, sans-serif; content: "Verdana"; }
+
+.ql-snow .ql-picker.ql-font .ql-picker-item[data-value="Tahoma"]::before,
+.ql-snow .ql-picker.ql-font .ql-picker-label[data-value="Tahoma"]::before { font-family: Tahoma, Geneva, sans-serif; content: "Tahoma"; }
+
+.ql-snow .ql-picker.ql-font .ql-picker-item[data-value="Trebuchet MS"]::before,
+.ql-snow .ql-picker.ql-font .ql-picker-label[data-value="Trebuchet MS"]::before { font-family: "Trebuchet MS", Helvetica, sans-serif; content: "Trebuchet MS"; }
+
+.ql-snow .ql-picker.ql-font .ql-picker-item[data-value="Times New Roman"]::before,
+.ql-snow .ql-picker.ql-font .ql-picker-label[data-value="Times New Roman"]::before { font-family: "Times New Roman", Times, serif; content: "Times New Roman"; }
+
+.ql-snow .ql-picker.ql-font .ql-picker-item[data-value="Georgia"]::before,
+.ql-snow .ql-picker.ql-font .ql-picker-label[data-value="Georgia"]::before { font-family: Georgia, serif; content: "Georgia"; }
+
+.ql-snow .ql-picker.ql-font .ql-picker-item[data-value="Roboto"]::before,
+.ql-snow .ql-picker.ql-font .ql-picker-label[data-value="Roboto"]::before { font-family: Roboto, Arial, sans-serif; content: "Roboto"; }
+
+.ql-snow .ql-picker.ql-font .ql-picker-item[data-value="Open Sans"]::before,
+.ql-snow .ql-picker.ql-font .ql-picker-label[data-value="Open Sans"]::before { font-family: "Open Sans", Arial, sans-serif; content: "Open Sans"; }
+
+.ql-snow .ql-picker.ql-font .ql-picker-item[data-value="Lato"]::before,
+.ql-snow .ql-picker.ql-font .ql-picker-label[data-value="Lato"]::before { font-family: Lato, Arial, sans-serif; content: "Lato"; }
+
+.ql-snow .ql-picker.ql-font .ql-picker-item[data-value="Montserrat"]::before,
+.ql-snow .ql-picker.ql-font .ql-picker-label[data-value="Montserrat"]::before { font-family: Montserrat, Arial, sans-serif; content: "Montserrat"; }
+
+.ql-snow .ql-picker.ql-font .ql-picker-item[data-value="Poppins"]::before,
+.ql-snow .ql-picker.ql-font .ql-picker-label[data-value="Poppins"]::before { font-family: Poppins, Arial, sans-serif; content: "Poppins"; }
+
+/* Show sizes as labels without the 'pt' suffix, or keep it—your call */
+:root { --size-label-suffix: ""; } /* set to " pt" if you want "12 pt" */
+.ql-snow .ql-picker.ql-size .ql-picker-item::before,
+.ql-snow .ql-picker.ql-size .ql-picker-label::before {
+  content: attr(data-value) var(--size-label-suffix);
+}
+
+/* Line-height dropdown shows the numeric value */
+.ql-snow .ql-picker.ql-lineheight .ql-picker-item::before,
+.ql-snow .ql-picker.ql-lineheight .ql-picker-label::before {
+  content: attr(data-value);
+}
+
+/* Optional: ensure chosen font applies inside editor content */
+.ql-editor { line-height: 1.5; } /* default base if nothing selected */
