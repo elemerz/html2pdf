@@ -370,20 +370,21 @@ export class CanvasElementComponent {
     return { x: snapX, y: snapY };
   }
 
-  protected showDivEditor = signal(false);
+  protected showCellEditor = signal(false); // Reused for both table cells and div elements
 
-  protected onEditDivContent(): void {
+  protected onEditCellContent(): void {
     this.designerState.selectElement(this.element.id);
-    this.showDivEditor.set(true);
+    this.showCellEditor.set(true);
   }
 
-  protected onDivEditorSaved(html: string): void {
+  protected onCellEditorSaved(html: string): void {
+    // html is already XHTML-ish; store raw so template binds via [innerHTML] without escaping
     this.designerState.updateElement(this.element.id, { content: html });
-    this.showDivEditor.set(false);
+    this.showCellEditor.set(false);
   }
 
-  protected onDivEditorClosed(): void {
-    this.showDivEditor.set(false);
+  protected onCellEditorClosed(): void {
+    this.showCellEditor.set(false);
   }
 }
 

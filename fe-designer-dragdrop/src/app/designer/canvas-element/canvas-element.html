@@ -27,8 +27,11 @@
       <div class="element-container" (click)="$event.stopPropagation()">
         <div class="div-content" [innerHTML]="element.content"></div>
         @if (isSelected) {
-          <div class="element-actions">
-            <button type="button" class="element-action" (click)="onEditDivContent()" title="Edit Content">✏</button>
+          <div class="cell-actions-toolbar"
+            [style.left.mm]="element.width / 2"
+            [style.top.mm]="0"
+            (click)="$event.stopPropagation()">
+            <button class="cell-action" type="button" (click)="onEditCellContent()" title="Edit Cell Content">✏</button>
           </div>
         }
       </div>
@@ -87,10 +90,10 @@
   <div class="context-menu-overlay" (click)="closeContextMenu()"></div>
 }
 
-@if (showDivEditor()) {
+@if (showCellEditor()) {
   <app-cell-editor-dialog
     [initialContent]="element.content"
-    (saved)="onDivEditorSaved($event)"
-    (closed)="onDivEditorClosed()"
+    (saved)="onCellEditorSaved($event)"
+    (closed)="onCellEditorClosed()"
   ></app-cell-editor-dialog>
 }

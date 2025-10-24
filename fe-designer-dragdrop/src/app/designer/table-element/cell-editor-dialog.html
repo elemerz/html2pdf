@@ -6,6 +6,8 @@
   </div>
   <quill-editor
     [(ngModel)]="contentValue"
+    [sanitize]="false"
+    (onEditorCreated)="onEditorCreated($event)"
     [modules]="quillModules"
     format="html"
     [styles]="{height: '480px'}"
