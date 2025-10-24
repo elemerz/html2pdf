@@ -26,6 +26,7 @@ export class MenuBarComponent {
   onRedo = output<void>();
   onOptions = output<void>();
   onZoomChange = output<CanvasZoomMode>();
+  onCalibrate = output<void>();
 
   toggleMenu(menu: string) {
     this.openMenu.update(current => current === menu ? null : menu);
@@ -67,6 +68,11 @@ export class MenuBarComponent {
 
   handleOptions() {
     this.onOptions.emit();
+    this.closeMenu();
+  }
+
+  openCalibration() {
+    this.onCalibrate.emit();
     this.closeMenu();
   }
 

@@ -9,6 +9,7 @@ import { CanvasComponent } from './designer/canvas/canvas';
 import { SaveDialogComponent } from './layout/save-dialog/save-dialog';
 import { OpenDialogComponent } from './layout/open-dialog/open-dialog';
 import { OptionsDialogComponent } from './shared/dialogs/options-dialog/options-dialog';
+import { ScreenCalibrationDialogComponent } from './shared/dialogs/screen-calibration/screen-calibration-dialog';
 import { ReportLayout } from './shared/models/schema';
 
 @Component({
@@ -22,7 +23,8 @@ import { ReportLayout } from './shared/models/schema';
     CanvasComponent,
     SaveDialogComponent,
     OpenDialogComponent,
-    OptionsDialogComponent
+    OptionsDialogComponent,
+    ScreenCalibrationDialogComponent
   ],
   templateUrl: './app.html',
   styleUrl: './app.less',
@@ -35,6 +37,7 @@ export class App {
   protected showSaveDialog = signal(false);
   protected showOpenDialog = signal(false);
   protected showOptionsDialog = signal(false);
+  protected showCalibrationDialog = signal(false);
 
   // Expose signals to template
   protected westCollapsed = this.designerState.westCollapsed;
@@ -83,6 +86,10 @@ export class App {
     this.showOptionsDialog.set(true);
   }
 
+  onCalibrateScreen(): void {
+    this.showCalibrationDialog.set(true);
+  }
+
   // Dialog handlers
   handleSave(name: string): void {
     const trimmedName = name.trim() || 'layout';
@@ -113,6 +120,10 @@ export class App {
 
   closeOptionsDialog(): void {
     this.showOptionsDialog.set(false);
+  }
+
+  closeCalibrationDialog(): void {
+    this.showCalibrationDialog.set(false);
   }
 
   private triggerDownload(filename: string, content: string, mimeType: string): void {

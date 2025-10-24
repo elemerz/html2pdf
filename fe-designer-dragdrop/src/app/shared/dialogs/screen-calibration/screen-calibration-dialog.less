@@ -1,0 +1,40 @@
+.calibration-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 40px;
+  z-index: 1050;
+}
+.calibration-dialog {
+  background: white;
+  color: black;
+  width: 520px;
+  max-width: 100%;
+  padding: 24px;
+  border-radius: 6px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+  font-family: system-ui, sans-serif;
+}
+.reference-line {
+  --mm: calc(96px / 25.4);
+  --scale: 1;
+  --len-mm: 50;
+  width: calc(var(--len-mm) * var(--mm) * var(--scale));
+  height: 0;
+  border-top: 3px solid red;
+  margin: 12px 0 20px;
+}
+.a4-preview {
+  --mm: calc(96px / 25.4);
+  --scale: 1;
+  width: calc(210 * var(--mm) * var(--scale));
+  height: calc(297 * var(--mm) * var(--scale));
+  outline: 3px solid red;
+  margin-top: 16px;
+  background: repeating-linear-gradient(90deg, rgba(255,0,0,.08) 0 1px, transparent 1px 10px);
+}
+.actions { display:flex; gap:8px; margin-top:16px; }
+button { cursor:pointer; }

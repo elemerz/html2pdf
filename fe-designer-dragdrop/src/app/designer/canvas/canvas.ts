@@ -52,6 +52,11 @@ export class CanvasComponent implements AfterViewInit, OnDestroy {
   protected readonly A4_WIDTH_MM = A4_WIDTH_MM;
   protected readonly A4_HEIGHT_MM = A4_HEIGHT_MM;
   protected readonly shouldCenterCanvas = signal(true);
+  protected readonly screenCalibrationScale = computed(() => {
+    const saved = localStorage.getItem('trueSizeScale');
+    const v = saved ? parseFloat(saved) : 1;
+    return Number.isFinite(v) && v > 0 ? v : 1;
+  });
 
   private viewInitialized = false;
   private stopZoomEffect = effect(() => {

@@ -8,13 +8,13 @@
   data-testid="canvas">
   <div 
     class="a4-sheet-wrapper"
-    [style.width.px]="A4_WIDTH_MM * MM_TO_PX * canvasScale()"
-    [style.height.px]="A4_HEIGHT_MM * MM_TO_PX * canvasScale()">
+    [style.width.px]="A4_WIDTH_MM * MM_TO_PX * canvasScale() * screenCalibrationScale()"
+    [style.height.px]="A4_HEIGHT_MM * MM_TO_PX * canvasScale() * screenCalibrationScale()">
     <div class="a4-sheet" 
       #sheet
       [style.width.mm]="A4_WIDTH_MM"
       [style.height.mm]="A4_HEIGHT_MM"
-      [style.transform]="'scale(' + canvasScale() + ')'"
+      [style.transform]="'scale(' + canvasScale() * screenCalibrationScale() + ')'"
       [style.transform-origin]="'top left'">
       
       <!-- Grid Background (SVG Pattern) -->
@@ -50,7 +50,7 @@
           [element]="element"
           [isSelected]="element.id === selectedElementId()"
           [gridSize]="logicalGridSize()"
-          [mmToPx]="MM_TO_PX * canvasScale()"
+          [mmToPx]="MM_TO_PX * canvasScale() * screenCalibrationScale()"
           [pageGutters]="pageGutters()">
         </app-canvas-element>
       }

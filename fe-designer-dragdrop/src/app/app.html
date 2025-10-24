@@ -9,7 +9,8 @@
       (onClose)="onCloseLayout()"
       (onUndo)="onUndo()"
       (onRedo)="onRedo()"
-      (onOptions)="onOptions()">
+      (onOptions)="onOptions()"
+      (onCalibrate)="onCalibrateScreen()">
     </app-menu-bar>
   </div>
 
@@ -76,4 +77,8 @@
   <app-options-dialog
     (close)="closeOptionsDialog()">
   </app-options-dialog>
+}
+
+@if (showCalibrationDialog()) {
+  <app-screen-calibration-dialog (close)="closeCalibrationDialog()"></app-screen-calibration-dialog>
 }
