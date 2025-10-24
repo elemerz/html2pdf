@@ -97,14 +97,14 @@
                 <div class="property-field">
                   <label class="property-label">Width (px)</label>
                   <input type="number" min="0" step="1" class="property-input"
-                         [value]="element.properties?.tableBorderWidth || 0"
-                         (input)="updateElementProperties({ tableBorderWidth: Math.max(0, +$any($event.target).value) })" />
+                         [value]="getTableBorderWidth()"
+                         (input)="onBorderWidthChange($any($event.target).value)" />
                 </div>
                 <div class="property-field">
                   <label class="property-label">Style</label>
                   <select class="property-input"
-                          [value]="element.properties?.tableBorderStyle || 'solid'"
-                          (change)="updateElementProperties({ tableBorderStyle: $any($event.target).value })">
+                          [value]="getTableBorderStyle()"
+                          (change)="onBorderStyleChange($any($event.target).value)">
                     <option value="none">none</option>
                     <option value="solid">solid</option>
                     <option value="dashed">dashed</option>
@@ -115,8 +115,8 @@
                 <div class="property-field">
                   <label class="property-label">Color</label>
                   <input type="color" class="property-input"
-                         [value]="element.properties?.tableBorderColor || '#000000'"
-                         (input)="updateElementProperties({ tableBorderColor: $any($event.target).value })" />
+                         [value]="getTableBorderColor()"
+                         (input)="onBorderColorChange($any($event.target).value)" />
                 </div>
               </div>
             </div>

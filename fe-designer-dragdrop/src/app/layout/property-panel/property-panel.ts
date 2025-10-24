@@ -160,6 +160,14 @@ export class PropertyPanelComponent {
     }
   }
 
+  // Table border helpers
+  getTableBorderWidth(): number { const el = this.selectedElement(); return el ? (el.properties?.['tableBorderWidth'] ?? 0) : 0; }
+  getTableBorderStyle(): string { const el = this.selectedElement(); return el ? (el.properties?.['tableBorderStyle'] ?? 'solid') : 'solid'; }
+  getTableBorderColor(): string { const el = this.selectedElement(); return el ? (el.properties?.['tableBorderColor'] ?? '#000000') : '#000000'; }
+  onBorderWidthChange(v: any) { this.updateElementProperties({ tableBorderWidth: Math.max(0, Number(v) || 0) }); }
+  onBorderStyleChange(style: any) { this.updateElementProperties({ tableBorderStyle: String(style) }); }
+  onBorderColorChange(color: any) { this.updateElementProperties({ tableBorderColor: String(color) }); }
+
   private normalizeNumber(value: number, fallback: number = 0): number {
     if (Number.isFinite(value)) {
       return value;
