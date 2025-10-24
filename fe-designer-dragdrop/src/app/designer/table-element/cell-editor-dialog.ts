@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter } from '@angular/core';
+import {Component, Input, Output, EventEmitter, OnInit} from '@angular/core';
 import Quill from 'quill';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -11,11 +11,12 @@ import { QuillModule } from 'ngx-quill';
   templateUrl: './cell-editor-dialog.html',
   styleUrl: './cell-editor-dialog.less'
 })
-export class CellEditorDialogComponent {
+export class CellEditorDialogComponent implements OnInit {
   @Input() initialContent: string = '';
   @Output() closed = new EventEmitter<void>();
   @Output() saved = new EventEmitter<string>();
 
+  quill!: Quill;
   contentValue = '';
 
   quillModules = {
@@ -28,6 +29,14 @@ export class CellEditorDialogComponent {
       ['link', 'image']
     ]
   };
+
+  onEditorCreated(q: Quill) {
+    this.quill = q;
+  }
+  private quillHtmlToXhtml(html: string): string {
+    //replace all <br> instances with their self-closing counterpart: <br/>:
+    return html.replaceAll('<br>', '<br/>');
+  }
 
   ngOnInit(): void {
     // Dynamic registration (in case global setup not loaded)
@@ -49,8 +58,15 @@ export class CellEditorDialogComponent {
   }
 
   save(): void {
-    const html = this.contentValue && this.contentValue.trim().length ? this.contentValue : '&nbsp;';
-    this.saved.emit(html);
+    //const raw = this.contentValue && this.contentValue.trim().length ? this.contentValue : '&nbsp;';
+    const raw = this.contentValue && this.contentValue.trim().length ? this.quill.root.innerHTML : '&nbsp;';
+    let xhtml = raw;
+    try {
+      xhtml = this.quillHtmlToXhtml(raw);
+    } catch {
+      // fallback to raw if parsing fails
+    }
+    this.saved.emit(xhtml);
     this.close();
   }
 
