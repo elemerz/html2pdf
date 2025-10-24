@@ -25,6 +25,18 @@ export class PropertyPanelComponent {
     }
   }
 
+  updateElementProperties(patch: Record<string, any>) {
+    const el = this.selectedElement();
+    if (!el) return;
+    const nextProps = { ...(el.properties||{}), ...patch };
+    this.updateElement({ properties: nextProps });
+  }
+    const el = this.selectedElement();
+    if (el) {
+      this.designerState.updateElement(el.id, updates);
+    }
+  }
+
   updatePosition(x: number, y: number) {
     const el = this.selectedElement();
     if (!el) return;
