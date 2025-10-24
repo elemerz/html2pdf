@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { CanvasElement, A4_WIDTH_MM, A4_HEIGHT_MM } from '../../shared/models/schema';
 import { DesignerStateService, PageGutters } from '../../core/services/designer-state.service';
 import { TableElementComponent } from '../table-element/table-element';
+import { CellEditorDialogComponent } from '../table-element/cell-editor-dialog';
 
 type ResizeHandle =
   | 'top'
@@ -16,7 +17,7 @@ type ResizeHandle =
 
 @Component({
   selector: 'app-canvas-element',
-  imports: [CommonModule, TableElementComponent],
+  imports: [CommonModule, TableElementComponent, CellEditorDialogComponent],
   templateUrl: './canvas-element.html',
   styleUrl: './canvas-element.less',
   standalone: true,
@@ -369,5 +370,20 @@ export class CanvasElementComponent {
     return { x: snapX, y: snapY };
   }
 
+  protected showDivEditor = signal(false);
+
+  protected onEditDivContent(): void {
+    this.designerState.selectElement(this.element.id);
+    this.showDivEditor.set(true);
+  }
+
+  protected onDivEditorSaved(html: string): void {
+    this.designerState.updateElement(this.element.id, { content: html });
+    this.showDivEditor.set(false);
+  }
+
+  protected onDivEditorClosed(): void {
+    this.showDivEditor.set(false);
+  }
 }
 

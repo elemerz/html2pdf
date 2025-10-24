@@ -24,7 +24,14 @@
       <div class="element-text">{{ element.content }}</div>
     }
     @case ('div') {
-      <div class="element-container">div</div>
+      <div class="element-container" (click)="$event.stopPropagation()">
+        <div class="div-content" [innerHTML]="element.content"></div>
+        @if (isSelected) {
+          <div class="element-actions">
+            <button type="button" class="element-action" (click)="onEditDivContent()" title="Edit Content">✏</button>
+          </div>
+        }
+      </div>
     }
     @case ('section') {
       <div class="element-container">section</div>
@@ -78,4 +85,12 @@
 <!-- Overlay to close context menu -->
 @if (showContextMenu()) {
   <div class="context-menu-overlay" (click)="closeContextMenu()"></div>
+}
+
+@if (showDivEditor()) {
+  <app-cell-editor-dialog
+    [initialContent]="element.content"
+    (saved)="onDivEditorSaved($event)"
+    (closed)="onDivEditorClosed()"
+  ></app-cell-editor-dialog>
 }
