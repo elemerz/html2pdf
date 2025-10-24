@@ -6,7 +6,7 @@
   align-items: flex-start;
   justify-content: center;
   padding: 40px;
-  z-index: 1050;
+  z-index: 1001;
 }
 .calibration-dialog {
   background: white;
@@ -23,20 +23,21 @@
 .reference-line {
   --mm: calc(96px / 25.4);
   --scale: 1;
-  --len-mm: 50;
+  --len-mm: 100;
   width: calc(var(--len-mm) * var(--mm) * var(--scale));
   height: 0;
   border-top: 3px solid red;
   margin: 12px 0 20px;
 }
 .a4-preview {
+  box-sizing: border-box;
   --mm: calc(96px / 25.4);
   --scale: 1;
   width: calc(210 * var(--mm) * var(--scale));
   height: calc(297 * var(--mm) * var(--scale));
-  outline: 3px solid red;
+  border: 3px solid red;
   margin-top: 16px;
   background: repeating-linear-gradient(90deg, rgba(255,0,0,.08) 0 1px, transparent 1px 10px);
 }
-.actions { display:flex; gap:8px; margin-top:16px; }
+.actions { display:inline flex; gap:8px; margin-left:16px; }
 button { cursor:pointer; }

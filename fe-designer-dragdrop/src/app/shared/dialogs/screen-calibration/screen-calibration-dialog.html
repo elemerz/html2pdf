@@ -2,15 +2,14 @@
   <div class="calibration-dialog" (click)="onDialogClick($event)">
     <h1>Screen Calibration</h1>
     <p>Measure the red line below with a real ruler.</p>
-    <div class="reference-line" style="--len-mm:50" [style.--scale]="scaleFactor()"></div>
+    <div class="reference-line" style="--len-mm:100" [style.--scale]="scaleFactor()"></div>
     <form (submit)="$event.preventDefault(); applyCalibration();">
-      <p>It should be <strong>50 mm</strong>. Enter what you actually measured:</p>
-      <input type="number" step="0.1" min="1" style="width:8ch" [(ngModel)]="measuredLength" name="measured"> mm
-      <div class="actions">
-        <button type="submit">Apply</button>
+      <p>It should be <strong>100 mm</strong>. Enter what you actually measured:</p>
+      <input type="number" step="0.1" min="1" style="width:8ch" [(ngModel)]="measuredLength" name="measured" (change)="applyCalibration()"> mm
+      <span class="actions">
         <button type="button" (click)="resetCalibration()">Reset</button>
         <button type="button" (click)="close.emit()">Close</button>
-      </div>
+      </span>
     </form>
     <h2>Preview A4 (True-size)</h2>
     <div class="a4-preview" [style.--scale]="scaleFactor()"></div>

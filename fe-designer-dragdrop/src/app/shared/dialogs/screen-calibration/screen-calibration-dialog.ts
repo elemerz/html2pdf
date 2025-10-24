@@ -19,9 +19,10 @@ export class ScreenCalibrationDialogComponent implements OnInit {
 
   // The measured length entered by the user (in mm)
   protected measuredLength = signal<number | null>(null);
-  protected readonly referenceMm = 50;
+  protected readonly referenceMm = 100;
   // Current applied scale factor
-  protected scaleFactor = signal(1);
+  protected scaleFactor = signal(1.0); //will be overridden in ngOnInit
+  private scaleFactorInitial: number = 1; //will be overridden in ngOnInit
 
   ngOnInit(): void {
     const saved = localStorage.getItem(CALIBRATION_KEY);
@@ -33,6 +34,7 @@ export class ScreenCalibrationDialogComponent implements OnInit {
     }
     // Pre-populate measured value based on scale: measured = reference / scale
     const currentScale = this.scaleFactor();
+    this.scaleFactorInitial = currentScale;
     const measured = this.referenceMm / currentScale;
     this.measuredLength.set(Math.round(measured * 100) / 100);
   }
@@ -40,7 +42,7 @@ export class ScreenCalibrationDialogComponent implements OnInit {
   applyCalibration(): void {
     const measured = this.measuredLength();
     if (!measured || measured <= 0) return;
-    // Target reference length is 50mm; scale = target / measured
+    // Target reference length is 100mm; scale = target / measured
     const scale = this.referenceMm / measured;
     this.scaleFactor.set(scale);
     localStorage.setItem(CALIBRATION_KEY, String(scale));
@@ -48,11 +50,12 @@ export class ScreenCalibrationDialogComponent implements OnInit {
   }
 
   resetCalibration(): void {
-    this.scaleFactor.set(1);
+    this.scaleFactor.set(this.scaleFactorInitial);
     localStorage.removeItem(CALIBRATION_KEY);
     this.designerState.setCalibrationScale(1);
     // Reset measured value to reference
     this.measuredLength.set(this.referenceMm);
+    localStorage.setItem(CALIBRATION_KEY, String(this.scaleFactor()));
   }
 
   onOverlayClick() { this.close.emit(); } // Clicking outside closes
