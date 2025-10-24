@@ -101,3 +101,11 @@ Please implement the new Calibrate screen based on this sample file. (If you reu
   previously saved to localStorage, or use the value = 50, if no trueSizeScale was saved previously.
 - Fix 3: "Apply" and "Reset" buttons should NOT close the secreen calibration dialog!
 - Fix 4: "Screen Calibration Dialog" should be vertically scrollable.
+
+=== Properties Pane: Add Table Border ===
+For a Table object drag/dropped to the canvas, please add to its Property Pane (right-side):
+   - Border properties (under Rows,Columns section).
+   - width(spinner)
+   - Style(dropdown)
+   - Color(color selector dialog)
+   
