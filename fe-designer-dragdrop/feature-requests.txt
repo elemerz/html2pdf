@@ -94,4 +94,10 @@ Please implement the new Calibrate screen based on this sample file. (If you reu
  - Rename / move it accordingly
  - Read the user comments in the file, specially at line 11.
 
- 
+
+- Fix 1: The trueSizeScale is calculated correctly, and saved to localStorage, but, it is NOT APPLIED in style attribute of .a4-sheet element!
+- Fix 2: When I open "Screen Calibration Dialog": please, pre-populate the measured value (input[name="measured"]). 
+  Calculate it, based on the value of trueSizeScale (for trueSizeScale = 1, it should be 50).
+  previously saved to localStorage, or use the value = 50, if no trueSizeScale was saved previously.
+- Fix 3: "Apply" and "Reset" buttons should NOT close the secreen calibration dialog!
+- Fix 4: "Screen Calibration Dialog" should be vertically scrollable.
