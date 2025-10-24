@@ -62,4 +62,36 @@ The requested Change:
      modifiable later via the "margin" properties (in property pane).
 - Use only elements in the normal flow (position:static).
   Use margins for positioning.
-  
+
+===== Improve Quill V2 Editor Behaviour ====
+Please change the toolbar config inside the file:@src/app/designer/table-element/cell-editor-dialog.ts, so that:
+- "font-family"-selection dropdown: instead of the actual, generic font categories: ['Sans Serif', 'Serif', 'Monospace']
+  I have the name of the most popular font families: [Arial, Helvetica, Verdana, Tahoma, Trebuchet MS, TimesNew Roman, Georgia, Roboto, Open Sans, Lato, Montserrat, Poppins];
+- "font-size"-selection dropdown: instead of the actual: [Small,Normal,Large,Huge], I want to have exact font sizes in points, like [6,7,8,9,10,11,12,13,14,15,16,17,18,20,24,28,32];
+- "line-height"-selection dropdown: instead of the current empty dropdown, I want to have the list of most useful values.
+
+=== New Feture request: Zoom 1:1 ===
+Currently we have 3 zoom options in the Menu/View: "Zoom to fit", "Zoom to width" and "Zoom to height".
+Add a new Zoom Option: Zoom 1:1. This means, that when I place a physical A4 sheet over my screen, the 
+.a4-sheet element has exactly the same width and height as my physical paper. (in other words, they perfectly cover
+each other. When Using this zoom, take care to:
+ - Center the page horizontally on screen
+ - Scroll top, so the topmost pixels are in the viewport.
+
+=== Add Screen Calibration Page ===
+When setting the size of the canvas page (.a4-sheet in file:@src/app/designer/canvas/canvas.html) via the inline style attribute:
+```
+width: 210mm; height: 297mm; transform: scale(1); transform-origin: left top;
+```
+you must multiply the width (in our case: 210mm) and the height (in our case: 297mm) with a so-called 
+scaling factor.
+This scaling factor by default = 1, but it can vary depending on parameters like: display scaling, Chrome zoom, 
+device-pixel-ratio, the spec’s “reference pixel”, etc.
+To give the user the possibility to set the scaling factor for his/her screen, please:
+- Add new option to the "View Menu" (right after the "Zoom 1:1 (Actual Size)"): "Calibrate Screen".
+Based on the following sample: @src/sample-screen-calibration.html
+Please implement the new Calibrate screen based on this sample file. (If you reuse this exact file, then please:
+ - Rename / move it accordingly
+ - Read the user comments in the file, specially at line 11.
+
+ 
