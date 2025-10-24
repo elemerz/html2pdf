@@ -69,6 +69,7 @@ export class DesignerStateService {
   readonly logicalGridSize = signal(1); // Snap-to-grid quantum in mm
   readonly canvasScale = signal(1);
   readonly visualGridColor = signal('#1d4ed8');
+  readonly calibrationScale = signal(1);
   readonly canvasZoomMode = signal<CanvasZoomMode>('fit');
   readonly pageGutters = signal<PageGutters>({
     top: 10,
@@ -321,6 +322,13 @@ export class DesignerStateService {
   }
 
   setCanvasZoomMode(mode: CanvasZoomMode) {
+    this.canvasZoomMode.set(mode);
+  }
+
+  setCalibrationScale(scale: number) {
+    if (!Number.isFinite(scale) || scale <= 0) scale = 1;
+    this.calibrationScale.set(scale);
+  }
     this.canvasZoomMode.set(mode);
   }
 

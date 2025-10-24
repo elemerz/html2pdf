@@ -44,11 +44,13 @@ export class ScreenCalibrationDialogComponent implements OnInit {
     const scale = this.referenceMm / measured;
     this.scaleFactor.set(scale);
     localStorage.setItem(CALIBRATION_KEY, String(scale));
+    this.designerState.setCalibrationScale(scale);
   }
 
   resetCalibration(): void {
     this.scaleFactor.set(1);
     localStorage.removeItem(CALIBRATION_KEY);
+    this.designerState.setCalibrationScale(1);
     // Reset measured value to reference
     this.measuredLength.set(this.referenceMm);
   }
