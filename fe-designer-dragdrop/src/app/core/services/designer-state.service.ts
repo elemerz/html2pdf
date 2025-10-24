@@ -329,8 +329,6 @@ export class DesignerStateService {
     if (!Number.isFinite(scale) || scale <= 0) scale = 1;
     this.calibrationScale.set(scale);
   }
-    this.canvasZoomMode.set(mode);
-  }
 
   setPageGutters(gutters: PageGutters) {
     const normalized = this.normalizePageGutters(gutters);
