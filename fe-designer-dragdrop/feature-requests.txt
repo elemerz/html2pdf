@@ -127,3 +127,16 @@ For a Table object drag/dropped to the canvas, please add to its Property Pane (
    - Color(color selector dialog)
 
 === Add new Table properties: id, role to the Properties Pane ===
+For any element dropped to the canvas, please add the following 2 new properties in the Property Pane, 
+right after the Type property-field:
+- id: text-field, maxLength:20 characters
+- role: dropdown with the following discrete values: Header;Body;Footer
+For different roles, use different background colors for the selected td:
+ - role="Body": background-color: td.selected hsla(217, 91%, 48%, 0.12)
+ 
+=== Add content Editor for <div> elements ===
+"Edit Cell Content" functionality is already available for <td> elements, see files:
+ - @src/app/designer/table-element/table-element.html)
+ - src/app/designer/table-element/table-element.ts
+Please extend content editing also for <div> elements. Please reuse (as much as possible) the functioanlity
+available for <td> elements.
