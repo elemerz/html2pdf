@@ -210,7 +210,13 @@ export class CanvasComponent implements AfterViewInit, OnDestroy {
     const zoomMode = this.designerState.canvasZoomMode();
     let scale: number;
 
-    if (zoomMode === 'width') {
+    if (zoomMode === 'actual') {
+      // 1:1 scale; top-left visible; horizontal centering handled by flex container.
+      scale = 1;
+      workspaceEl.scrollTop = 0;
+      // Disable vertical centering regardless of available space.
+      this.shouldCenterCanvas.set(false);
+    } else if (zoomMode === 'width') {
       scale = workspaceWidth / baseWidth;
     } else if (zoomMode === 'height') {
       scale = workspaceHeight / baseHeight;
@@ -221,7 +227,9 @@ export class CanvasComponent implements AfterViewInit, OnDestroy {
     if (!isFinite(scale) || scale <= 0) return;
 
     const scaledHeight = baseHeight * scale;
-    this.shouldCenterCanvas.set(scaledHeight <= workspaceHeight);
+    if (zoomMode !== 'actual') {
+      this.shouldCenterCanvas.set(scaledHeight <= workspaceHeight);
+    }
 
     this.designerState.setCanvasScale(scale);
   }

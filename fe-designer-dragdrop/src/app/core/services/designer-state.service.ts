@@ -20,7 +20,7 @@ export interface TableCellSelection {
   col: number;
 }
 
-export type CanvasZoomMode = 'fit' | 'width' | 'height';
+export type CanvasZoomMode = 'fit' | 'width' | 'height' | 'actual';
 
 @Injectable({
   providedIn: 'root'

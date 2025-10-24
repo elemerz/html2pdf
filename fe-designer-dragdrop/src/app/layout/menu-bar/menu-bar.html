@@ -92,6 +92,13 @@
           data-testid="menu-view-zoom-height">
           <span>Zoom To Height</span>
         </button>
+        <button 
+          class="dropdown-item" 
+          (click)="handleZoom('actual')" 
+          [class.active]="canvasZoomMode() === 'actual'"
+          data-testid="menu-view-zoom-actual">
+          <span>Zoom 1:1 (Actual Size)</span>
+        </button>
       </div>
     }
   </div>
