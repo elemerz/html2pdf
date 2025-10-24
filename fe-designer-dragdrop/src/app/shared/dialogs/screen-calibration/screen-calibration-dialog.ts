@@ -19,6 +19,7 @@ export class ScreenCalibrationDialogComponent implements OnInit {
 
   // The measured length entered by the user (in mm)
   protected measuredLength = signal<number | null>(null);
+  protected readonly referenceMm = 50;
   // Current applied scale factor
   protected scaleFactor = signal(1);
 
@@ -30,24 +31,28 @@ export class ScreenCalibrationDialogComponent implements OnInit {
         this.scaleFactor.set(parsed);
       }
     }
+    // Pre-populate measured value based on scale: measured = reference / scale
+    const currentScale = this.scaleFactor();
+    const measured = this.referenceMm / currentScale;
+    this.measuredLength.set(Math.round(measured * 100) / 100);
   }
 
   applyCalibration(): void {
     const measured = this.measuredLength();
     if (!measured || measured <= 0) return;
     // Target reference length is 50mm; scale = target / measured
-    const scale = 50 / measured;
+    const scale = this.referenceMm / measured;
     this.scaleFactor.set(scale);
     localStorage.setItem(CALIBRATION_KEY, String(scale));
-    this.close.emit();
   }
 
   resetCalibration(): void {
     this.scaleFactor.set(1);
     localStorage.removeItem(CALIBRATION_KEY);
-    this.close.emit();
+    // Reset measured value to reference
+    this.measuredLength.set(this.referenceMm);
   }
 
-  onOverlayClick() { this.close.emit(); }
+  onOverlayClick() { this.close.emit(); } // Clicking outside closes
   onDialogClick(event: MouseEvent) { event.stopPropagation(); }
 }

@@ -2,7 +2,7 @@
   <div class="calibration-dialog" (click)="onDialogClick($event)">
     <h1>Screen Calibration</h1>
     <p>Measure the red line below with a real ruler.</p>
-    <div class="reference-line" style="--len-mm:50"></div>
+    <div class="reference-line" style="--len-mm:50" [style.--scale]="scaleFactor()"></div>
     <form (submit)="$event.preventDefault(); applyCalibration();">
       <p>It should be <strong>50 mm</strong>. Enter what you actually measured:</p>
       <input type="number" step="0.1" min="1" style="width:8ch" [(ngModel)]="measuredLength" name="measured"> mm
@@ -14,5 +14,6 @@
     </form>
     <h2>Preview A4 (True-size)</h2>
     <div class="a4-preview" [style.--scale]="scaleFactor()"></div>
+    <p class="note">Scale factor: {{ scaleFactor() | number:'1.3-3' }} (Measured: {{ measuredLength() }}mm for {{ referenceMm }}mm reference)</p>
   </div>
 </div>
