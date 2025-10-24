@@ -353,8 +353,8 @@ export class DesignerStateService {
             const leftMargin = el.x;
             lastFlowBottom = el.y + el.height;
             firstFlow = false;
-            const tableHtml = this.serializeTableElement(el, '');
-            return `<div class="flow-wrapper" style="margin-top:${this.formatMillimeters(topMargin)}mm;margin-left:${this.formatMillimeters(leftMargin)}mm;width:${this.formatMillimeters(el.width)}mm;">\n${tableHtml}\n      </div>`;
+            const tableHtml = this.serializeTableElement(el, `margin-top:${this.formatMillimeters(topMargin)}mm;margin-left:${this.formatMillimeters(leftMargin)}mm;width:${this.formatMillimeters(el.width)}mm;`);
+            return tableHtml;
         }
         return this.serializeElementToXhtml(el);
       })
@@ -376,7 +376,6 @@ export class DesignerStateService {
       `    <title>${safeTitle}</title>\n` +
       `    <style type="text/css" media="all">\n` +
       `${commonStyles}\n` +
-      `      .flow-wrapper { position: static; box-sizing: border-box; }\n` +
       `    </style>\n` +
       `  </head>\n` +
       `  <body>\n${bodyContent}  </body>\n</html>`;
@@ -453,7 +452,11 @@ export class DesignerStateService {
       })
       .join('\n');
 
-    return `<table class="element element-table" style="${style}">\n` +
+    const bw = element.properties?.['tableBorderWidth'];
+    const bs = element.properties?.['tableBorderStyle'];
+    const bc = element.properties?.['tableBorderColor'];
+    const borderCss = (bw ? `border-width:${bw}px;` : '') + (bs ? `border-style:${bs};` : '') + (bc ? `border-color:${bc};` : '');
+    return `<table class="element element-table" style="${style}${borderCss}">\n` +
       `    <tbody>\n${rowsMarkup}\n    </tbody>\n  </table>`;
   }
 
