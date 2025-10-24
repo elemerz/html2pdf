@@ -63,6 +63,23 @@ The requested Change:
 - Use only elements in the normal flow (position:static).
   Use margins for positioning.
 
+== Change Request: Eliminate use of positioned elements ===
+Why:
+The produced XHTML will be processed by some rudimentary 3rd-party CSS2-engine (out of our control). This CSS2 engine
+is generating PDF reports from our downloaded XHTML file. This CSS2-engine does not handle positioned elements correctly!
+The requested Change:
+- When placing elements to the canvas, we are NOT ALLOWED to use positioned elements anymore so, please change the 
+  implementation in the following way:
+- When an element (only Table for now, but we will support also others elements like <div> soon) is dropped to the 
+  canvas, determine its placement as follows:
+  - If it is the first element on the canvas: it can be placed whereever we want.
+  - If there are already elements on the canvas: it must be "snapped" either "right-before", or "right-after" an 
+    existing element, called ReferenceElement.
+   - At the moment of "dropping", the distance between the new element and the reference element should be 0 by default,
+     modifiable later via the "margin" properties (in property pane).
+- Use only elements in the normal flow (position:static).
+  Use margins for positioning.
+
 ===== Improve Quill V2 Editor Behaviour ====
 Please change the toolbar config inside the file:@src/app/designer/table-element/cell-editor-dialog.ts, so that:
 - "font-family"-selection dropdown: instead of the actual, generic font categories: ['Sans Serif', 'Serif', 'Monospace']
@@ -108,4 +125,5 @@ For a Table object drag/dropped to the canvas, please add to its Property Pane (
    - width(spinner)
    - Style(dropdown)
    - Color(color selector dialog)
-   
+
+=== Add new Table properties: id, role to the Properties Pane ===

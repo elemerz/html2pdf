@@ -3,9 +3,9 @@
 
 <div class="table-element-container">
   <table class="element-table" aria-label="Table element"
-         [style.border-width.px]="element.properties?.['tableBorderWidth'] || 0"
-         [style.border-style]="element.properties?.['tableBorderStyle'] || 'solid'"
-         [style.border-color]="element.properties?.['tableBorderColor'] || '#000000'">
+         [style.border-width.px]="element.properties['tableBorderWidth'] || 0"
+         [style.border-style]="element.properties['tableBorderStyle'] || 'solid'"
+         [style.border-color]="element.properties['tableBorderColor'] || '#000000'">
     <tbody>
       @for (rowSize of rowSizes; track $index; let rowIndex = $index) {
         <tr [style.height.mm]="element.height * rowSize">
