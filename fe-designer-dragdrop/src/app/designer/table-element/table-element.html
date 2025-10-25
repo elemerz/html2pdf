@@ -11,7 +11,6 @@
               [style.width.mm]="element.width * colSize"
               [style.height.mm]="element.height * rowSize"
               (click)="onCellClick($event, rowIndex, colIndex)"
-              (contextmenu)="onCellContextMenu($event, rowIndex, colIndex)"
               [class.selected]="isCellSelected(rowIndex, colIndex)"
               [style.padding]="getCellPaddingString(rowIndex,colIndex)"
               [style.text-align]="getCellHAlign(rowIndex,colIndex)"
@@ -60,38 +59,33 @@
     }
   }
 
-  @if (showContextMenu()) {
-    <div
-      class="table-context-menu"
-      [style.left.px]="contextMenuPosition().x"
-      [style.top.px]="contextMenuPosition().y"
-      (click)="$event.stopPropagation()"
-    >
-      <button class="context-item" type="button" (click)="onSplitHorizontally()">
-        Split Horizontally by "n" (default 2)
-      </button>
-      <button class="context-item" type="button" (click)="onSplitVertically()">
-        Split Vertically by "n" (default 2)
-      </button>
-    </div>
-  }
-
   @let cellOffsets = getSelectedCellOffsets();
   @if (cellOffsets) {
-    <div
-      class="cell-actions-toolbar"
-      [style.left.mm]="cellOffsets.left + cellOffsets.width / 2"
-      [style.top.mm]="cellOffsets.top"
-      (click)="$event.stopPropagation()"
-    >
-      <button class="cell-action" type="button" (click)="onEditCellContent()" title="Edit Cell Content">✏</button>
-    </div>
+    <!-- Actions trigger button (gear icon) -->
+    <button
+      class="cell-actions-trigger"
+      [style.left.mm]="cellOffsets.left + cellOffsets.width - 5"
+      [style.top.mm]="cellOffsets.top + 2"
+      (click)="toggleActionsToolbar(); $event.stopPropagation()"
+      title="Actions"
+      type="button"
+    >⚙</button>
+
+    <!-- Actions toolbar (shown when toggled) -->
+    @if (showActionsToolbar()) {
+      <div
+        class="cell-actions-toolbar"
+        [style.left.mm]="cellOffsets.left + cellOffsets.width / 2"
+        [style.top.mm]="cellOffsets.top"
+        (click)="$event.stopPropagation()"
+      >
+        <button class="cell-action" type="button" (click)="onEditCellContent()" title="Edit Cell Content">✏</button>
+        <button class="cell-action" type="button" (click)="onSplitRowsFromToolbar()" title="Split Rows">⬌</button>
+        <button class="cell-action" type="button" (click)="onSplitColsFromToolbar()" title="Split Columns">⬍</button>
+      </div>
+    }
   }
 </div>
-
-@if (showContextMenu()) {
-  <div class="table-context-menu-overlay" (click)="closeContextMenu()"></div>
-}
 
 @if (showCellEditor()) {
   <app-cell-editor-dialog

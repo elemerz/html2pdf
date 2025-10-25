@@ -104,42 +104,34 @@
   }
 }
 
-.table-context-menu {
+.cell-actions-trigger {
   position: absolute;
-  min-width: 200px;
-  background-color: @popover;
-  border: 1px solid @popover-border;
-  border-radius: @radius;
-  box-shadow: @shadow-lg;
-  z-index: @z-popover;
-  overflow: hidden;
-}
-
-.context-item {
-  width: 100%;
-  padding: 10px 16px;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  background-color: @primary;
+  color: @primary-foreground;
   border: none;
-  background: transparent;
-  color: @popover-foreground;
-  text-align: left;
-  font-size: 14px;
+  border-radius: 50%;
   cursor: pointer;
-  transition: background-color @transition-fast;
-
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: @shadow-sm;
+  z-index: @z-popover;
+  transform: translate(-50%, 0);
+  transition: all @transition-fast;
+  
   &:hover {
-    background-color: @accent;
+    background-color: darken(@primary, 10%);
+    transform: translate(-50%, 0) scale(1.1);
   }
-}
-
-.table-context-menu-overlay {
-  position: absolute;
-  inset: 0;
-  z-index: @z-popover - 1;
 }
 
 .cell-actions-toolbar {
   position: absolute;
-  transform: translate(-50%, -120%); // lifted a bit more to avoid overlap with vertical resizer
+  transform: translate(-50%, -150%); // Increased from -120% to avoid resize handle overlap
   display: flex;
   gap: 4px;
   background-color: @primary;
@@ -163,8 +155,11 @@
   align-items: center;
   justify-content: center;
   transition: background-color @transition-fast;
+  min-width: 20px;
+  min-height: 20px;
 
   &:hover {
     background-color: fade(@primary-foreground, 15%);
+    border-radius: @radius-sm;
   }
 }

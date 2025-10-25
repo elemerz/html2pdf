@@ -34,6 +34,7 @@ export class TableElementComponent {
 
   protected showContextMenu = signal(false);
   protected contextMenuPosition = signal({ x: 0, y: 0 });
+  protected showActionsToolbar = signal(false);
   protected contextMenuCell = signal<ContextMenuCell | null>(null);
 
   protected getRowSizes(): number[] {
@@ -98,6 +99,77 @@ export class TableElementComponent {
     const selection = this.designerState.selectedTableCell();
     if (!selection || selection.elementId !== this.element.id) return;
     this.showCellEditor.set(true);
+    this.closeActionsToolbar();
+  }
+
+  protected toggleActionsToolbar(): void {
+    this.showActionsToolbar.update(v => !v);
+  }
+
+  protected closeActionsToolbar(): void {
+    this.showActionsToolbar.set(false);
+  }
+
+  protected onSplitRowsFromToolbar(): void {
+    const selection = this.designerState.selectedTableCell();
+    if (!selection || selection.elementId !== this.element.id) return;
+    
+    const parts = this.promptForSplit('row');
+    if (!parts) {
+      this.closeActionsToolbar();
+      return;
+    }
+
+    const rowSizes = this.getRowSizes();
+    if (!rowSizes.length) {
+      this.closeActionsToolbar();
+      return;
+    }
+
+    const currentSize = rowSizes[selection.row];
+    if (currentSize <= 0) {
+      this.closeActionsToolbar();
+      return;
+    }
+
+    const newSizesSegment = Array.from({ length: parts }, () => currentSize / parts);
+    const updatedRows = [...rowSizes];
+    updatedRows.splice(selection.row, 1, ...newSizesSegment);
+
+    this.applyTableSizes(updatedRows, this.getColSizes());
+    this.designerState.selectTableCell(this.element.id, selection.row, selection.col);
+    this.closeActionsToolbar();
+  }
+
+  protected onSplitColsFromToolbar(): void {
+    const selection = this.designerState.selectedTableCell();
+    if (!selection || selection.elementId !== this.element.id) return;
+    
+    const parts = this.promptForSplit('col');
+    if (!parts) {
+      this.closeActionsToolbar();
+      return;
+    }
+
+    const colSizes = this.getColSizes();
+    if (!colSizes.length) {
+      this.closeActionsToolbar();
+      return;
+    }
+
+    const currentSize = colSizes[selection.col];
+    if (currentSize <= 0) {
+      this.closeActionsToolbar();
+      return;
+    }
+
+    const newSizesSegment = Array.from({ length: parts }, () => currentSize / parts);
+    const updatedCols = [...colSizes];
+    updatedCols.splice(selection.col, 1, ...newSizesSegment);
+
+    this.applyTableSizes(this.getRowSizes(), updatedCols);
+    this.designerState.selectTableCell(this.element.id, selection.row, selection.col);
+    this.closeActionsToolbar();
   }
 
   protected onCellEditorSaved(html: string): void {
