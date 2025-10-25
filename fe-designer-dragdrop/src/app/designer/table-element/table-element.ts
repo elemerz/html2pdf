@@ -41,9 +41,22 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
   protected showActionsToolbar = signal(false);
 
   ngAfterViewInit(): void {
-    // Test: log ALL clicks
+    // Add DOCUMENT-level listener first for debugging
+    const docListener = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (target.closest('.sub-table-cell')) {
+        console.log('🟢 DOCUMENT-LEVEL: Sub-table cell click detected!', target);
+        console.log('🟢 Closest sub-table-cell:', target.closest('.sub-table-cell'));
+      }
+    };
+    document.addEventListener('click', docListener, true);
+    
+    // Add click listener at capture phase to intercept ALL clicks including sub-table cells
     this.clickListener = (event: MouseEvent) => {
-      console.log('🔴 NATIVE CLICK EVENT CAPTURED!', event.target);
+      const target = event.target as HTMLElement;
+      console.log('🔴 NATIVE CLICK EVENT CAPTURED!', target);
+      console.log('🔴 Event phase:', event.eventPhase, 'CAPTURING=1, AT_TARGET=2, BUBBLING=3');
+      console.log('🔴 Current target:', event.currentTarget);
       this.handleNativeClick(event);
     };
     
@@ -51,14 +64,6 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
     this.hostRef.nativeElement.addEventListener('click', this.clickListener, true);
     
     console.log('✅ Native click listener attached to:', this.hostRef.nativeElement);
-    
-    // DEBUGGING: Add document-level listener to see ALL clicks
-    document.addEventListener('click', (e) => {
-      const target = e.target as HTMLElement;
-      if (target.closest('.sub-table-cell')) {
-        console.log('🟢 DOCUMENT LEVEL: Sub-table cell clicked!', target);
-      }
-    }, true);
   }
 
   ngOnDestroy(): void {
@@ -68,72 +73,18 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
   }
 
   ngAfterViewChecked(): void {
-    // Attach click handlers to any sub-table cells that don't have them yet
-    const subTableCells = this.hostRef.nativeElement.querySelectorAll('.sub-table-cell');
-    
-    subTableCells.forEach((cell: Element) => {
-      const htmlCell = cell as HTMLElement;
-      
-      // Skip if we've already attached a handler to this cell
-      if (this.subTableClickHandlersAttached.has(htmlCell)) {
-        return;
-      }
-      
-      // Attach click handler
-      htmlCell.addEventListener('click', (e: Event) => {
-        const mouseEvent = e as MouseEvent;
-        const target = mouseEvent.target as HTMLElement;
-        const clickedCell = target.closest('.sub-table-cell') as HTMLElement;
-        
-        if (!clickedCell) return;
-        
-        // Stop propagation AFTER we've found the cell
-        e.stopPropagation();
-        e.preventDefault();
-        
-        console.log('🟢 SUB-TABLE CELL DIRECT CLICK!', clickedCell);
-        
-        const subRow = parseInt(clickedCell.dataset['row'] || '0', 10);
-        const subCol = parseInt(clickedCell.dataset['col'] || '0', 10);
-        const level = parseInt(clickedCell.dataset['level'] || '1', 10);
-        
-        // Find parent TD
-        let parentTd = clickedCell.closest('td') as HTMLElement | null;
-        while (parentTd && parentTd.classList.contains('sub-table-cell')) {
-          const parentTable = parentTd.closest('table');
-          if (parentTable) {
-            parentTd = parentTable.closest('td');
-          } else {
-            parentTd = null;
-          }
-        }
-        
-        if (!parentTd) return;
-        
-        const parentRow = parseInt(parentTd.dataset['row'] || '0', 10);
-        const parentCol = parseInt(parentTd.dataset['col'] || '0', 10);
-        
-        const subTablePath = [{ row: subRow, col: subCol }];
-        this.designerState.selectElement(this.element.id);
-        this.designerState.selectTableCell(this.element.id, parentRow, parentCol, subTablePath);
-        
-        console.log(`✅ Sub-table cell selected: parent[${parentRow},${parentCol}] sub[${subRow},${subCol}] level:${level}`);
-      }, true); // Use capture phase
-      
-      // Mark this cell as having a handler
-      this.subTableClickHandlersAttached.add(htmlCell);
-    });
+    // No need to attach handlers anymore - the capture-phase listener handles everything
   }
 
   private handleNativeClick(event: MouseEvent): void {
     const target = event.target as HTMLElement;
     
-    console.log('Click detected on:', target, 'classes:', target.className);
+    console.log('🔴 Click detected on:', target, 'classes:', target.className);
     
     // Check if click was on or inside a sub-table cell
     const subTableCell = target.closest('.sub-table-cell') as HTMLElement;
     
-    console.log('Closest .sub-table-cell:', subTableCell);
+    console.log('🔴 Closest .sub-table-cell:', subTableCell);
     
     if (subTableCell) {
       event.stopPropagation();
@@ -142,12 +93,31 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
       const subCol = parseInt(subTableCell.dataset['col'] || '0', 10);
       const level = parseInt(subTableCell.dataset['level'] || '1', 10);
       
-      console.log('Sub-table cell data:', { subRow, subCol, level });
+      console.log('🔴 Sub-table cell data:', { subRow, subCol, level });
       
-      // Find which parent <td> this sub-table-cell belongs to
+      // Build the full path through all nesting levels
+      const subTablePath: Array<{ row: number; col: number }> = [];
+      
+      // Walk up from the clicked cell to collect all sub-table levels
+      let currentCell: HTMLElement | null = subTableCell;
+      while (currentCell && currentCell.classList.contains('sub-table-cell')) {
+        const r = parseInt(currentCell.dataset['row'] || '0', 10);
+        const c = parseInt(currentCell.dataset['col'] || '0', 10);
+        
+        // Add to the FRONT of the path (we're walking up)
+        subTablePath.unshift({ row: r, col: c });
+        
+        // Move to parent sub-table cell (if any)
+        const parentTable = currentCell.closest('table');
+        if (parentTable) {
+          currentCell = parentTable.closest('.sub-table-cell') as HTMLElement | null;
+        } else {
+          currentCell = null;
+        }
+      }
+      
+      // Now find the root parent <td> (not a sub-table-cell)
       let parentTd = subTableCell.closest('td') as HTMLElement | null;
-      
-      // Skip past the sub-table-cell itself and any nested sub-table-cells
       while (parentTd && parentTd.classList.contains('sub-table-cell')) {
         const parentTable = parentTd.closest('table');
         if (parentTable) {
@@ -157,7 +127,7 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
         }
       }
       
-      console.log('Parent TD found:', parentTd);
+      console.log('🔴 Parent TD found:', parentTd);
       
       if (!parentTd) return;
       
@@ -168,7 +138,7 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
       const allTds = Array.from(mainTable.querySelectorAll(':scope > tbody > tr > td'));
       const parentIndex = allTds.indexOf(parentTd);
       
-      console.log('Parent TD index:', parentIndex, 'Total TDs:', allTds.length);
+      console.log('🔴 Parent TD index:', parentIndex, 'Total TDs:', allTds.length);
       
       if (parentIndex === -1) return;
       
@@ -176,12 +146,12 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
       const parentRow = Math.floor(parentIndex / colSizes.length);
       const parentCol = parentIndex % colSizes.length;
       
-      console.log('Calculated parent position:', { parentRow, parentCol });
+      console.log('🔴 Calculated parent position:', { parentRow, parentCol });
+      console.log('🔴 SubTablePath (full):', subTablePath);
       
-      // Build path and select
-      const subTablePath = [{ row: subRow, col: subCol }];
+      // Build path and select - pass the FULL subTablePath to support all nesting levels
       this.designerState.selectElement(this.element.id);
-      this.designerState.selectTableCell(this.element.id, parentRow, parentCol, subTablePath);
+      this.designerState.selectTableCell(this.element.id, parentRow, parentCol, subTablePath.length > 0 ? subTablePath : undefined);
       
       console.log(`✅ Sub-table cell selected: parent[${parentRow},${parentCol}] sub[${subRow},${subCol}] level:${level}`);
       return;
@@ -201,7 +171,7 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
       return;
     }
     
-    console.log('Not a cell click');
+    console.log('🔴 Not a cell click');
   }
 
   protected getRowSizes(): number[] {
@@ -242,7 +212,7 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
     let width = colSizes[selection.col] * this.element.width;
     let height = rowSizes[selection.row] * this.element.height;
 
-    // If sub-table path exists, calculate sub-cell position
+    // If sub-table path exists, calculate nested sub-cell position
     if (selection.subTablePath && selection.subTablePath.length > 0) {
       const parentKey = `${selection.row}_${selection.col}`;
       const subTablesMap = this.element.properties?.['tableCellSubTables'] as Record<string, any> | undefined;
@@ -251,34 +221,57 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
       console.log('subTablesMap:', subTablesMap);
       
       if (subTablesMap && subTablesMap[parentKey]) {
-        const subTable = subTablesMap[parentKey];
-        const subCell = selection.subTablePath[0]; // For now, support one level
-        
-        console.log('Found subTable:', subTable, 'subCell:', subCell);
-        
-        const subRowSizes = subTable.rowSizes || [];
-        const subColSizes = subTable.colSizes || [];
-        
-        // Calculate offset within parent cell
-        let subTop = 0;
-        for (let r = 0; r < subCell.row; r++) {
-          subTop += subRowSizes[r] * height;
-        }
-        
-        let subLeft = 0;
-        for (let c = 0; c < subCell.col; c++) {
-          subLeft += subColSizes[c] * width;
-        }
-        
-        const subWidth = subColSizes[subCell.col] * width;
-        
-        // Add parent cell padding
+        // Add parent cell padding once at the start
         const parentPadding = this.getCellPadding(selection.row, selection.col);
-        top += subTop + parentPadding.top;
-        left += subLeft + parentPadding.left;
-        width = subWidth;
+        top += parentPadding.top;
+        left += parentPadding.left;
         
-        console.log('Sub-cell offset calculated:', { left, top, width });
+        // Walk through each level of nesting
+        let currentSubTable = subTablesMap[parentKey];
+        let currentWidth = width;
+        let currentHeight = height;
+        
+        for (let level = 0; level < selection.subTablePath.length; level++) {
+          const subCell: { row: number; col: number } = selection.subTablePath[level];
+          const subRowSizes = currentSubTable.rowSizes || [];
+          const subColSizes = currentSubTable.colSizes || [];
+          
+          console.log(`Processing level ${level}, subCell:`, subCell, 'sizes:', { subRowSizes, subColSizes });
+          
+          // Calculate offset within current level
+          let subTop = 0;
+          for (let r = 0; r < subCell.row; r++) {
+            subTop += subRowSizes[r] * currentHeight;
+          }
+          
+          let subLeft = 0;
+          for (let c = 0; c < subCell.col; c++) {
+            subLeft += subColSizes[c] * currentWidth;
+          }
+          
+          // Update position
+          top += subTop;
+          left += subLeft;
+          
+          // Update dimensions for next level (or final dimensions)
+          currentWidth = subColSizes[subCell.col] * currentWidth;
+          currentHeight = subRowSizes[subCell.row] * currentHeight;
+          
+          // If there's another level, get the nested sub-table
+          if (level < selection.subTablePath.length - 1) {
+            const nestedKey = `${subCell.row}_${subCell.col}`;
+            const nestedSubTables = currentSubTable.cellSubTables as Record<string, any> | undefined;
+            if (nestedSubTables && nestedSubTables[nestedKey]) {
+              currentSubTable = nestedSubTables[nestedKey];
+            } else {
+              console.warn(`No nested sub-table found at level ${level}, key: ${nestedKey}`);
+              break;
+            }
+          }
+        }
+        
+        width = currentWidth;
+        console.log('Final nested cell offset calculated:', { left, top, width });
       }
     }
 
@@ -478,29 +471,48 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
     let targetKey = '';
     
     if (selection.subTablePath && selection.subTablePath.length > 0) {
-      // We're splitting a sub-table cell
+      // We're splitting a sub-table cell - walk through all nesting levels
       const parentKey = `${selection.row}_${selection.col}`;
       const subTablesMap = this.element.properties?.['tableCellSubTables'] as Record<string, any> | undefined;
       
       if (subTablesMap && subTablesMap[parentKey]) {
-        const subTable = subTablesMap[parentKey];
-        currentLevel = subTable.level || 1;
+        let currentSubTable = subTablesMap[parentKey];
+        currentLevel = currentSubTable.level || 1;
         
-        // For now, support one level deep
-        const subCell = selection.subTablePath[0];
-        targetKey = `${subCell.row}_${subCell.col}`;
+        // Walk through each level except the last one (which is the cell we're splitting)
+        for (let i = 0; i < selection.subTablePath.length - 1; i++) {
+          const subCell: { row: number; col: number } = selection.subTablePath[i];
+          const cellKey = `${subCell.row}_${subCell.col}`;
+          
+          if (!currentSubTable.cellSubTables) {
+            currentSubTable.cellSubTables = {};
+          }
+          
+          if (!currentSubTable.cellSubTables[cellKey]) {
+            console.error(`Sub-table path invalid at level ${i}, key: ${cellKey}`);
+            this.closeActionsToolbar();
+            return;
+          }
+          
+          currentSubTable = currentSubTable.cellSubTables[cellKey];
+          currentLevel = currentSubTable.level || currentLevel + 1;
+        }
+        
+        // Now we're at the parent of the cell we want to split
+        const finalSubCell = selection.subTablePath[selection.subTablePath.length - 1];
+        targetKey = `${finalSubCell.row}_${finalSubCell.col}`;
         
         // Initialize cellSubTables if needed
-        if (!subTable.cellSubTables) {
-          subTable.cellSubTables = {};
+        if (!currentSubTable.cellSubTables) {
+          currentSubTable.cellSubTables = {};
         }
         
         // Check if this sub-cell already has a sub-table
-        if (subTable.cellSubTables[targetKey]) {
-          currentLevel = subTable.cellSubTables[targetKey].level || currentLevel + 1;
+        if (currentSubTable.cellSubTables[targetKey]) {
+          currentLevel = currentSubTable.cellSubTables[targetKey].level || currentLevel + 1;
         }
         
-        targetData = subTable;
+        targetData = currentSubTable;
       }
     } else {
       // We're splitting a parent table cell
