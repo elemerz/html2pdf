@@ -10,8 +10,10 @@
             <td
               [style.width.mm]="element.width * colSize"
               [style.height.mm]="element.height * rowSize"
-              (click)="onCellClick($event, rowIndex, colIndex)"
               [class.selected]="isCellSelected(rowIndex, colIndex)"
+              [attr.data-row]="rowIndex"
+              [attr.data-col]="colIndex"
+              [attr.data-has-subtable]="hasSubTable(rowIndex, colIndex) ? 'true' : null"
               [style.padding]="getCellPaddingString(rowIndex,colIndex)"
               [style.text-align]="getCellHAlign(rowIndex,colIndex)"
               [style.vertical-align]="getCellVAlign(rowIndex,colIndex)"

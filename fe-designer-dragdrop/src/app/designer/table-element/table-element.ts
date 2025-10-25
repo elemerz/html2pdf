@@ -1,4 +1,4 @@
-import { Component, HostListener, Input, signal, inject, ElementRef } from '@angular/core';
+import { Component, HostListener, Input, signal, inject, ElementRef, AfterViewInit, AfterViewChecked, OnDestroy } from '@angular/core';
 import { CellEditorDialogComponent } from './cell-editor-dialog';
 import { CommonModule } from '@angular/common';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
@@ -22,7 +22,7 @@ interface ContextMenuCell {
   templateUrl: './table-element.html',
   styleUrl: './table-element.less',
 })
-export class TableElementComponent {
+export class TableElementComponent implements AfterViewInit, AfterViewChecked, OnDestroy {
   @Input({ required: true }) element!: CanvasElement;
   @Input() mmToPx = 3.7795275591;
   @Input() gridSize = 10;
@@ -31,14 +31,101 @@ export class TableElementComponent {
   private hostRef = inject(ElementRef<HTMLElement>);
   private sanitizer = inject(DomSanitizer);
   private activeResize: ResizeMode | null = null;
+  private clickListener?: (event: MouseEvent) => void;
+  private subTableClickHandlersAttached = new WeakSet<HTMLElement>();
+  private subTableHtmlCache = new Map<string, SafeHtml>();
 
   protected showContextMenu = signal(false);
   protected contextMenuPosition = signal({ x: 0, y: 0 });
   protected contextMenuCell = signal<ContextMenuCell | null>(null);
   protected showActionsToolbar = signal(false);
 
-  @HostListener('click', ['$event'])
-  onHostClick(event: MouseEvent): void {
+  ngAfterViewInit(): void {
+    // Test: log ALL clicks
+    this.clickListener = (event: MouseEvent) => {
+      console.log('🔴 NATIVE CLICK EVENT CAPTURED!', event.target);
+      this.handleNativeClick(event);
+    };
+    
+    // Use capture phase to intercept before any other handlers
+    this.hostRef.nativeElement.addEventListener('click', this.clickListener, true);
+    
+    console.log('✅ Native click listener attached to:', this.hostRef.nativeElement);
+    
+    // DEBUGGING: Add document-level listener to see ALL clicks
+    document.addEventListener('click', (e) => {
+      const target = e.target as HTMLElement;
+      if (target.closest('.sub-table-cell')) {
+        console.log('🟢 DOCUMENT LEVEL: Sub-table cell clicked!', target);
+      }
+    }, true);
+  }
+
+  ngOnDestroy(): void {
+    if (this.clickListener) {
+      this.hostRef.nativeElement.removeEventListener('click', this.clickListener, true);
+    }
+  }
+
+  ngAfterViewChecked(): void {
+    // Attach click handlers to any sub-table cells that don't have them yet
+    const subTableCells = this.hostRef.nativeElement.querySelectorAll('.sub-table-cell');
+    
+    subTableCells.forEach((cell: Element) => {
+      const htmlCell = cell as HTMLElement;
+      
+      // Skip if we've already attached a handler to this cell
+      if (this.subTableClickHandlersAttached.has(htmlCell)) {
+        return;
+      }
+      
+      // Attach click handler
+      htmlCell.addEventListener('click', (e: Event) => {
+        const mouseEvent = e as MouseEvent;
+        const target = mouseEvent.target as HTMLElement;
+        const clickedCell = target.closest('.sub-table-cell') as HTMLElement;
+        
+        if (!clickedCell) return;
+        
+        // Stop propagation AFTER we've found the cell
+        e.stopPropagation();
+        e.preventDefault();
+        
+        console.log('🟢 SUB-TABLE CELL DIRECT CLICK!', clickedCell);
+        
+        const subRow = parseInt(clickedCell.dataset['row'] || '0', 10);
+        const subCol = parseInt(clickedCell.dataset['col'] || '0', 10);
+        const level = parseInt(clickedCell.dataset['level'] || '1', 10);
+        
+        // Find parent TD
+        let parentTd = clickedCell.closest('td') as HTMLElement | null;
+        while (parentTd && parentTd.classList.contains('sub-table-cell')) {
+          const parentTable = parentTd.closest('table');
+          if (parentTable) {
+            parentTd = parentTable.closest('td');
+          } else {
+            parentTd = null;
+          }
+        }
+        
+        if (!parentTd) return;
+        
+        const parentRow = parseInt(parentTd.dataset['row'] || '0', 10);
+        const parentCol = parseInt(parentTd.dataset['col'] || '0', 10);
+        
+        const subTablePath = [{ row: subRow, col: subCol }];
+        this.designerState.selectElement(this.element.id);
+        this.designerState.selectTableCell(this.element.id, parentRow, parentCol, subTablePath);
+        
+        console.log(`✅ Sub-table cell selected: parent[${parentRow},${parentCol}] sub[${subRow},${subCol}] level:${level}`);
+      }, true); // Use capture phase
+      
+      // Mark this cell as having a handler
+      this.subTableClickHandlersAttached.add(htmlCell);
+    });
+  }
+
+  private handleNativeClick(event: MouseEvent): void {
     const target = event.target as HTMLElement;
     
     console.log('Click detected on:', target, 'classes:', target.className);
@@ -98,9 +185,23 @@ export class TableElementComponent {
       
       console.log(`✅ Sub-table cell selected: parent[${parentRow},${parentCol}] sub[${subRow},${subCol}] level:${level}`);
       return;
-    } else {
-      console.log('Not a sub-table cell click');
     }
+    
+    // Check if click was on a parent cell (not sub-table)
+    const parentTd = target.closest('td[data-row]') as HTMLElement;
+    if (parentTd && !parentTd.classList.contains('sub-table-cell')) {
+      const row = parseInt(parentTd.dataset['row'] || '0', 10);
+      const col = parseInt(parentTd.dataset['col'] || '0', 10);
+      
+      console.log('🔵 Parent cell clicked:', { row, col });
+      
+      this.designerState.selectElement(this.element.id);
+      this.designerState.selectTableCell(this.element.id, row, col);
+      this.closeContextMenu();
+      return;
+    }
+    
+    console.log('Not a cell click');
   }
 
   protected getRowSizes(): number[] {
@@ -522,6 +623,10 @@ export class TableElementComponent {
       parentSubTable.cellContents[subCellKey] = '';
     }
     
+    // Clear HTML cache for parent cell
+    const cacheKey = `${this.element.id}_${parentRow}_${parentCol}`;
+    this.subTableHtmlCache.delete(cacheKey);
+    
     // Trigger update
     this.designerState.updateElement(this.element.id, this.element);
   }
@@ -606,6 +711,10 @@ export class TableElementComponent {
     // Store sub-table
     subTablesMap[key] = subTable;
     
+    // Clear HTML cache for this cell
+    const cacheKey = `${this.element.id}_${key}`;
+    this.subTableHtmlCache.delete(cacheKey);
+    
     // Clear parent cell content (now in sub-table)
     const contentsMap = this.element.properties['tableCellContents'] as Record<string, string> | undefined;
     if (contentsMap) {
@@ -663,14 +772,27 @@ export class TableElementComponent {
 
   protected getSubTableHtml(row: number, col: number): SafeHtml {
     const key = `${row}_${col}`;
+    
+    // Check cache first
+    const cacheKey = `${this.element.id}_${key}`;
+    if (this.subTableHtmlCache.has(cacheKey)) {
+      return this.subTableHtmlCache.get(cacheKey)!;
+    }
+    
     const subTablesMap = this.element.properties?.['tableCellSubTables'] as Record<string, any> | undefined;
     if (!subTablesMap || !subTablesMap[key]) {
-      return this.sanitizer.bypassSecurityTrustHtml('');
+      const emptyHtml = this.sanitizer.bypassSecurityTrustHtml('');
+      this.subTableHtmlCache.set(cacheKey, emptyHtml);
+      return emptyHtml;
     }
 
     const subTable = subTablesMap[key];
     const html = this.generateSubTableHtml(subTable, 0); // Start with parent cell padding = 0
-    return this.sanitizer.bypassSecurityTrustHtml(html);
+    const safeHtml = this.sanitizer.bypassSecurityTrustHtml(html);
+    
+    // Cache it
+    this.subTableHtmlCache.set(cacheKey, safeHtml);
+    return safeHtml;
   }
 
   private generateSubTableHtml(subTable: any, parentPadding: number): string {
@@ -682,8 +804,6 @@ export class TableElementComponent {
 
     // Calculate selection color based on level
     const selectionColor = this.getSelectionColorForLevel(level);
-    
-    console.log(`Generating sub-table: level=${level}, color=${selectionColor}, rows=${rows}, cols=${cols}`);
 
     let html = `<table class="sub-table sub-table-level-${level}" style="width:100%;height:100%;border-collapse:collapse;table-layout:fixed;">`;
     html += '<tbody>';
@@ -907,8 +1027,18 @@ export class TableElementComponent {
   }
 
   protected onCellClick(event: MouseEvent, row: number, col: number): void {
-    event.stopPropagation();
-    event.preventDefault();
+    const target = event.target as HTMLElement;
+    
+    // Check if click is on or inside a sub-table cell
+    const subTableCell = target.closest('.sub-table-cell');
+    if (subTableCell) {
+      // Let the native handler deal with sub-table cells
+      console.log('🟢 Click on sub-table cell detected in onCellClick, skipping');
+      return; // Don't stop propagation, don't select parent cell
+    }
+    
+    // Normal cell click - DON'T stop propagation so native handler can process
+    console.log('🔵 Normal cell click, selecting parent cell');
     this.designerState.selectElement(this.element.id);
     this.designerState.selectTableCell(this.element.id, row, col);
     this.closeContextMenu();

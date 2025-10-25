@@ -49,6 +49,14 @@ export class CanvasElementComponent {
   private resizeStart = { startX: 0, startY: 0, x: 0, y: 0, width: 0, height: 0 };
 
   onClick(event: MouseEvent) {
+    const target = event.target as HTMLElement;
+    
+    // Don't stop propagation if clicking on a sub-table cell - let table-element handle it
+    if (target.closest('.sub-table-cell')) {
+      console.log('🟡 canvas-element: sub-table cell click, allowing propagation');
+      return;
+    }
+    
     event.stopPropagation();
     this.designerState.selectElement(this.element.id);
   }
