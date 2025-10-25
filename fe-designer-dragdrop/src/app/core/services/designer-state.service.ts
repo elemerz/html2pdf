@@ -444,7 +444,16 @@ export class DesignerStateService {
             const hAlign = (hAlignMap?.[key] === 'center' || hAlignMap?.[key] === 'right') ? hAlignMap?.[key] : 'left';
             const vAlignRaw = (vAlignMap?.[key] === 'middle' || vAlignMap?.[key] === 'bottom') ? vAlignMap?.[key] : 'top';
             const vAlign = vAlignRaw === 'middle' ? 'middle' : vAlignRaw; // 'top' | 'middle' | 'bottom'
-            return `        <td style="width:${colWidthStr}mm;height:${rowHeightStr}mm;padding:${pt}mm ${pr}mm ${pb}mm ${pl}mm;text-align:${hAlign};vertical-align:${vAlign};">${cellContent}</td>`;
+            const borderWidthMap = element.properties?.['tableCellBorderWidth'] as Record<string, number> | undefined;
+            const borderStyleMap = element.properties?.['tableCellBorderStyle'] as Record<string, string> | undefined;
+            const borderColorMap = element.properties?.['tableCellBorderColor'] as Record<string, string> | undefined;
+            const borderWidth = borderWidthMap?.[key];
+            const borderStyle = borderStyleMap?.[key];
+            const borderColor = borderColorMap?.[key];
+            const borderCss = (Number.isFinite(borderWidth) && borderWidth! > 0) 
+              ? `border:${borderWidth}px ${borderStyle || 'solid'} ${borderColor || '#000000'};` 
+              : '';
+            return `        <td style="width:${colWidthStr}mm;height:${rowHeightStr}mm;padding:${pt}mm ${pr}mm ${pb}mm ${pl}mm;text-align:${hAlign};vertical-align:${vAlign};${borderCss}">${cellContent}</td>`;
           })
           .join('\n');
 
@@ -452,11 +461,7 @@ export class DesignerStateService {
       })
       .join('\n');
 
-    const bw = element.properties?.['tableBorderWidth'];
-    const bs = element.properties?.['tableBorderStyle'];
-    const bc = element.properties?.['tableBorderColor'];
-    const borderCss = (bw ? `border-width:${bw}px;` : '') + (bs ? `border-style:${bs};` : '') + (bc ? `border-color:${bc};` : '');
-    return `<table class="element element-table" style="${style}${borderCss}">\n` +
+    return `<table class="element element-table" style="${style}">\n` +
       `    <tbody>\n${rowsMarkup}\n    </tbody>\n  </table>`;
   }
 
