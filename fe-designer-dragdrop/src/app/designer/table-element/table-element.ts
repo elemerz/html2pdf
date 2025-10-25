@@ -34,8 +34,74 @@ export class TableElementComponent {
 
   protected showContextMenu = signal(false);
   protected contextMenuPosition = signal({ x: 0, y: 0 });
-  protected showActionsToolbar = signal(false);
   protected contextMenuCell = signal<ContextMenuCell | null>(null);
+  protected showActionsToolbar = signal(false);
+
+  @HostListener('click', ['$event'])
+  onHostClick(event: MouseEvent): void {
+    const target = event.target as HTMLElement;
+    
+    console.log('Click detected on:', target, 'classes:', target.className);
+    
+    // Check if click was on or inside a sub-table cell
+    const subTableCell = target.closest('.sub-table-cell') as HTMLElement;
+    
+    console.log('Closest .sub-table-cell:', subTableCell);
+    
+    if (subTableCell) {
+      event.stopPropagation();
+      
+      const subRow = parseInt(subTableCell.dataset['row'] || '0', 10);
+      const subCol = parseInt(subTableCell.dataset['col'] || '0', 10);
+      const level = parseInt(subTableCell.dataset['level'] || '1', 10);
+      
+      console.log('Sub-table cell data:', { subRow, subCol, level });
+      
+      // Find which parent <td> this sub-table-cell belongs to
+      let parentTd = subTableCell.closest('td') as HTMLElement | null;
+      
+      // Skip past the sub-table-cell itself and any nested sub-table-cells
+      while (parentTd && parentTd.classList.contains('sub-table-cell')) {
+        const parentTable = parentTd.closest('table');
+        if (parentTable) {
+          parentTd = parentTable.closest('td');
+        } else {
+          parentTd = null;
+        }
+      }
+      
+      console.log('Parent TD found:', parentTd);
+      
+      if (!parentTd) return;
+      
+      // Find parent row and col by searching through the table structure
+      const mainTable = this.hostRef.nativeElement.querySelector('table:first-of-type');
+      if (!mainTable) return;
+      
+      const allTds = Array.from(mainTable.querySelectorAll(':scope > tbody > tr > td'));
+      const parentIndex = allTds.indexOf(parentTd);
+      
+      console.log('Parent TD index:', parentIndex, 'Total TDs:', allTds.length);
+      
+      if (parentIndex === -1) return;
+      
+      const colSizes = this.getColSizes();
+      const parentRow = Math.floor(parentIndex / colSizes.length);
+      const parentCol = parentIndex % colSizes.length;
+      
+      console.log('Calculated parent position:', { parentRow, parentCol });
+      
+      // Build path and select
+      const subTablePath = [{ row: subRow, col: subCol }];
+      this.designerState.selectElement(this.element.id);
+      this.designerState.selectTableCell(this.element.id, parentRow, parentCol, subTablePath);
+      
+      console.log(`✅ Sub-table cell selected: parent[${parentRow},${parentCol}] sub[${subRow},${subCol}] level:${level}`);
+      return;
+    } else {
+      console.log('Not a sub-table cell click');
+    }
+  }
 
   protected getRowSizes(): number[] {
     return getTableRowSizes(this.element);
@@ -55,10 +121,13 @@ export class TableElementComponent {
     const selection = this.designerState.selectedTableCell();
     if (!selection || selection.elementId !== this.element.id) return null;
 
+    console.log('getSelectedCellOffsets - selection:', selection);
+
     const rowSizes = this.getRowSizes();
     const colSizes = this.getColSizes();
     if (!rowSizes.length || !colSizes.length) return null;
 
+    // Calculate parent cell position
     let top = 0;
     for (let r = 0; r < selection.row; r++) {
       top += rowSizes[r] * this.element.height;
@@ -69,8 +138,52 @@ export class TableElementComponent {
       left += colSizes[c] * this.element.width;
     }
 
-    const width = colSizes[selection.col] * this.element.width;
-    return { left, top, width };
+    let width = colSizes[selection.col] * this.element.width;
+    let height = rowSizes[selection.row] * this.element.height;
+
+    // If sub-table path exists, calculate sub-cell position
+    if (selection.subTablePath && selection.subTablePath.length > 0) {
+      const parentKey = `${selection.row}_${selection.col}`;
+      const subTablesMap = this.element.properties?.['tableCellSubTables'] as Record<string, any> | undefined;
+      
+      console.log('Sub-table path detected:', selection.subTablePath, 'parentKey:', parentKey);
+      console.log('subTablesMap:', subTablesMap);
+      
+      if (subTablesMap && subTablesMap[parentKey]) {
+        const subTable = subTablesMap[parentKey];
+        const subCell = selection.subTablePath[0]; // For now, support one level
+        
+        console.log('Found subTable:', subTable, 'subCell:', subCell);
+        
+        const subRowSizes = subTable.rowSizes || [];
+        const subColSizes = subTable.colSizes || [];
+        
+        // Calculate offset within parent cell
+        let subTop = 0;
+        for (let r = 0; r < subCell.row; r++) {
+          subTop += subRowSizes[r] * height;
+        }
+        
+        let subLeft = 0;
+        for (let c = 0; c < subCell.col; c++) {
+          subLeft += subColSizes[c] * width;
+        }
+        
+        const subWidth = subColSizes[subCell.col] * width;
+        
+        // Add parent cell padding
+        const parentPadding = this.getCellPadding(selection.row, selection.col);
+        top += subTop + parentPadding.top;
+        left += subLeft + parentPadding.left;
+        width = subWidth;
+        
+        console.log('Sub-cell offset calculated:', { left, top, width });
+      }
+    }
+
+    const result = { left, top, width };
+    console.log('Returning offset:', result);
+    return result;
   }
 
   protected getCellContentRaw(row: number, col: number): string {
@@ -253,6 +366,394 @@ export class TableElementComponent {
     this.designerState.selectTableCell(this.element.id, selection.row, newCol);
     this.closeActionsToolbar();
   }
+
+  protected onSplitCellIntoSubTable(): void {
+    const selection = this.designerState.selectedTableCell();
+    if (!selection || selection.elementId !== this.element.id) return;
+    
+    // Determine current level and get target for split
+    let currentLevel = 0;
+    let targetData: any = null;
+    let targetKey = '';
+    
+    if (selection.subTablePath && selection.subTablePath.length > 0) {
+      // We're splitting a sub-table cell
+      const parentKey = `${selection.row}_${selection.col}`;
+      const subTablesMap = this.element.properties?.['tableCellSubTables'] as Record<string, any> | undefined;
+      
+      if (subTablesMap && subTablesMap[parentKey]) {
+        const subTable = subTablesMap[parentKey];
+        currentLevel = subTable.level || 1;
+        
+        // For now, support one level deep
+        const subCell = selection.subTablePath[0];
+        targetKey = `${subCell.row}_${subCell.col}`;
+        
+        // Initialize cellSubTables if needed
+        if (!subTable.cellSubTables) {
+          subTable.cellSubTables = {};
+        }
+        
+        // Check if this sub-cell already has a sub-table
+        if (subTable.cellSubTables[targetKey]) {
+          currentLevel = subTable.cellSubTables[targetKey].level || currentLevel + 1;
+        }
+        
+        targetData = subTable;
+      }
+    } else {
+      // We're splitting a parent table cell
+      currentLevel = this.getCurrentNestingLevel(selection.row, selection.col);
+    }
+    
+    // Check nesting level
+    if (currentLevel >= 5) {
+      alert("Maximum nesting level (5) reached. Cannot create more nested tables.");
+      this.closeActionsToolbar();
+      return;
+    }
+    
+    // Prompt for dimensions
+    const rowsInput = window.prompt("Split into how many rows?", "2");
+    if (!rowsInput) {
+      this.closeActionsToolbar();
+      return;
+    }
+    
+    const colsInput = window.prompt("Split into how many columns?", "2");
+    if (!colsInput) {
+      this.closeActionsToolbar();
+      return;
+    }
+    
+    const rows = parseInt(rowsInput, 10);
+    const cols = parseInt(colsInput, 10);
+    
+    if (!Number.isFinite(rows) || rows < 1 || !Number.isFinite(cols) || cols < 1) {
+      alert("Invalid dimensions. Must be at least 1x1.");
+      this.closeActionsToolbar();
+      return;
+    }
+    
+    // Create sub-table
+    if (targetData && targetKey) {
+      // Creating nested sub-table within existing sub-table
+      this.createNestedSubTable(selection.row, selection.col, targetData, targetKey, rows, cols, currentLevel + 1);
+    } else {
+      // Creating sub-table in parent cell
+      this.createSubTable(selection.row, selection.col, rows, cols, currentLevel + 1);
+    }
+    
+    this.closeActionsToolbar();
+  }
+
+  private createNestedSubTable(parentRow: number, parentCol: number, parentSubTable: any, subCellKey: string, rows: number, cols: number, level: number): void {
+    console.log(`Creating nested sub-table: level=${level}, rows=${rows}, cols=${cols}, parentLevel=${parentSubTable.level}, subCellKey=${subCellKey}`);
+    
+    // Get properties from parent sub-cell to inherit
+    const parentContent = parentSubTable.cellContents?.[subCellKey] || '';
+    const parentPadding = parentSubTable.cellPadding?.[subCellKey] || [0, 0, 0, 0];
+    const parentHAlign = parentSubTable.cellHAlign?.[subCellKey] || 'left';
+    const parentVAlign = parentSubTable.cellVAlign?.[subCellKey] || 'top';
+    const parentBorderWidth = parentSubTable.cellBorderWidth?.[subCellKey] || 1;
+    const parentBorderStyle = parentSubTable.cellBorderStyle?.[subCellKey] || 'solid';
+    const parentBorderColor = parentSubTable.cellBorderColor?.[subCellKey] || '#000000';
+    const parentFontFamily = parentSubTable.cellFontFamily?.[subCellKey] || '';
+    const parentFontSize = parentSubTable.cellFontSize?.[subCellKey] || '';
+    const parentFontWeight = parentSubTable.cellFontWeight?.[subCellKey] || '';
+    const parentFontStyle = parentSubTable.cellFontStyle?.[subCellKey] || '';
+    const parentLineHeight = parentSubTable.cellLineHeight?.[subCellKey] || '';
+    const parentTextDecoration = parentSubTable.cellTextDecoration?.[subCellKey] || '';
+    
+    // Create nested sub-table data
+    const nestedSubTable: any = {
+      rows,
+      cols,
+      rowSizes: Array(rows).fill(1 / rows),
+      colSizes: Array(cols).fill(1 / cols),
+      level,
+      cellContents: {},
+      cellPadding: {},
+      cellHAlign: {},
+      cellVAlign: {},
+      cellBorderWidth: {},
+      cellBorderStyle: {},
+      cellBorderColor: {},
+      cellFontFamily: {},
+      cellFontSize: {},
+      cellFontWeight: {},
+      cellFontStyle: {},
+      cellLineHeight: {},
+      cellTextDecoration: {}
+    };
+    
+    // Move parent content to first nested sub-cell
+    if (parentContent && parentContent !== '&nbsp;') {
+      nestedSubTable.cellContents['0_0'] = parentContent;
+    }
+    
+    // Apply inherited properties to all nested sub-cells
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        const nestedKey = `${r}_${c}`;
+        nestedSubTable.cellPadding[nestedKey] = parentPadding;
+        nestedSubTable.cellHAlign[nestedKey] = parentHAlign;
+        nestedSubTable.cellVAlign[nestedKey] = parentVAlign;
+        nestedSubTable.cellBorderWidth[nestedKey] = parentBorderWidth;
+        nestedSubTable.cellBorderStyle[nestedKey] = parentBorderStyle;
+        nestedSubTable.cellBorderColor[nestedKey] = parentBorderColor;
+        if (parentFontFamily) nestedSubTable.cellFontFamily[nestedKey] = parentFontFamily;
+        if (parentFontSize) nestedSubTable.cellFontSize[nestedKey] = parentFontSize;
+        if (parentFontWeight) nestedSubTable.cellFontWeight[nestedKey] = parentFontWeight;
+        if (parentFontStyle) nestedSubTable.cellFontStyle[nestedKey] = parentFontStyle;
+        if (parentLineHeight) nestedSubTable.cellLineHeight[nestedKey] = parentLineHeight;
+        if (parentTextDecoration) nestedSubTable.cellTextDecoration[nestedKey] = parentTextDecoration;
+      }
+    }
+    
+    // Store nested sub-table
+    if (!parentSubTable.cellSubTables) {
+      parentSubTable.cellSubTables = {};
+    }
+    parentSubTable.cellSubTables[subCellKey] = nestedSubTable;
+    
+    // Clear parent sub-cell content
+    if (parentSubTable.cellContents) {
+      parentSubTable.cellContents[subCellKey] = '';
+    }
+    
+    // Trigger update
+    this.designerState.updateElement(this.element.id, this.element);
+  }
+
+  private getCurrentNestingLevel(row: number, col: number): number {
+    // For now, check if cell already has a sub-table
+    const key = `${row}_${col}`;
+    const subTablesMap = this.element.properties?.['tableCellSubTables'] as Record<string, any> | undefined;
+    if (subTablesMap && subTablesMap[key]) {
+      return subTablesMap[key].level || 1;
+    }
+    return 0; // Parent table level
+  }
+
+  private createSubTable(row: number, col: number, rows: number, cols: number, level: number): void {
+    const key = `${row}_${col}`;
+    
+    // Initialize sub-tables map if needed
+    if (!this.element.properties) {
+      this.element.properties = {};
+    }
+    if (!this.element.properties['tableCellSubTables']) {
+      this.element.properties['tableCellSubTables'] = {};
+    }
+    
+    const subTablesMap = this.element.properties['tableCellSubTables'] as Record<string, any>;
+    
+    // Get parent cell properties to inherit
+    const parentContent = this.getCellContentRaw(row, col);
+    const parentPadding = this.getCellPadding(row, col);
+    const parentHAlign = this.getCellHAlign(row, col);
+    const parentVAlign = this.getCellVAlign(row, col);
+    const parentBorder = this.getCellBorderProps(row, col);
+    const parentFont = this.getCellFontProps(row, col);
+    
+    // Create sub-table data
+    const subTable: any = {
+      rows,
+      cols,
+      rowSizes: Array(rows).fill(1 / rows),
+      colSizes: Array(cols).fill(1 / cols),
+      level,
+      cellContents: {},
+      cellPadding: {},
+      cellHAlign: {},
+      cellVAlign: {},
+      cellBorderWidth: {},
+      cellBorderStyle: {},
+      cellBorderColor: {},
+      cellFontFamily: {},
+      cellFontSize: {},
+      cellFontWeight: {},
+      cellFontStyle: {},
+      cellLineHeight: {},
+      cellTextDecoration: {}
+    };
+    
+    // Move parent content to first sub-cell and inherit properties
+    if (parentContent && parentContent !== '&nbsp;') {
+      subTable.cellContents['0_0'] = parentContent;
+    }
+    
+    // Apply inherited properties to all sub-cells
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        const subKey = `${r}_${c}`;
+        subTable.cellPadding[subKey] = [parentPadding.top, parentPadding.right, parentPadding.bottom, parentPadding.left];
+        subTable.cellHAlign[subKey] = parentHAlign;
+        subTable.cellVAlign[subKey] = parentVAlign;
+        subTable.cellBorderWidth[subKey] = parentBorder.width;
+        subTable.cellBorderStyle[subKey] = parentBorder.style;
+        subTable.cellBorderColor[subKey] = parentBorder.color;
+        if (parentFont.family) subTable.cellFontFamily[subKey] = parentFont.family;
+        if (parentFont.size) subTable.cellFontSize[subKey] = parentFont.size;
+        if (parentFont.weight) subTable.cellFontWeight[subKey] = parentFont.weight;
+        if (parentFont.style) subTable.cellFontStyle[subKey] = parentFont.style;
+        if (parentFont.lineHeight) subTable.cellLineHeight[subKey] = parentFont.lineHeight;
+        if (parentFont.decoration) subTable.cellTextDecoration[subKey] = parentFont.decoration;
+      }
+    }
+    
+    // Store sub-table
+    subTablesMap[key] = subTable;
+    
+    // Clear parent cell content (now in sub-table)
+    const contentsMap = this.element.properties['tableCellContents'] as Record<string, string> | undefined;
+    if (contentsMap) {
+      contentsMap[key] = ''; // Empty parent cell
+    }
+    
+    // Trigger update
+    this.designerState.updateElement(this.element.id, this.element);
+  }
+
+  private getCellBorderProps(row: number, col: number): { width: number; style: string; color: string } {
+    const key = `${row}_${col}`;
+    const widthMap = this.element.properties?.['tableCellBorderWidth'] as Record<string, number> | undefined;
+    const styleMap = this.element.properties?.['tableCellBorderStyle'] as Record<string, string> | undefined;
+    const colorMap = this.element.properties?.['tableCellBorderColor'] as Record<string, string> | undefined;
+    
+    return {
+      width: widthMap?.[key] || 1,
+      style: styleMap?.[key] || 'solid',
+      color: colorMap?.[key] || '#000000'
+    };
+  }
+
+  private getCellFontProps(row: number, col: number): { 
+    family?: string; 
+    size?: number; 
+    weight?: string; 
+    style?: string; 
+    lineHeight?: number;
+    decoration?: string;
+  } {
+    const key = `${row}_${col}`;
+    const familyMap = this.element.properties?.['tableCellFontFamily'] as Record<string, string> | undefined;
+    const sizeMap = this.element.properties?.['tableCellFontSize'] as Record<string, number> | undefined;
+    const weightMap = this.element.properties?.['tableCellFontWeight'] as Record<string, string> | undefined;
+    const styleMap = this.element.properties?.['tableCellFontStyle'] as Record<string, string> | undefined;
+    const lineHeightMap = this.element.properties?.['tableCellLineHeight'] as Record<string, number> | undefined;
+    const decorationMap = this.element.properties?.['tableCellTextDecoration'] as Record<string, string> | undefined;
+    
+    return {
+      family: familyMap?.[key],
+      size: sizeMap?.[key],
+      weight: weightMap?.[key],
+      style: styleMap?.[key],
+      lineHeight: lineHeightMap?.[key],
+      decoration: decorationMap?.[key]
+    };
+  }
+
+  protected hasSubTable(row: number, col: number): boolean {
+    const key = `${row}_${col}`;
+    const subTablesMap = this.element.properties?.['tableCellSubTables'] as Record<string, any> | undefined;
+    return !!(subTablesMap && subTablesMap[key]);
+  }
+
+  protected getSubTableHtml(row: number, col: number): SafeHtml {
+    const key = `${row}_${col}`;
+    const subTablesMap = this.element.properties?.['tableCellSubTables'] as Record<string, any> | undefined;
+    if (!subTablesMap || !subTablesMap[key]) {
+      return this.sanitizer.bypassSecurityTrustHtml('');
+    }
+
+    const subTable = subTablesMap[key];
+    const html = this.generateSubTableHtml(subTable, 0); // Start with parent cell padding = 0
+    return this.sanitizer.bypassSecurityTrustHtml(html);
+  }
+
+  private generateSubTableHtml(subTable: any, parentPadding: number): string {
+    const level = subTable.level || 1;
+    const rows = subTable.rows || 1;
+    const cols = subTable.cols || 1;
+    const rowSizes = subTable.rowSizes || Array(rows).fill(1 / rows);
+    const colSizes = subTable.colSizes || Array(cols).fill(1 / cols);
+
+    // Calculate selection color based on level
+    const selectionColor = this.getSelectionColorForLevel(level);
+    
+    console.log(`Generating sub-table: level=${level}, color=${selectionColor}, rows=${rows}, cols=${cols}`);
+
+    let html = `<table class="sub-table sub-table-level-${level}" style="width:100%;height:100%;border-collapse:collapse;table-layout:fixed;">`;
+    html += '<tbody>';
+
+    for (let r = 0; r < rows; r++) {
+      const rowHeightPercent = (rowSizes[r] * 100).toFixed(2);
+      html += `<tr style="height:${rowHeightPercent}%;">`;
+
+      for (let c = 0; c < cols; c++) {
+        const cellKey = `${r}_${c}`;
+        const colWidthPercent = (colSizes[c] * 100).toFixed(2);
+
+        // Get cell properties
+        const content = subTable.cellContents?.[cellKey] || '';
+        const padding = subTable.cellPadding?.[cellKey] || [0, 0, 0, 0];
+        const hAlign = subTable.cellHAlign?.[cellKey] || 'left';
+        const vAlign = subTable.cellVAlign?.[cellKey] || 'top';
+        const borderWidth = subTable.cellBorderWidth?.[cellKey] || 1;
+        const borderStyle = subTable.cellBorderStyle?.[cellKey] || 'solid';
+        const borderColor = subTable.cellBorderColor?.[cellKey] || '#000000';
+        const fontFamily = subTable.cellFontFamily?.[cellKey] || '';
+        const fontSize = subTable.cellFontSize?.[cellKey] || '';
+        const fontWeight = subTable.cellFontWeight?.[cellKey] || '';
+        const fontStyleProp = subTable.cellFontStyle?.[cellKey] || '';
+        const lineHeight = subTable.cellLineHeight?.[cellKey] || '';
+        const textDecoration = subTable.cellTextDecoration?.[cellKey] || '';
+
+        const [pt, pr, pb, pl] = padding;
+        const borderCss = `border:${borderWidth}px ${borderStyle} ${borderColor};`;
+        const fontCss = (fontFamily ? `font-family:${fontFamily};` : '') +
+          (fontSize ? `font-size:${fontSize}pt;` : '') +
+          (fontWeight ? `font-weight:${fontWeight};` : '') +
+          (fontStyleProp ? `font-style:${fontStyleProp};` : '') +
+          (lineHeight ? `line-height:${lineHeight};` : '') +
+          (textDecoration ? `text-decoration:${textDecoration};` : '');
+
+        // Apply selection color directly as background-color
+        html += `<td class="sub-table-cell" data-row="${r}" data-col="${c}" data-level="${level}" `;
+        html += `style="width:${colWidthPercent}%;padding:${pt}mm ${pr}mm ${pb}mm ${pl}mm;`;
+        html += `text-align:${hAlign};vertical-align:${vAlign};${borderCss}${fontCss}`;
+        html += `background-color:${selectionColor};">`;
+
+        // Check for nested sub-table
+        if (subTable.cellSubTables && subTable.cellSubTables[cellKey]) {
+          html += this.generateSubTableHtml(subTable.cellSubTables[cellKey], padding[0]);
+        } else {
+          html += content || '&nbsp;';
+        }
+
+        html += '</td>';
+      }
+      html += '</tr>';
+    }
+
+    html += '</tbody></table>';
+    return html;
+  }
+
+  private getSelectionColorForLevel(level: number): string {
+    const colors = [
+      'hsla(217, 91%, 48%, 0.4)', // Level 0 (parent) - Blue
+      'hsla(142, 71%, 45%, 0.4)', // Level 1 - Green
+      'hsla(48, 96%, 53%, 0.4)',  // Level 2 - Yellow
+      'hsla(25, 95%, 53%, 0.4)',  // Level 3 - Orange
+      'hsla(280, 67%, 55%, 0.4)', // Level 4 - Purple
+      'hsla(345, 82%, 58%, 0.4)'  // Level 5 - Pink/Red
+    ];
+    return colors[Math.min(level, 5)] || colors[0];
+  }
+
 
   private rowHasContent(rowIndex: number): boolean {
     const colSizes = this.getColSizes();

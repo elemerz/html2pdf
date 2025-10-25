@@ -23,6 +23,29 @@ export interface CanvasElement {
   content: string;
 }
 
+// Sub-table data structure for nested tables within cells
+export interface SubTableData {
+  rows: number;
+  cols: number;
+  rowSizes: number[];
+  colSizes: number[];
+  level: number; // Nesting level (1-5)
+  cellContents: Record<string, string>;
+  cellPadding: Record<string, number[]>;
+  cellHAlign: Record<string, string>;
+  cellVAlign: Record<string, string>;
+  cellBorderWidth: Record<string, number>;
+  cellBorderStyle: Record<string, string>;
+  cellBorderColor: Record<string, string>;
+  cellFontFamily: Record<string, string>;
+  cellFontSize: Record<string, number>;
+  cellFontWeight: Record<string, string>;
+  cellFontStyle: Record<string, string>;
+  cellLineHeight: Record<string, number>;
+  cellTextDecoration: Record<string, string>;
+  cellSubTables?: Record<string, SubTableData>; // Nested sub-tables
+}
+
 // Layout/Report design
 export interface ReportLayout {
   id?: string;

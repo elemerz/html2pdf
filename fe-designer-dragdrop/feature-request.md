@@ -28,4 +28,9 @@
 - Ability to save (under a name):
   - Whole page as Reusable component.
   - Selected Objects as Reusable component.
+##Ability to define Header, Body, Footer
+
+##Remove DIV-s intercalated between splitted cell and sub-Table
+## Default zoom 1:1 when Opening the App.
+
  

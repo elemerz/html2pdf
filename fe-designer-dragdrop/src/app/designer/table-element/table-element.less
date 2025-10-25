@@ -49,6 +49,32 @@
       // Font properties are now inherited from <td> element
       // Quill-generated inline styles in content will override via higher specificity
     }
+    
+    .sub-table-container {
+      width: 100%;
+      height: 100%;
+      box-sizing: border-box;
+      padding: 0;
+      margin: 0;
+    }
+    
+    .sub-table {
+      border-collapse: collapse;
+      
+      .sub-table-cell {
+        position: relative;
+        cursor: pointer;
+        transition: all @transition-fast;
+        
+        // Background color is applied inline per level
+        // Don't override it here
+        
+        &:hover {
+          // Darken slightly on hover
+          filter: brightness(0.95);
+        }
+      }
+    }
   }
 }
 

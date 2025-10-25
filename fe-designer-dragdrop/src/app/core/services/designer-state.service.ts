@@ -18,6 +18,7 @@ export interface TableCellSelection {
   elementId: string;
   row: number;
   col: number;
+  subTablePath?: Array<{row: number; col: number}>; // Path to nested sub-cell
 }
 
 export type CanvasZoomMode = 'fit' | 'width' | 'height' | 'actual';
@@ -147,7 +148,7 @@ export class DesignerStateService {
     }
   }
 
-  selectTableCell(elementId: string, row: number, col: number) {
+  selectTableCell(elementId: string, row: number, col: number, subTablePath?: Array<{row: number; col: number}>) {
     const element = this.elementsSignal().find(el => el.id === elementId);
     if (!element) {
       this.clearTableCellSelection();
@@ -167,7 +168,8 @@ export class DesignerStateService {
     this.selectedTableCellSignal.set({
       elementId,
       row: normalizedRow,
-      col: normalizedCol
+      col: normalizedCol,
+      subTablePath
     });
   }
 
