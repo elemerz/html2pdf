@@ -58,6 +58,34 @@
   }
 }
 
+.dialog-tabs {
+  display: flex;
+  border-bottom: 1px solid @border;
+  
+  .tab-btn {
+    flex: 1;
+    padding: @spacing-sm @spacing-md;
+    border: none;
+    background: none;
+    color: @muted-foreground;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    border-bottom: 2px solid transparent;
+    
+    &:hover {
+      color: @foreground;
+      background-color: @accent;
+    }
+    
+    &.active {
+      color: @primary;
+      border-bottom-color: @primary;
+    }
+  }
+}
+
 .dialog-body {
   padding: @spacing-md;
   flex: 1;
@@ -122,6 +150,38 @@
         background-color: @destructive;
         color: @destructive-foreground;
         border-color: @destructive;
+      }
+    }
+  }
+  
+  .file-upload-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: @spacing-md;
+    height: 100%;
+    padding: @spacing-lg;
+    
+    .upload-instructions {
+      text-align: center;
+      color: @muted-foreground;
+      font-size: 14px;
+      margin: 0;
+    }
+    
+    .file-input {
+      padding: @spacing-sm @spacing-md;
+      border: 2px dashed @border;
+      border-radius: @radius-sm;
+      background-color: @accent;
+      cursor: pointer;
+      font-size: 14px;
+      width: 100%;
+      
+      &:hover {
+        border-color: @primary;
+        background-color: fadeout(@primary, 95%);
       }
     }
   }

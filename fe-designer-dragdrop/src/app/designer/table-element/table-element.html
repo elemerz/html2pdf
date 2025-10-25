@@ -20,6 +20,12 @@
               [style.text-align]="getCellHAlign(rowIndex,colIndex)"
               [style.vertical-align]="getCellVAlign(rowIndex,colIndex)"
               [style.border]="getCellBorder(rowIndex,colIndex)"
+              [style.font-style]="getCellFontStyle(rowIndex,colIndex)"
+              [style.font-weight]="getCellFontWeight(rowIndex,colIndex)"
+              [style.font-size]="getCellFontSize(rowIndex,colIndex)"
+              [style.line-height]="getCellLineHeight(rowIndex,colIndex)"
+              [style.font-family]="getCellFontFamily(rowIndex,colIndex)"
+              [style.text-decoration]="getCellTextDecoration(rowIndex,colIndex)"
             >
               <div class="cell-content"
                    [style.display]="'flex'"
@@ -27,12 +33,6 @@
                    [style.justifyContent]="getCellVAlignFlex(rowIndex,colIndex)"
                    [style.textAlign]="getCellHAlign(rowIndex,colIndex)"
                    [style.overflow]="'auto'"
-                   [style.--cell-font-style]="getCellFontStyle(rowIndex,colIndex)"
-                   [style.--cell-font-weight]="getCellFontWeight(rowIndex,colIndex)"
-                   [style.--cell-font-size]="getCellFontSize(rowIndex,colIndex)"
-                   [style.--cell-line-height]="getCellLineHeight(rowIndex,colIndex)"
-                   [style.--cell-font-family]="getCellFontFamily(rowIndex,colIndex)"
-                   [style.--cell-text-decoration]="getCellTextDecoration(rowIndex,colIndex)"
                    [innerHTML]="getCellContent(rowIndex, colIndex)"></div>
             </td>
           }

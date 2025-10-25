@@ -8,32 +8,68 @@
         </button>
       </div>
       
+      <div class="dialog-tabs">
+        <button 
+          class="tab-btn" 
+          [class.active]="selectedTab() === 'api'"
+          (click)="selectedTab.set('api')"
+        >
+          From Server
+        </button>
+        <button 
+          class="tab-btn" 
+          [class.active]="selectedTab() === 'file'"
+          (click)="selectedTab.set('file')"
+        >
+          From File
+        </button>
+      </div>
+      
       <div class="dialog-body">
         @if (loading()) {
-          <div class="loading">Loading layouts...</div>
+          <div class="loading">Loading...</div>
         } @else if (error()) {
           <div class="error">{{ error() }}</div>
-        } @else if (layouts().length === 0) {
-          <div class="empty">No saved layouts found</div>
-        } @else {
-          <div class="layouts-list">
-            @for (layout of layouts(); track layout.id) {
-              <div 
-                class="layout-item" 
-                (click)="handleOpen(layout)"
-                [attr.data-testid]="'layout-item-' + layout.id"
-              >
-                <span class="layout-name">{{ layout.name }}</span>
-                <button 
-                  class="delete-btn"
-                  (click)="handleDelete($event, layout.id!)"
-                  [attr.data-testid]="'button-delete-' + layout.id"
-                  title="Delete layout"
-                >
-                  Delete
-                </button>
+        }
+        
+        @if (selectedTab() === 'api') {
+          @if (!loading() && !error()) {
+            @if (layouts().length === 0) {
+              <div class="empty">No saved layouts found</div>
+            } @else {
+              <div class="layouts-list">
+                @for (layout of layouts(); track layout.id) {
+                  <div 
+                    class="layout-item" 
+                    (click)="handleOpen(layout)"
+                    [attr.data-testid]="'layout-item-' + layout.id"
+                  >
+                    <span class="layout-name">{{ layout.name }}</span>
+                    <button 
+                      class="delete-btn"
+                      (click)="handleDelete($event, layout.id!)"
+                      [attr.data-testid]="'button-delete-' + layout.id"
+                      title="Delete layout"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                }
               </div>
             }
+          }
+        } @else {
+          <div class="file-upload-section">
+            <p class="upload-instructions">
+              Select an XHTML file previously saved from the designer.
+            </p>
+            <input 
+              type="file" 
+              accept=".xhtml,.html,.xml"
+              (change)="handleFileSelect($event)"
+              class="file-input"
+              data-testid="file-input"
+            />
           </div>
         }
       </div>

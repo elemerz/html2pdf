@@ -645,4 +645,324 @@ export class DesignerStateService {
     const clampedSteps = Math.min(Math.max(rawSteps, 0), maxSteps);
     return min + clampedSteps * step;
   }
+
+  /**
+   * Parse XHTML document and convert it back to a ReportLayout
+   */
+  parseXhtmlToLayout(xhtmlContent: string, filename: string): ReportLayout {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(xhtmlContent, 'application/xhtml+xml');
+    
+    // Check for parsing errors
+    const parserError = doc.querySelector('parsererror');
+    if (parserError) {
+      throw new Error('Invalid XHTML: ' + parserError.textContent);
+    }
+    
+    const elements: CanvasElement[] = [];
+    let elementIdCounter = 1;
+    
+    // Extract body elements
+    const body = doc.querySelector('body');
+    if (!body) {
+      throw new Error('No body element found in XHTML');
+    }
+    
+    // Parse all elements (tables, divs, paragraphs, headings, etc.)
+    const bodyElements = Array.from(body.children) as HTMLElement[];
+    
+    for (const elem of bodyElements) {
+      try {
+        const parsed = this.parseXhtmlElement(elem, elementIdCounter++);
+        if (parsed) {
+          elements.push(parsed);
+        }
+      } catch (err) {
+        console.warn('Failed to parse element:', elem, err);
+      }
+    }
+    
+    // Extract title from head
+    const title = doc.querySelector('title')?.textContent || filename.replace(/\.xhtml$/i, '');
+    
+    return {
+      name: title,
+      elements,
+      gridSize: 10,
+      canvasWidth: 210,
+      canvasHeight: 297
+    };
+  }
+  
+  private parseXhtmlElement(elem: HTMLElement, idCounter: number): CanvasElement | null {
+    const tagName = elem.tagName.toLowerCase();
+    
+    // Parse table elements
+    if (tagName === 'table') {
+      return this.parseXhtmlTable(elem, idCounter);
+    }
+    
+    // Parse other elements (div, p, h1, etc.)
+    const style = elem.getAttribute('style') || '';
+    const position = this.parseStylePosition(style);
+    
+    if (!position) {
+      return null; // Skip elements without position/size
+    }
+    
+    let type: 'paragraph' | 'heading' | 'text' | 'div' = 'div';
+    if (tagName === 'p') type = 'paragraph';
+    else if (tagName === 'h1' || tagName === 'h2' || tagName === 'h3') type = 'heading';
+    else if (tagName === 'div') type = elem.classList.contains('element') ? 'text' : 'div';
+    
+    return {
+      id: `element-${idCounter}`,
+      type,
+      x: position.x,
+      y: position.y,
+      width: position.width,
+      height: position.height,
+      content: elem.innerHTML || '',
+      properties: {}
+    };
+  }
+  
+  private parseXhtmlTable(table: HTMLElement, idCounter: number): CanvasElement | null {
+    const style = table.getAttribute('style') || '';
+    const position = this.parseStylePosition(style, true);
+    
+    if (!position) {
+      return null;
+    }
+    
+    // Parse table structure
+    const tbody = table.querySelector('tbody');
+    if (!tbody) {
+      return null;
+    }
+    
+    const rows = Array.from(tbody.querySelectorAll('tr')) as HTMLTableRowElement[];
+    const numRows = rows.length;
+    
+    if (numRows === 0) {
+      return null;
+    }
+    
+    // Get number of columns from first row
+    const firstRowCells = Array.from(rows[0].querySelectorAll('td')) as HTMLTableCellElement[];
+    const numCols = firstRowCells.length;
+    
+    if (numCols === 0) {
+      return null;
+    }
+    
+    // Parse cell contents and properties
+    const tableCellContents: Record<string, string> = {};
+    const tableCellPadding: Record<string, number[]> = {};
+    const tableCellHAlign: Record<string, string> = {};
+    const tableCellVAlign: Record<string, string> = {};
+    const tableCellBorderWidth: Record<string, number> = {};
+    const tableCellBorderStyle: Record<string, string> = {};
+    const tableCellBorderColor: Record<string, string> = {};
+    const tableCellFontStyle: Record<string, string> = {};
+    const tableCellFontWeight: Record<string, string> = {};
+    const tableCellFontSize: Record<string, number> = {};
+    const tableCellLineHeight: Record<string, number> = {};
+    const tableCellFontFamily: Record<string, string> = {};
+    const tableCellTextDecoration: Record<string, string> = {};
+    
+    // Parse row and column sizes
+    const rowSizes: number[] = [];
+    const colSizes: number[] = [];
+    
+    // Calculate row sizes
+    const totalHeight = position.height;
+    for (const row of rows) {
+      const heightStr = row.style.height || row.getAttribute('style')?.match(/height:\s*([0-9.]+)mm/)?.[1];
+      if (heightStr) {
+        rowSizes.push(parseFloat(heightStr) / totalHeight);
+      }
+    }
+    
+    // Calculate column sizes from first row
+    const totalWidth = position.width;
+    for (const cell of firstRowCells) {
+      const widthStr = cell.style.width || cell.getAttribute('style')?.match(/width:\s*([0-9.]+)mm/)?.[1];
+      if (widthStr) {
+        colSizes.push(parseFloat(widthStr) / totalWidth);
+      }
+    }
+    
+    // Parse each cell
+    rows.forEach((row, rowIndex) => {
+      const cells = Array.from(row.querySelectorAll('td')) as HTMLTableCellElement[];
+      cells.forEach((cell, colIndex) => {
+        const key = `${rowIndex}_${colIndex}`;
+        
+        // Content
+        tableCellContents[key] = cell.innerHTML;
+        
+        // Padding
+        const paddingTop = this.parseStyleValue(cell.style.paddingTop || '0');
+        const paddingRight = this.parseStyleValue(cell.style.paddingRight || '0');
+        const paddingBottom = this.parseStyleValue(cell.style.paddingBottom || '0');
+        const paddingLeft = this.parseStyleValue(cell.style.paddingLeft || '0');
+        tableCellPadding[key] = [paddingTop, paddingRight, paddingBottom, paddingLeft];
+        
+        // Alignment
+        tableCellHAlign[key] = cell.style.textAlign || 'left';
+        tableCellVAlign[key] = cell.style.verticalAlign || 'top';
+        
+        // Border - parse from style attribute
+        const cellStyle = cell.getAttribute('style') || '';
+        const border = cell.style.border || '';
+        const borderMatch = border.match(/([0-9.]+)px\s+(\w+)\s+(#[0-9a-f]{6}|#[0-9a-f]{3}|rgb\([^)]+\)|\w+)/i);
+        if (borderMatch) {
+          tableCellBorderWidth[key] = parseFloat(borderMatch[1]);
+          tableCellBorderStyle[key] = borderMatch[2];
+          tableCellBorderColor[key] = borderMatch[3];
+        } else {
+          // Try parsing from style attribute directly
+          const borderWidthMatch = cellStyle.match(/border:\s*([0-9.]+)px/);
+          const borderStyleMatch = cellStyle.match(/border:\s*[0-9.]+px\s+(\w+)/);
+          const borderColorMatch = cellStyle.match(/border:\s*[0-9.]+px\s+\w+\s+(#[0-9a-f]{6}|#[0-9a-f]{3}|rgb\([^)]+\)|\w+)/i);
+          if (borderWidthMatch) tableCellBorderWidth[key] = parseFloat(borderWidthMatch[1]);
+          if (borderStyleMatch) tableCellBorderStyle[key] = borderStyleMatch[1];
+          if (borderColorMatch) tableCellBorderColor[key] = borderColorMatch[1];
+        }
+        
+        // Font properties from <td> element's inline style (generic cell properties)
+        // Parse from both cell.style and raw attribute to handle all formats
+        let fontFamily = cell.style.fontFamily;
+        if (!fontFamily) {
+          // Try parsing from style attribute directly
+          const fontFamilyMatch = cellStyle.match(/font-family:\s*([^;]+)/i);
+          if (fontFamilyMatch) {
+            fontFamily = fontFamilyMatch[1].trim();
+          }
+        }
+        if (fontFamily) {
+          // Clean up the font-family value (remove quotes at start and end, and around individual font names)
+          fontFamily = fontFamily.replace(/["']/g, '').trim();
+          tableCellFontFamily[key] = fontFamily;
+        }
+        
+        if (cell.style.fontSize) {
+          tableCellFontSize[key] = this.parseStyleValue(cell.style.fontSize);
+        } else {
+          const fontSizeMatch = cellStyle.match(/font-size:\s*([0-9.]+)pt/i);
+          if (fontSizeMatch) tableCellFontSize[key] = parseFloat(fontSizeMatch[1]);
+        }
+        
+        if (cell.style.fontWeight) {
+          tableCellFontWeight[key] = cell.style.fontWeight;
+        } else {
+          const fontWeightMatch = cellStyle.match(/font-weight:\s*(\w+)/i);
+          if (fontWeightMatch) tableCellFontWeight[key] = fontWeightMatch[1];
+        }
+        
+        if (cell.style.fontStyle) {
+          tableCellFontStyle[key] = cell.style.fontStyle;
+        } else {
+          const fontStyleMatch = cellStyle.match(/font-style:\s*(\w+)/i);
+          if (fontStyleMatch) tableCellFontStyle[key] = fontStyleMatch[1];
+        }
+        
+        if (cell.style.lineHeight) {
+          tableCellLineHeight[key] = parseFloat(cell.style.lineHeight) || 1.5;
+        } else {
+          const lineHeightMatch = cellStyle.match(/line-height:\s*([0-9.]+)/i);
+          if (lineHeightMatch) tableCellLineHeight[key] = parseFloat(lineHeightMatch[1]);
+        }
+        
+        if (cell.style.textDecoration) {
+          tableCellTextDecoration[key] = cell.style.textDecoration;
+        } else {
+          const textDecorationMatch = cellStyle.match(/text-decoration:\s*([^;]+)/i);
+          if (textDecorationMatch) tableCellTextDecoration[key] = textDecorationMatch[1].trim();
+        }
+        
+        // Override with any inline styles from Quill content (these take precedence)
+        const styledElements = cell.querySelectorAll('[style]') as NodeListOf<HTMLElement>;
+        styledElements.forEach(elem => {
+          // Only extract overriding styles from direct content, not from wrapper divs
+          if (elem !== cell && elem.style) {
+            // These are Quill-generated inline styles that should override cell-level styles
+            // We keep them in the content HTML, they will be handled by DomSanitizer
+            // No need to extract them to cell properties
+          }
+        });
+      });
+    });
+    
+    return {
+      id: `element-${idCounter}`,
+      type: 'table',
+      x: position.x,
+      y: position.y,
+      width: position.width,
+      height: position.height,
+      content: '',
+      properties: {
+        rows: numRows,
+        cols: numCols,
+        rowSizes,
+        colSizes,
+        tableCellContents,
+        tableCellPadding,
+        tableCellHAlign,
+        tableCellVAlign,
+        tableCellBorderWidth,
+        tableCellBorderStyle,
+        tableCellBorderColor,
+        tableCellFontStyle,
+        tableCellFontWeight,
+        tableCellFontSize,
+        tableCellLineHeight,
+        tableCellFontFamily,
+        tableCellTextDecoration
+      }
+    };
+  }
+  
+  private parseStylePosition(style: string, isTable: boolean = false): { x: number; y: number; width: number; height: number } | null {
+    // For tables, look for margin-top and margin-left (flow positioning)
+    // For other elements, look for left/top (absolute positioning)
+    
+    let x = 0, y = 0, width = 0, height = 0;
+    
+    if (isTable) {
+      const marginTopMatch = style.match(/margin-top:\s*([0-9.]+)mm/);
+      const marginLeftMatch = style.match(/margin-left:\s*([0-9.]+)mm/);
+      const widthMatch = style.match(/width:\s*([0-9.]+)mm/);
+      
+      if (marginTopMatch) y = parseFloat(marginTopMatch[1]);
+      if (marginLeftMatch) x = parseFloat(marginLeftMatch[1]);
+      if (widthMatch) width = parseFloat(widthMatch[1]);
+      
+      // Height will be calculated from row heights
+      height = width > 0 ? 100 : 0; // Default height
+    } else {
+      const leftMatch = style.match(/left:\s*([0-9.]+)mm/);
+      const topMatch = style.match(/top:\s*([0-9.]+)mm/);
+      const widthMatch = style.match(/width:\s*([0-9.]+)mm/);
+      const heightMatch = style.match(/height:\s*([0-9.]+)mm/);
+      
+      if (leftMatch) x = parseFloat(leftMatch[1]);
+      if (topMatch) y = parseFloat(topMatch[1]);
+      if (widthMatch) width = parseFloat(widthMatch[1]);
+      if (heightMatch) height = parseFloat(heightMatch[1]);
+    }
+    
+    if (width <= 0 || height <= 0) {
+      return null;
+    }
+    
+    return { x, y, width, height };
+  }
+  
+  private parseStyleValue(value: string): number {
+    const match = value.match(/([0-9.]+)/);
+    return match ? parseFloat(match[1]) : 0;
+  }
 }

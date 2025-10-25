@@ -2,6 +2,7 @@ import { Component, signal, output, input, effect, inject } from '@angular/core'
 import { CommonModule } from '@angular/common';
 import { firstValueFrom } from 'rxjs';
 import { LayoutsApiService } from '../../core/services/layouts-api.service';
+import { DesignerStateService } from '../../core/services/designer-state.service';
 import { ReportLayout } from '../../shared/models/schema';
 
 @Component({
@@ -13,6 +14,7 @@ import { ReportLayout } from '../../shared/models/schema';
 })
 export class OpenDialogComponent {
   private layoutsApi = inject(LayoutsApiService);
+  private designerState = inject(DesignerStateService);
 
   isOpen = input.required<boolean>();
   onClose = output<void>();
@@ -21,11 +23,12 @@ export class OpenDialogComponent {
   layouts = signal<ReportLayout[]>([]);
   loading = signal(false);
   error = signal<string | null>(null);
+  selectedTab = signal<'api' | 'file'>('file'); // Default to file tab
 
   constructor() {
-    // Reload layouts whenever dialog is opened
+    // Reload layouts only when API tab is active
     effect(() => {
-      if (this.isOpen()) {
+      if (this.isOpen() && this.selectedTab() === 'api') {
         this.loadLayouts();
       }
     });
@@ -74,5 +77,42 @@ export class OpenDialogComponent {
       this.error.set('Failed to delete layout');
       console.error('Error deleting layout:', err);
     }
+  }
+
+  handleFileSelect(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    
+    if (!file) {
+      return;
+    }
+
+    this.loading.set(true);
+    this.error.set(null);
+
+    const reader = new FileReader();
+    
+    reader.onload = (e) => {
+      try {
+        const xhtmlContent = e.target?.result as string;
+        const layout = this.designerState.parseXhtmlToLayout(xhtmlContent, file.name);
+        this.onOpen.emit(layout);
+        this.loading.set(false);
+      } catch (err) {
+        this.error.set('Failed to parse XHTML file: ' + (err as Error).message);
+        console.error('Error parsing XHTML:', err);
+        this.loading.set(false);
+      }
+    };
+
+    reader.onerror = () => {
+      this.error.set('Failed to read file');
+      this.loading.set(false);
+    };
+
+    reader.readAsText(file);
+    
+    // Reset input so the same file can be selected again
+    input.value = '';
   }
 }
