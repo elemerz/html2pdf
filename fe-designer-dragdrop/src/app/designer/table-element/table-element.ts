@@ -172,6 +172,222 @@ export class TableElementComponent {
     this.closeActionsToolbar();
   }
 
+  protected onDeleteRowFromToolbar(): void {
+    const selection = this.designerState.selectedTableCell();
+    if (!selection || selection.elementId !== this.element.id) return;
+    
+    const rowSizes = this.getRowSizes();
+    
+    // Check minimum (can't delete last row)
+    if (rowSizes.length <= 1) {
+      alert("Cannot delete the last row. Table must have at least 1 row.");
+      this.closeActionsToolbar();
+      return;
+    }
+    
+    // Check for content (smart confirmation)
+    const hasContent = this.rowHasContent(selection.row);
+    if (hasContent) {
+      if (!confirm("This row contains content. Delete anyway?")) {
+        this.closeActionsToolbar();
+        return;
+      }
+    }
+    
+    // Remove the row and redistribute sizes proportionally
+    const updatedRows = [...rowSizes];
+    updatedRows.splice(selection.row, 1);
+    
+    // Normalize to maintain total = 1 (proportional redistribution)
+    const total = updatedRows.reduce((sum, size) => sum + size, 0);
+    const normalized = updatedRows.map(size => size / total);
+    
+    // Clean up cell properties for deleted row
+    this.cleanupDeletedRow(selection.row, rowSizes.length);
+    
+    this.applyTableSizes(normalized, this.getColSizes());
+    
+    // Select safe cell after deletion
+    const newRow = Math.min(selection.row, normalized.length - 1);
+    this.designerState.selectTableCell(this.element.id, newRow, selection.col);
+    this.closeActionsToolbar();
+  }
+
+  protected onDeleteColFromToolbar(): void {
+    const selection = this.designerState.selectedTableCell();
+    if (!selection || selection.elementId !== this.element.id) return;
+    
+    const colSizes = this.getColSizes();
+    
+    // Check minimum (can't delete last column)
+    if (colSizes.length <= 1) {
+      alert("Cannot delete the last column. Table must have at least 1 column.");
+      this.closeActionsToolbar();
+      return;
+    }
+    
+    // Check for content (smart confirmation)
+    const hasContent = this.colHasContent(selection.col);
+    if (hasContent) {
+      if (!confirm("This column contains content. Delete anyway?")) {
+        this.closeActionsToolbar();
+        return;
+      }
+    }
+    
+    // Remove the column and redistribute sizes proportionally
+    const updatedCols = [...colSizes];
+    updatedCols.splice(selection.col, 1);
+    
+    // Normalize to maintain total = 1 (proportional redistribution)
+    const total = updatedCols.reduce((sum, size) => sum + size, 0);
+    const normalized = updatedCols.map(size => size / total);
+    
+    // Clean up cell properties for deleted column
+    this.cleanupDeletedCol(selection.col, colSizes.length);
+    
+    this.applyTableSizes(this.getRowSizes(), normalized);
+    
+    // Select safe cell after deletion
+    const newCol = Math.min(selection.col, normalized.length - 1);
+    this.designerState.selectTableCell(this.element.id, selection.row, newCol);
+    this.closeActionsToolbar();
+  }
+
+  private rowHasContent(rowIndex: number): boolean {
+    const colSizes = this.getColSizes();
+    const contents = this.element.properties?.['tableCellContents'] as Record<string, string> | undefined;
+    if (!contents) return false;
+    
+    for (let col = 0; col < colSizes.length; col++) {
+      const key = `${rowIndex}_${col}`;
+      const content = contents[key];
+      if (content && content.trim() !== '' && content !== '&nbsp;') {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private colHasContent(colIndex: number): boolean {
+    const rowSizes = this.getRowSizes();
+    const contents = this.element.properties?.['tableCellContents'] as Record<string, string> | undefined;
+    if (!contents) return false;
+    
+    for (let row = 0; row < rowSizes.length; row++) {
+      const key = `${row}_${colIndex}`;
+      const content = contents[key];
+      if (content && content.trim() !== '' && content !== '&nbsp;') {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private cleanupDeletedRow(deletedRow: number, totalRows: number): void {
+    const colSizes = this.getColSizes();
+    const propertyMaps = [
+      'tableCellContents',
+      'tableCellPadding',
+      'tableCellHAlign',
+      'tableCellVAlign',
+      'tableCellBorderWidth',
+      'tableCellBorderStyle',
+      'tableCellBorderColor',
+      'tableCellFontStyle',
+      'tableCellFontWeight',
+      'tableCellFontSize',
+      'tableCellLineHeight',
+      'tableCellFontFamily',
+      'tableCellTextDecoration'
+    ];
+    
+    propertyMaps.forEach(mapName => {
+      const map = this.element.properties?.[mapName] as Record<string, any> | undefined;
+      if (!map) return;
+      
+      const newMap: Record<string, any> = {};
+      
+      // Reindex all cells
+      for (let row = 0; row < totalRows; row++) {
+        for (let col = 0; col < colSizes.length; col++) {
+          const oldKey = `${row}_${col}`;
+          
+          if (row === deletedRow) {
+            // Skip deleted row
+            continue;
+          } else if (row > deletedRow) {
+            // Rows after deleted row: shift up
+            const newKey = `${row - 1}_${col}`;
+            if (map[oldKey] !== undefined) {
+              newMap[newKey] = map[oldKey];
+            }
+          } else {
+            // Rows before deleted row: keep same index
+            if (map[oldKey] !== undefined) {
+              newMap[oldKey] = map[oldKey];
+            }
+          }
+        }
+      }
+      
+      // Update the property map
+      this.element.properties![mapName] = newMap;
+    });
+  }
+
+  private cleanupDeletedCol(deletedCol: number, totalCols: number): void {
+    const rowSizes = this.getRowSizes();
+    const propertyMaps = [
+      'tableCellContents',
+      'tableCellPadding',
+      'tableCellHAlign',
+      'tableCellVAlign',
+      'tableCellBorderWidth',
+      'tableCellBorderStyle',
+      'tableCellBorderColor',
+      'tableCellFontStyle',
+      'tableCellFontWeight',
+      'tableCellFontSize',
+      'tableCellLineHeight',
+      'tableCellFontFamily',
+      'tableCellTextDecoration'
+    ];
+    
+    propertyMaps.forEach(mapName => {
+      const map = this.element.properties?.[mapName] as Record<string, any> | undefined;
+      if (!map) return;
+      
+      const newMap: Record<string, any> = {};
+      
+      // Reindex all cells
+      for (let row = 0; row < rowSizes.length; row++) {
+        for (let col = 0; col < totalCols; col++) {
+          const oldKey = `${row}_${col}`;
+          
+          if (col === deletedCol) {
+            // Skip deleted column
+            continue;
+          } else if (col > deletedCol) {
+            // Columns after deleted column: shift left
+            const newKey = `${row}_${col - 1}`;
+            if (map[oldKey] !== undefined) {
+              newMap[newKey] = map[oldKey];
+            }
+          } else {
+            // Columns before deleted column: keep same index
+            if (map[oldKey] !== undefined) {
+              newMap[oldKey] = map[oldKey];
+            }
+          }
+        }
+      }
+      
+      // Update the property map
+      this.element.properties![mapName] = newMap;
+    });
+  }
+
   protected onCellEditorSaved(html: string): void {
     const selection = this.designerState.selectedTableCell();
     if (!selection || selection.elementId !== this.element.id) return;

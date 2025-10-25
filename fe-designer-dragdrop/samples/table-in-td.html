@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Table In TD</title>
+</head>
+<body>
+<!--Original Table: 2 rows x 2 columns (4 cells)-->
+<table>
+  <tr><td>Cell 1.1</td><td>Cell 1.2</td></tr>
+  <tr><td>Cell 2.1</td><td>Cell 2.2</td></tr>
+</table>
+<!--Eg: Splitting Cell 2.2 in 2 columns and 2 rows, should become:-->
+<table>
+  <tr><td>Cell 1.1</td><td>Cell 1.2</td></tr>
+  <tr>
+    <td>Cell 2.1</td>
+    <td>
+      <table>
+        <tr><td>Cell 2.2-1.1</td><td>Cell 2.2-1.2</td></tr>
+        <tr><td>Cell 2.2-2.1</td><td>Cell 2.2-2.2</td></tr>
+      </table>
+    </td>
+  </tr>
+</table>
+</body>
+</html>

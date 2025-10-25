@@ -131,7 +131,7 @@
 
 .cell-actions-toolbar {
   position: absolute;
-  transform: translate(-50%, -150%); // Increased from -120% to avoid resize handle overlap
+  transform: translate(-50%, -120%); // Lowered from -150% to bring closer to table
   display: flex;
   gap: 4px;
   background-color: @primary;
@@ -154,13 +154,13 @@
   align-items: center;
   justify-content: center;
   transition: background-color @transition-fast;
-  min-width: 24px;
-  min-height: 24px;
+  min-width: 28px;  // Increased from 24px
+  min-height: 28px; // Increased from 24px
 
   svg {
     display: block;
-    width: 16px;
-    height: 16px;
+    width: 20px;      // Increased from 16px (25% larger)
+    height: 20px;     // Increased from 16px (25% larger)
     flex-shrink: 0;
   }
 
