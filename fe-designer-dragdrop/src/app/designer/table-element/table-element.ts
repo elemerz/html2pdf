@@ -397,6 +397,11 @@ export class TableElementComponent {
     return { top: 0, right: 0, bottom: 0, left: 0 };
   }
 
+  protected getCellPaddingString(row: number, col: number): string {
+    const padding = this.getCellPadding(row, col);
+    return `${padding.top}mm ${padding.right}mm ${padding.bottom}mm ${padding.left}mm`;
+  }
+
   protected getCellHAlign(row: number, col: number): 'left' | 'center' | 'right' {
     const key = this.cellKey(row, col);
     const map = this.element.properties?.['tableCellHAlign'] as Record<string, string> | undefined;

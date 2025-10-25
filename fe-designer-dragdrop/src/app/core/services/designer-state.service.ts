@@ -842,8 +842,9 @@ export class DesignerStateService {
           }
         }
         if (fontFamily) {
-          // Clean up the font-family value (remove quotes at start and end, and around individual font names)
-          fontFamily = fontFamily.replace(/["']/g, '').trim();
+          // Normalize quotes: convert double quotes to single quotes to match dropdown options
+          // Browser may convert &quot; to " or keep ' as-is
+          fontFamily = fontFamily.replace(/"/g, "'").trim();
           tableCellFontFamily[key] = fontFamily;
         }
         
