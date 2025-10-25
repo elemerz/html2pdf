@@ -407,5 +407,19 @@ export class TableElementComponent {
     if (v === 'bottom') return 'flex-end';
     return 'flex-start';
   }
+
+  protected getCellBorder(row: number, col: number): string {
+    const key = `${row}_${col}`;
+    const widthMap = this.element.properties?.['tableCellBorderWidth'] as Record<string, number> | undefined;
+    const styleMap = this.element.properties?.['tableCellBorderStyle'] as Record<string, string> | undefined;
+    const colorMap = this.element.properties?.['tableCellBorderColor'] as Record<string, string> | undefined;
+    const w = widthMap?.[key];
+    const s = styleMap?.[key];
+    const c = colorMap?.[key];
+    const width = Number.isFinite(w) ? w! : 0;
+    const style = typeof s === 'string' ? s : 'solid';
+    const color = typeof c === 'string' ? c : '#000000';
+    return width > 0 ? `${width}px ${style} ${color}` : 'none';
+  }
 }
 

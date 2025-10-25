@@ -91,35 +91,7 @@
               </div>
             </div>
 
-            <div class="property-subsection">
-              <header class="subsection-header">Border</header>
-              <div class="property-grid">
-                <div class="property-field">
-                  <label class="property-label">Width (px)</label>
-                  <input type="number" min="0" step="1" class="property-input"
-                         [value]="getTableBorderWidth()"
-                         (input)="onBorderWidthChange($any($event.target).value)" />
-                </div>
-                <div class="property-field">
-                  <label class="property-label">Style</label>
-                  <select class="property-input"
-                          [value]="getTableBorderStyle()"
-                          (change)="onBorderStyleChange($any($event.target).value)">
-                    <option value="none">none</option>
-                    <option value="solid">solid</option>
-                    <option value="dashed">dashed</option>
-                    <option value="dotted">dotted</option>
-                    <option value="double">double</option>
-                  </select>
-                </div>
-                <div class="property-field">
-                  <label class="property-label">Color</label>
-                  <input type="color" class="property-input"
-                         [value]="getTableBorderColor()"
-                         (input)="onBorderColorChange($any($event.target).value)" />
-                </div>
-              </div>
-            </div>
+
           </div>
         </section>
       }
@@ -170,6 +142,36 @@
                 <button type="button" class="align-btn" [class.active]="getSelectedCellVAlign()==='top'" (click)="updateSelectedCellAlignment('v','top')"><span class="ico-align_vertical_top"></span></button>
                 <button type="button" class="align-btn" [class.active]="getSelectedCellVAlign()==='middle'" (click)="updateSelectedCellAlignment('v','middle')"><span class="ico-align_vertical_center"></span></button>
                 <button type="button" class="align-btn" [class.active]="getSelectedCellVAlign()==='bottom'" (click)="updateSelectedCellAlignment('v','bottom')"><span class="ico-align_vertical_bottom"></span></button>
+              </div>
+            </div>
+
+            <div class="property-subsection">
+              <header class="subsection-header">Cell Border</header>
+              <div class="property-grid">
+                <div class="property-field">
+                  <label class="property-label">Width (px)</label>
+                  <input type="number" min="0" step="1" class="property-input"
+                         [value]="getSelectedCellBorderWidth()"
+                         (input)="updateSelectedCellBorder('width', $any($event.target).value)" />
+                </div>
+                <div class="property-field">
+                  <label class="property-label">Style</label>
+                  <select class="property-input"
+                          [value]="getSelectedCellBorderStyle()"
+                          (change)="updateSelectedCellBorder('style', $any($event.target).value)">
+                    <option value="none">none</option>
+                    <option value="solid">solid</option>
+                    <option value="dashed">dashed</option>
+                    <option value="dotted">dotted</option>
+                    <option value="double">double</option>
+                  </select>
+                </div>
+                <div class="property-field">
+                  <label class="property-label">Color</label>
+                  <input type="color" class="property-input"
+                         [value]="getSelectedCellBorderColor()"
+                         (input)="updateSelectedCellBorder('color', $any($event.target).value)" />
+                </div>
               </div>
             </div>
           </div>

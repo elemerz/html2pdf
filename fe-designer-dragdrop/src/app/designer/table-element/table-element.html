@@ -2,8 +2,7 @@
 @let colSizes = getColSizes();
 
 <div class="table-element-container">
-  <table class="element-table" aria-label="Table element"
-         [style.border]="(element.properties['tableBorderWidth']||0) + 'px ' + (element.properties['tableBorderStyle']||'solid') + ' ' + (element.properties['tableBorderColor']||'#000000')" >
+  <table class="element-table" aria-label="Table element">
     <tbody>
       @for (rowSize of rowSizes; track $index; let rowIndex = $index) {
         <tr [style.height.mm]="element.height * rowSize">
@@ -20,6 +19,7 @@
               [style.padding-left.mm]="getCellPadding(rowIndex,colIndex).left"
               [style.text-align]="getCellHAlign(rowIndex,colIndex)"
               [style.vertical-align]="getCellVAlign(rowIndex,colIndex)"
+              [style.border]="getCellBorder(rowIndex,colIndex)"
             >
               <div class="cell-content"
                    [style.display]="'flex'"

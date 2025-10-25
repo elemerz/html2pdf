@@ -160,13 +160,51 @@ export class PropertyPanelComponent {
     }
   }
 
-  // Table border helpers
-  getTableBorderWidth(): number { const el = this.selectedElement(); return el ? (el.properties?.['tableBorderWidth'] ?? 0) : 0; }
-  getTableBorderStyle(): string { const el = this.selectedElement(); return el ? (el.properties?.['tableBorderStyle'] ?? 'solid') : 'solid'; }
-  getTableBorderColor(): string { const el = this.selectedElement(); return el ? (el.properties?.['tableBorderColor'] ?? '#000000') : '#000000'; }
-  onBorderWidthChange(v: any) { this.updateElementProperties({ tableBorderWidth: Math.max(0, Number(v) || 0) }); }
-  onBorderStyleChange(style: any) { this.updateElementProperties({ tableBorderStyle: String(style) }); }
-  onBorderColorChange(color: any) { this.updateElementProperties({ tableBorderColor: String(color) }); }
+  // Removed table-level border helpers (migrated to cell-level)
+
+  // Cell border helpers
+  getSelectedCellBorderWidth(): number | null {
+    const selection = this.selectedTableCell();
+    const el = this.selectedElement();
+    if (!selection || !el || el.id !== selection.elementId) return null;
+    const map = el.properties?.['tableCellBorderWidth'] as Record<string, number> | undefined;
+    const v = map?.[this.cellKey(selection.row, selection.col)];
+    return Number.isFinite(v) ? v! : 0;
+  }
+  getSelectedCellBorderStyle(): string | null {
+    const selection = this.selectedTableCell();
+    const el = this.selectedElement();
+    if (!selection || !el || el.id !== selection.elementId) return null;
+    const map = el.properties?.['tableCellBorderStyle'] as Record<string, string> | undefined;
+    const v = map?.[this.cellKey(selection.row, selection.col)];
+    return typeof v === 'string' ? v : 'solid';
+  }
+  getSelectedCellBorderColor(): string | null {
+    const selection = this.selectedTableCell();
+    const el = this.selectedElement();
+    if (!selection || !el || el.id !== selection.elementId) return null;
+    const map = el.properties?.['tableCellBorderColor'] as Record<string, string> | undefined;
+    const v = map?.[this.cellKey(selection.row, selection.col)];
+    return typeof v === 'string' ? v : '#000000';
+  }
+  updateSelectedCellBorder(part: 'width' | 'style' | 'color', value: any) {
+    const selection = this.selectedTableCell();
+    const el = this.selectedElement();
+    if (!selection || !el || el.id !== selection.elementId) return;
+    const key = this.cellKey(selection.row, selection.col);
+    const widthMap = (el.properties?.['tableCellBorderWidth'] as Record<string, number>) || {};
+    const styleMap = (el.properties?.['tableCellBorderStyle'] as Record<string, string>) || {};
+    const colorMap = (el.properties?.['tableCellBorderColor'] as Record<string, string>) || {};
+    let nextProps: Record<string, any> = { ...(el.properties||{}) };
+    if (part === 'width') {
+      nextProps['tableCellBorderWidth'] = { ...widthMap, [key]: Math.max(0, Number(value) || 0) };
+    } else if (part === 'style') {
+      nextProps['tableCellBorderStyle'] = { ...styleMap, [key]: String(value) };
+    } else if (part === 'color') {
+      nextProps['tableCellBorderColor'] = { ...colorMap, [key]: String(value) };
+    }
+    this.updateElement({ properties: nextProps });
+  }
 
   private normalizeNumber(value: number, fallback: number = 0): number {
     if (Number.isFinite(value)) {
