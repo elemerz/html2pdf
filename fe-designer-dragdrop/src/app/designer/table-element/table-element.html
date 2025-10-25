@@ -79,9 +79,25 @@
         [style.top.mm]="cellOffsets.top"
         (click)="$event.stopPropagation()"
       >
-        <button class="cell-action" type="button" (click)="onEditCellContent()" title="Edit Cell Content">✏</button>
-        <button class="cell-action" type="button" (click)="onSplitRowsFromToolbar()" title="Split Rows">⬌</button>
-        <button class="cell-action" type="button" (click)="onSplitColsFromToolbar()" title="Split Columns">⬍</button>
+        <button class="cell-action" type="button" (click)="onEditCellContent()" title="Edit Cell Content">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M11.5 1.5L14.5 4.5L5 14H2V11L11.5 1.5Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+        <button class="cell-action" type="button" (click)="onSplitRowsFromToolbar()" title="Split Rows">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="2" y="2" width="12" height="4" stroke="currentColor" stroke-width="1.5"/>
+            <rect x="2" y="10" width="12" height="4" stroke="currentColor" stroke-width="1.5"/>
+            <line x1="2" y1="8" x2="14" y2="8" stroke="currentColor" stroke-width="1.5" stroke-dasharray="2 2"/>
+          </svg>
+        </button>
+        <button class="cell-action" type="button" (click)="onSplitColsFromToolbar()" title="Split Columns">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="2" y="2" width="4" height="12" stroke="currentColor" stroke-width="1.5"/>
+            <rect x="10" y="2" width="4" height="12" stroke="currentColor" stroke-width="1.5"/>
+            <line x1="8" y1="2" x2="8" y2="14" stroke="currentColor" stroke-width="1.5" stroke-dasharray="2 2"/>
+          </svg>
+        </button>
       </div>
     }
   }
