@@ -44,9 +44,32 @@
       width: 100%;
       height: 100%;
       box-sizing: border-box;
-      font-size: 12px;
-      line-height: 1.3;
+      // Default fallback values
+      font-size: 12pt;
+      line-height: 1.5;
+      font-family: sans-serif;
+      font-style: normal;
+      font-weight: normal;
+      text-decoration: none;
       white-space: pre-wrap; // preserve whitespace & newlines
+      
+      // Apply generic cell properties as defaults via CSS variables
+      // These will be overridden by inline styles from Quill editor
+      font-style: var(--cell-font-style, normal);
+      font-weight: var(--cell-font-weight, normal);
+      font-size: var(--cell-font-size, 12pt);
+      line-height: var(--cell-line-height, 1.5);
+      font-family: var(--cell-font-family, sans-serif);
+      text-decoration: var(--cell-text-decoration, none);
+      
+      // Quill-generated inline styles have higher specificity and will override
+      // For example: <span style="color: green; font-size: 14pt;">text</span>
+      // The span's inline styles will win over the parent div's properties
+      
+      // Ensure children can inherit or override
+      * {
+        // Let inline styles from Quill take precedence
+      }
     }
   }
 }

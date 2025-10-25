@@ -206,6 +206,84 @@ export class PropertyPanelComponent {
     this.updateElement({ properties: nextProps });
   }
 
+  // Cell font helpers
+  getSelectedCellFontStyle(): string | null {
+    const selection = this.selectedTableCell();
+    const el = this.selectedElement();
+    if (!selection || !el || el.id !== selection.elementId) return null;
+    const map = el.properties?.['tableCellFontStyle'] as Record<string, string> | undefined;
+    const v = map?.[this.cellKey(selection.row, selection.col)];
+    return typeof v === 'string' ? v : 'normal';
+  }
+  getSelectedCellFontWeight(): string | null {
+    const selection = this.selectedTableCell();
+    const el = this.selectedElement();
+    if (!selection || !el || el.id !== selection.elementId) return null;
+    const map = el.properties?.['tableCellFontWeight'] as Record<string, string> | undefined;
+    const v = map?.[this.cellKey(selection.row, selection.col)];
+    return typeof v === 'string' ? v : 'normal';
+  }
+  getSelectedCellFontSize(): number | null {
+    const selection = this.selectedTableCell();
+    const el = this.selectedElement();
+    if (!selection || !el || el.id !== selection.elementId) return null;
+    const map = el.properties?.['tableCellFontSize'] as Record<string, number> | undefined;
+    const v = map?.[this.cellKey(selection.row, selection.col)];
+    return Number.isFinite(v) ? v! : 12;
+  }
+  getSelectedCellLineHeight(): number | null {
+    const selection = this.selectedTableCell();
+    const el = this.selectedElement();
+    if (!selection || !el || el.id !== selection.elementId) return null;
+    const map = el.properties?.['tableCellLineHeight'] as Record<string, number> | undefined;
+    const v = map?.[this.cellKey(selection.row, selection.col)];
+    return Number.isFinite(v) ? v! : 1.5;
+  }
+  getSelectedCellFontFamily(): string | null {
+    const selection = this.selectedTableCell();
+    const el = this.selectedElement();
+    if (!selection || !el || el.id !== selection.elementId) return null;
+    const map = el.properties?.['tableCellFontFamily'] as Record<string, string> | undefined;
+    const v = map?.[this.cellKey(selection.row, selection.col)];
+    return typeof v === 'string' ? v : 'sans-serif';
+  }
+  getSelectedCellTextDecoration(): string | null {
+    const selection = this.selectedTableCell();
+    const el = this.selectedElement();
+    if (!selection || !el || el.id !== selection.elementId) return null;
+    const map = el.properties?.['tableCellTextDecoration'] as Record<string, string> | undefined;
+    const v = map?.[this.cellKey(selection.row, selection.col)];
+    return typeof v === 'string' ? v : 'none';
+  }
+  updateSelectedCellFont(part: 'style' | 'weight' | 'size' | 'lineHeight' | 'family' | 'decoration', value: any) {
+    const selection = this.selectedTableCell();
+    const el = this.selectedElement();
+    if (!selection || !el || el.id !== selection.elementId) return;
+    const key = this.cellKey(selection.row, selection.col);
+    let nextProps: Record<string, any> = { ...(el.properties||{}) };
+    
+    if (part === 'style') {
+      const map = (el.properties?.['tableCellFontStyle'] as Record<string, string>) || {};
+      nextProps['tableCellFontStyle'] = { ...map, [key]: String(value) };
+    } else if (part === 'weight') {
+      const map = (el.properties?.['tableCellFontWeight'] as Record<string, string>) || {};
+      nextProps['tableCellFontWeight'] = { ...map, [key]: String(value) };
+    } else if (part === 'size') {
+      const map = (el.properties?.['tableCellFontSize'] as Record<string, number>) || {};
+      nextProps['tableCellFontSize'] = { ...map, [key]: Math.max(1, Number(value) || 12) };
+    } else if (part === 'lineHeight') {
+      const map = (el.properties?.['tableCellLineHeight'] as Record<string, number>) || {};
+      nextProps['tableCellLineHeight'] = { ...map, [key]: Math.max(0.5, Number(value) || 1.5) };
+    } else if (part === 'family') {
+      const map = (el.properties?.['tableCellFontFamily'] as Record<string, string>) || {};
+      nextProps['tableCellFontFamily'] = { ...map, [key]: String(value) };
+    } else if (part === 'decoration') {
+      const map = (el.properties?.['tableCellTextDecoration'] as Record<string, string>) || {};
+      nextProps['tableCellTextDecoration'] = { ...map, [key]: String(value) };
+    }
+    this.updateElement({ properties: nextProps });
+  }
+
   private normalizeNumber(value: number, fallback: number = 0): number {
     if (Number.isFinite(value)) {
       return value;

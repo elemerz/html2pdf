@@ -1,6 +1,7 @@
 import { Component, HostListener, Input, signal, inject, ElementRef } from '@angular/core';
 import { CellEditorDialogComponent } from './cell-editor-dialog';
 import { CommonModule } from '@angular/common';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { CanvasElement } from '../../shared/models/schema';
 import { DesignerStateService } from '../../core/services/designer-state.service';
 import { getTableColSizes, getTableRowSizes, withTableSizes } from '../../shared/utils/table-utils';
@@ -28,6 +29,7 @@ export class TableElementComponent {
 
   protected designerState = inject(DesignerStateService);
   private hostRef = inject(ElementRef<HTMLElement>);
+  private sanitizer = inject(DomSanitizer);
   private activeResize: ResizeMode | null = null;
 
   protected showContextMenu = signal(false);
@@ -70,7 +72,7 @@ export class TableElementComponent {
     return { left, top, width };
   }
 
-  protected getCellContent(row: number, col: number): string {
+  protected getCellContentRaw(row: number, col: number): string {
     const contents = this.element.properties?.['tableCellContents'];
     if (contents && typeof contents === 'object') {
       const key = `${row}_${col}`;
@@ -80,6 +82,14 @@ export class TableElementComponent {
       }
     }
     return '&nbsp;';
+  }
+
+  protected getCellContent(row: number, col: number): SafeHtml {
+    const htmlString = this.getCellContentRaw(row, col);
+    
+    // Bypass Angular's sanitization to preserve inline styles from Quill
+    // This is safe because the content comes from our own Quill editor
+    return this.sanitizer.bypassSecurityTrustHtml(htmlString);
   }
 
   protected showCellEditor = signal(false);
@@ -420,6 +430,44 @@ export class TableElementComponent {
     const style = typeof s === 'string' ? s : 'solid';
     const color = typeof c === 'string' ? c : '#000000';
     return width > 0 ? `${width}px ${style} ${color}` : 'none';
+  }
+
+  protected getCellFontStyle(row: number, col: number): string {
+    const key = `${row}_${col}`;
+    const map = this.element.properties?.['tableCellFontStyle'] as Record<string, string> | undefined;
+    return map?.[key] || 'normal';
+  }
+
+  protected getCellFontWeight(row: number, col: number): string {
+    const key = `${row}_${col}`;
+    const map = this.element.properties?.['tableCellFontWeight'] as Record<string, string> | undefined;
+    return map?.[key] || 'normal';
+  }
+
+  protected getCellFontSize(row: number, col: number): string {
+    const key = `${row}_${col}`;
+    const map = this.element.properties?.['tableCellFontSize'] as Record<string, number> | undefined;
+    const size = map?.[key];
+    return Number.isFinite(size) ? `${size}pt` : '12pt';
+  }
+
+  protected getCellLineHeight(row: number, col: number): string {
+    const key = `${row}_${col}`;
+    const map = this.element.properties?.['tableCellLineHeight'] as Record<string, number> | undefined;
+    const lineHeight = map?.[key];
+    return Number.isFinite(lineHeight) ? String(lineHeight) : '1.5';
+  }
+
+  protected getCellFontFamily(row: number, col: number): string {
+    const key = `${row}_${col}`;
+    const map = this.element.properties?.['tableCellFontFamily'] as Record<string, string> | undefined;
+    return map?.[key] || 'sans-serif';
+  }
+
+  protected getCellTextDecoration(row: number, col: number): string {
+    const key = `${row}_${col}`;
+    const map = this.element.properties?.['tableCellTextDecoration'] as Record<string, string> | undefined;
+    return map?.[key] || 'none';
   }
 }
 

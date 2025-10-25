@@ -27,6 +27,12 @@
                    [style.justifyContent]="getCellVAlignFlex(rowIndex,colIndex)"
                    [style.textAlign]="getCellHAlign(rowIndex,colIndex)"
                    [style.overflow]="'auto'"
+                   [style.--cell-font-style]="getCellFontStyle(rowIndex,colIndex)"
+                   [style.--cell-font-weight]="getCellFontWeight(rowIndex,colIndex)"
+                   [style.--cell-font-size]="getCellFontSize(rowIndex,colIndex)"
+                   [style.--cell-line-height]="getCellLineHeight(rowIndex,colIndex)"
+                   [style.--cell-font-family]="getCellFontFamily(rowIndex,colIndex)"
+                   [style.--cell-text-decoration]="getCellTextDecoration(rowIndex,colIndex)"
                    [innerHTML]="getCellContent(rowIndex, colIndex)"></div>
             </td>
           }
@@ -92,7 +98,7 @@
 
 @if (showCellEditor()) {
   <app-cell-editor-dialog
-    [initialContent]="getCellContent(designerState.selectedTableCell()!.row, designerState.selectedTableCell()!.col)"
+    [initialContent]="getCellContentRaw(designerState.selectedTableCell()!.row, designerState.selectedTableCell()!.col)"
     (saved)="onCellEditorSaved($event)"
     (closed)="onCellEditorClosed()"
   ></app-cell-editor-dialog>

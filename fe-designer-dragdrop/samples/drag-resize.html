@@ -1,0 +1,114 @@
+<!doctype html>
+<meta charset="utf-8" />
+<style>
+  :root { --grip: 12px; --minw: 60px; --minh: 40px; }
+
+  .stage {
+    position: relative;
+    block-size: 80vh;
+    inline-size: 100%;
+    background: #f6f7f9;
+    border: 1px solid #d0d6e0;
+  }
+
+  /* The handled element */
+  .box {
+    position: absolute;
+    left: 120px; top: 120px;
+    inline-size: 300px; block-size: 180px;
+    background: color-mix(in oklab, #00a0ff 20%, white);
+    border: 2px solid #00a0ff;
+    box-shadow: 0 0 0 1px #fff inset;
+    anchor-name: --box;             /* <- exposes an anchor */
+    touch-action: none;             /* improves pointer handling */
+    user-select: none;
+  }
+
+  /* Generic grip styling */
+  .grip {
+    position: absolute;
+    position-anchor: --box;         /* <- position against the box */
+    inline-size: var(--grip);
+    block-size: var(--grip);
+    background: #00a0ff;
+    border-radius: 50%;
+    box-shadow: 0 0 0 2px #fff;
+    cursor: pointer;
+    touch-action: none;
+  }
+  /* Corner grips anchored via anchor() */
+  .grip.tl { top: anchor(top);     left:  anchor(left);  translate: -50% -50%; cursor: nwse-resize; }
+  .grip.tr { top: anchor(top);     left:  anchor(right); translate: -50% -50%; cursor: nesw-resize; }
+  .grip.bl { top: anchor(bottom);  left:  anchor(left);  translate: -50% -50%; cursor: nesw-resize; }
+  .grip.br { top: anchor(bottom);  left:  anchor(right); translate: -50% -50%; cursor: nwse-resize; }
+
+  /* Move handle centered on top edge */
+  .grip.move {
+    top: anchor(top);
+    left: calc((anchor(left) + anchor(right)) / 2);
+    translate: -50% calc(-150%);
+    inline-size: 28px; block-size: 28px; border-radius: 6px;
+    cursor: move;
+  }
+</style>
+
+<div class="stage" id="stage">
+  <div class="box" id="box" role="region" aria-label="marquee"></div>
+
+  <!-- Helper grips as siblings, not inside .box -->
+  <button class="grip tl"  data-dir="tl" aria-label="resize top-left"></button>
+  <button class="grip tr"  data-dir="tr" aria-label="resize top-right"></button>
+  <button class="grip bl"  data-dir="bl" aria-label="resize bottom-left"></button>
+  <button class="grip br"  data-dir="br" aria-label="resize bottom-right"></button>
+  <button class="grip move" data-dir="move" aria-label="move"></button>
+</div>
+
+<script>
+  const box = document.getElementById('box');
+  const stage = document.getElementById('stage');
+  const grips = [...document.querySelectorAll('.grip')];
+
+  let startX, startY, startLeft, startTop, startW, startH, mode;
+
+  function rectOf(el) { return el.getBoundingClientRect(); }
+  function px(n){ return `${n}px`; }
+
+  function start(e){
+    e.preventDefault();
+    const r = rectOf(box), s = rectOf(stage);
+    startX = e.clientX; startY = e.clientY;
+    startLeft = r.left - s.left; startTop = r.top - s.top;
+    startW = r.width; startH = r.height;
+    mode = e.currentTarget.dataset.dir;
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', end, { once:true });
+  }
+
+  function move(e){
+    const dx = e.clientX - startX;
+    const dy = e.clientY - startY;
+
+    let L = startLeft, T = startTop, W = startW, H = startH;
+
+    if (mode === 'move') {
+      L = startLeft + dx; T = startTop + dy;
+    } else {
+      if (mode.includes('l')) { L = startLeft + dx; W = startW - dx; }
+      if (mode.includes('r')) { W = startW + dx; }
+      if (mode.includes('t')) { T = startTop + dy; H = startH - dy; }
+      if (mode.includes('b')) { H = startH + dy; }
+    }
+    // constraints
+    W = Math.max(W, parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--minw')) || 60);
+    H = Math.max(H, parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--minh')) || 40);
+
+    box.style.left = px(L);
+    box.style.top  = px(T);
+    box.style.width  = px(W);
+    box.style.height = px(H);
+  }
+
+  function end(){ window.removeEventListener('pointermove', move); }
+
+  grips.forEach(g => g.addEventListener('pointerdown', start));
+</script>

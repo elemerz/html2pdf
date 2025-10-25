@@ -174,6 +174,86 @@
                 </div>
               </div>
             </div>
+
+            <div class="property-subsection">
+              <header class="subsection-header">Font</header>
+              <div class="property-grid">
+                <div class="property-field">
+                  <label class="property-label">Font Weight</label>
+                  <select class="property-input"
+                          [value]="getSelectedCellFontWeight()"
+                          (change)="updateSelectedCellFont('weight', $any($event.target).value)">
+                    <option value="normal">normal</option>
+                    <option value="bold">bold</option>
+                    <option value="bolder">bolder</option>
+                    <option value="lighter">lighter</option>
+                  </select>
+                </div>
+                <div class="property-field">
+                  <label class="property-label">Font Style</label>
+                  <select class="property-input"
+                          [value]="getSelectedCellFontStyle()"
+                          (change)="updateSelectedCellFont('style', $any($event.target).value)">
+                    <option value="normal">normal</option>
+                    <option value="italic">italic</option>
+                    <option value="oblique">oblique</option>
+                  </select>
+                </div>
+                <div class="property-field">
+                  <label class="property-label">Decoration</label>
+                  <select class="property-input"
+                          [value]="getSelectedCellTextDecoration()"
+                          (change)="updateSelectedCellFont('decoration', $any($event.target).value)">
+                    <option value="none">None</option>
+                    <option value="underline">Underline</option>
+                    <option value="overline">Overline</option>
+                    <option value="line-through">StrikeThrough</option>
+                  </select>
+                </div>
+                <div class="property-field">
+                  <label class="property-label">Font Size (pt)</label>
+                  <input type="number" min="1" step="1" class="property-input"
+                         [value]="getSelectedCellFontSize()"
+                         (input)="updateSelectedCellFont('size', $any($event.target).value)" />
+                </div>
+                <div class="property-field">
+                  <label class="property-label">Line Height</label>
+                  <input type="number" min="0.5" step="0.1" class="property-input"
+                         [value]="getSelectedCellLineHeight()"
+                         (input)="updateSelectedCellFont('lineHeight', $any($event.target).value)" />
+                </div>
+                <div class="property-field" style="grid-column: span 2;">
+                  <label class="property-label">Font Family</label>
+                  <select class="property-input"
+                          [value]="getSelectedCellFontFamily()"
+                          (change)="updateSelectedCellFont('family', $any($event.target).value)">
+                    <option value="serif">serif</option>
+                    <option value="sans-serif">sans-serif</option>
+                    <option value="monospace">monospace</option>
+                    <option value="cursive">cursive</option>
+                    <option value="Arial, Helvetica, sans-serif">Arial</option>
+                    <option value="Verdana, Geneva, sans-serif">Verdana</option>
+                    <option value="Tahoma, Geneva, sans-serif">Tahoma</option>
+                    <option value="'Trebuchet MS', sans-serif">Trebuchet MS</option>
+                    <option value="'Segoe UI', Tahoma, sans-serif">Segoe UI</option>
+                    <option value="Calibri, sans-serif">Calibri</option>
+                    <option value="'Times New Roman', Times, serif">Times New Roman</option>
+                    <option value="Georgia, serif">Georgia</option>
+                    <option value="'Courier New', Courier, monospace">Courier New</option>
+                    <option value="Consolas, monospace">Consolas</option>
+                    <option value="Symbol">Symbol</option>
+                    <option value="Webdings">Webdings</option>
+                    <option value="Wingdings">Wingdings</option>
+                    <option value="Roboto, sans-serif">Roboto</option>
+                    <option value="'Open Sans', sans-serif">Open Sans</option>
+                    <option value="Lato, sans-serif">Lato</option>
+                    <option value="Montserrat, sans-serif">Montserrat</option>
+                    <option value="Poppins, sans-serif">Poppins</option>
+                    <option value="Raleway, sans-serif">Raleway</option>
+                  </select>
+                </div>
+              </div>
+            </div>
           </div>
         </section>
       }

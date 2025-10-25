@@ -453,7 +453,22 @@ export class DesignerStateService {
             const borderCss = (Number.isFinite(borderWidth) && borderWidth! > 0) 
               ? `border:${borderWidth}px ${borderStyle || 'solid'} ${borderColor || '#000000'};` 
               : '';
-            return `        <td style="width:${colWidthStr}mm;height:${rowHeightStr}mm;padding:${pt}mm ${pr}mm ${pb}mm ${pl}mm;text-align:${hAlign};vertical-align:${vAlign};${borderCss}">${cellContent}</td>`;
+            const fontStyleMap = element.properties?.['tableCellFontStyle'] as Record<string, string> | undefined;
+            const fontWeightMap = element.properties?.['tableCellFontWeight'] as Record<string, string> | undefined;
+            const fontSizeMap = element.properties?.['tableCellFontSize'] as Record<string, number> | undefined;
+            const lineHeightMap = element.properties?.['tableCellLineHeight'] as Record<string, number> | undefined;
+            const fontFamilyMap = element.properties?.['tableCellFontFamily'] as Record<string, string> | undefined;
+            const fontStyle = fontStyleMap?.[key];
+            const fontWeight = fontWeightMap?.[key];
+            const fontSize = fontSizeMap?.[key];
+            const lineHeight = lineHeightMap?.[key];
+            const fontFamily = fontFamilyMap?.[key];
+            const fontCss = (fontStyle ? `font-style:${fontStyle};` : '') +
+              (fontWeight ? `font-weight:${fontWeight};` : '') +
+              (Number.isFinite(fontSize) ? `font-size:${fontSize}pt;` : '') +
+              (Number.isFinite(lineHeight) ? `line-height:${lineHeight};` : '') +
+              (fontFamily ? `font-family:${fontFamily};` : '');
+            return `        <td style="width:${colWidthStr}mm;height:${rowHeightStr}mm;padding:${pt}mm ${pr}mm ${pb}mm ${pl}mm;text-align:${hAlign};vertical-align:${vAlign};${borderCss}${fontCss}">${cellContent}</td>`;
           })
           .join('\n');
 
