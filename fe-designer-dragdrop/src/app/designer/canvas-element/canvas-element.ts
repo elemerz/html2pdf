@@ -36,6 +36,7 @@ export class CanvasElementComponent {
   @HostBinding('style.top') get top() { return `${this.element.y}mm`; }
   @HostBinding('style.width') get width() { return `${this.element.width}mm`; }
   @HostBinding('style.height') get height() { return `${this.element.height}mm`; }
+  @HostBinding('attr.data-role') get dataRole() { return this.element.properties?.['elementRole'] || null; }
 
   private elementRef = inject(ElementRef);
   private designerState = inject(DesignerStateService);

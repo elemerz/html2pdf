@@ -355,6 +355,7 @@ export class DesignerStateService {
 
   /**
    * Validate that elements with the same role are adjacent
+   * Uses CSS queries on the actual DOM to detect intercalations
    * Throws error if validation fails
    */
   private validateRoleAdjacency(elements: CanvasElement[]): void {
@@ -364,36 +365,35 @@ export class DesignerStateService {
       return; // No roles to validate
     }
 
-    // Group elements by role and track their indices
-    const roleIndices = new Map<string, number[]>();
-    
-    roledElements.forEach((el, idx) => {
+    // Get unique roles
+    const roles = new Set<string>();
+    roledElements.forEach(el => {
       const role = el.properties?.['elementRole'];
       if (role) {
-        // Find the actual index in the original elements array
-        const actualIndex = elements.indexOf(el);
-        if (!roleIndices.has(role)) {
-          roleIndices.set(role, []);
-        }
-        roleIndices.get(role)!.push(actualIndex);
+        roles.add(role);
       }
     });
 
-    // Check adjacency for each role
-    for (const [role, indices] of roleIndices.entries()) {
-      if (indices.length <= 1) {
-        continue; // Single element or no elements, always adjacent
-      }
-
-      // Sort indices
-      const sortedIndices = [...indices].sort((a, b) => a - b);
-      
-      // Check if all indices are consecutive
-      for (let i = 1; i < sortedIndices.length; i++) {
-        if (sortedIndices[i] !== sortedIndices[i - 1] + 1) {
+    // Check for each possible intercalation pattern
+    // Pattern: role1 + role2 + role1 (where role1 != role2)
+    const roleList = Array.from(roles);
+    
+    for (let i = 0; i < roleList.length; i++) {
+      for (let j = 0; j < roleList.length; j++) {
+        if (i === j) continue; // Skip same role pairs
+        
+        const role1 = roleList[i];
+        const role2 = roleList[j];
+        
+        // Query: *[data-role="role1"]+*[data-role="role2"]+*[data-role="role1"]
+        const selector = `app-canvas-element[data-role="${role1}"]+app-canvas-element[data-role="${role2}"]+app-canvas-element[data-role="${role1}"]`;
+        const intercalations = document.querySelectorAll(selector);
+        
+        if (intercalations.length > 0) {
           throw new Error(
-            `Validation Error: Elements with role "${role}" are not adjacent. ` +
-            `Please group all ${role} elements together before saving.`
+            `Validation Error: Elements with role "${role1}" are not adjacent. ` +
+            `Found "${role2}" element(s) intercalated between "${role1}" elements. ` +
+            `Please group all ${role1} elements together before saving.`
           );
         }
       }
