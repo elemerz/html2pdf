@@ -242,8 +242,13 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
   protected getCellContentRaw(row: number, col: number): string {
     const selection = this.designerState.selectedTableCell();
 
-    // If we have a sub-table path, navigate into nested structure
-    if (selection && selection.subTablePath && selection.subTablePath.length > 0) {
+    // Only navigate into nested structure if THIS cell is selected AND has a subTablePath
+    if (selection && 
+        selection.elementId === this.element.id &&
+        selection.row === row && 
+        selection.col === col &&
+        selection.subTablePath && 
+        selection.subTablePath.length > 0) {
       return this.getNestedCellContent(row, col, selection.subTablePath);
     }
 
