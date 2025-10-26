@@ -130,6 +130,55 @@
   }
 }
 
+.sub-table-resize-handle {
+  position: absolute;
+  z-index: 10;
+  background-color: transparent;
+
+  &.horizontal {
+    left: 0;
+    right: 0;
+    height: 10px;
+    cursor: ns-resize;
+  }
+
+  &.vertical {
+    top: 0;
+    bottom: 0;
+    width: 10px;
+    cursor: ew-resize;
+  }
+
+  &::after {
+    content: '';
+    position: absolute;
+    background-color: fade(@primary, 50%);
+    opacity: 0;
+    transition: opacity @transition-fast;
+    pointer-events: none;
+  }
+
+  &.horizontal::after {
+    left: 0;
+    right: 0;
+    top: 50%;
+    height: 2px;
+    transform: translateY(-50%);
+  }
+
+  &.vertical::after {
+    top: 0;
+    bottom: 0;
+    left: 50%;
+    width: 2px;
+    transform: translateX(-50%);
+  }
+
+  &:hover::after {
+    opacity: 1;
+  }
+}
+
 .cell-actions-trigger {
   position: absolute;
   width: 20px;

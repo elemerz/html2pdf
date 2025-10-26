@@ -8,7 +8,9 @@ import { getTableColSizes, getTableRowSizes, withTableSizes } from '../../shared
 
 type ResizeMode =
   | { type: 'row'; index: number; startClientY: number; startRowSizes: number[] }
-  | { type: 'col'; index: number; startClientX: number; startColSizes: number[] };
+  | { type: 'col'; index: number; startClientX: number; startColSizes: number[] }
+  | { type: 'subtable-row'; parentRow: number; parentCol: number; subTablePath: Array<{row: number; col: number}>; index: number; startClientY: number; startRowSizes: number[]; level: number }
+  | { type: 'subtable-col'; parentRow: number; parentCol: number; subTablePath: Array<{row: number; col: number}>; index: number; startClientX: number; startColSizes: number[]; level: number };
 
 interface ContextMenuCell {
   row: number;
@@ -64,7 +66,21 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
   }
 
   ngAfterViewChecked(): void {
-    // No need to attach handlers anymore - the capture-phase listener handles everything
+    // Attach event listeners to subtable resize handles
+    this.attachSubTableResizeHandlers();
+  }
+
+  private attachSubTableResizeHandlers(): void {
+    const allHandles = this.hostRef.nativeElement.querySelectorAll('.sub-table-resize-handle');
+    allHandles.forEach((handle: HTMLElement) => {
+      // Remove old listener if exists
+      (handle as any)._resizeListener && handle.removeEventListener('mousedown', (handle as any)._resizeListener);
+      
+      // Create and attach new listener
+      const listener = (event: MouseEvent) => this.startSubTableResize(handle, event);
+      (handle as any)._resizeListener = listener;
+      handle.addEventListener('mousedown', listener);
+    });
   }
 
   private handleNativeClick(event: MouseEvent): void {
@@ -825,7 +841,9 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
     // Calculate selection color based on level
     const selectionColor = this.getSelectionColorForLevel(level);
 
-    let html = `<table class="sub-table sub-table-level-${level}" style="width:100%;height:100%;border-collapse:collapse;table-layout:fixed;">`;
+    // Wrap subtable in a positioned container for resize handles
+    let html = `<div class="sub-table-wrapper" style="position:relative;width:100%;height:100%;">`;
+    html += `<table class="sub-table sub-table-level-${level}" style="width:100%;height:100%;border-collapse:collapse;table-layout:fixed;">`;
     html += '<tbody>';
 
     for (let r = 0; r < rows; r++) {
@@ -879,6 +897,24 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
     }
 
     html += '</tbody></table>';
+
+    // Add resize handles for rows (horizontal)
+    let cumulativeTop = 0;
+    for (let r = 0; r < rows - 1; r++) {
+      cumulativeTop += rowSizes[r];
+      const topPercent = (cumulativeTop * 100).toFixed(2);
+      html += `<div class="sub-table-resize-handle horizontal" data-level="${level}" data-row="${r}" style="position:absolute;left:0;right:0;height:10px;top:${topPercent}%;transform:translateY(-50%);cursor:ns-resize;z-index:10;"></div>`;
+    }
+
+    // Add resize handles for columns (vertical)
+    let cumulativeLeft = 0;
+    for (let c = 0; c < cols - 1; c++) {
+      cumulativeLeft += colSizes[c];
+      const leftPercent = (cumulativeLeft * 100).toFixed(2);
+      html += `<div class="sub-table-resize-handle vertical" data-level="${level}" data-col="${c}" style="position:absolute;top:0;bottom:0;width:10px;left:${leftPercent}%;transform:translateX(-50%);cursor:ew-resize;z-index:10;"></div>`;
+    }
+
+    html += '</div>'; // close wrapper
     return html;
   }
 
@@ -1264,6 +1300,100 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
     this.designerState.selectElement(this.element.id);
   }
 
+  private startSubTableResize(handle: HTMLElement, event: MouseEvent): void {
+    event.stopPropagation();
+    event.preventDefault();
+
+    const level = parseInt(handle.dataset['level'] || '1', 10);
+    const isHorizontal = handle.classList.contains('horizontal');
+    const index = parseInt(handle.dataset[isHorizontal ? 'row' : 'col'] || '0', 10);
+
+    // Find the parent cell containing this subtable
+    const subTableWrapper = handle.closest('.sub-table-wrapper') as HTMLElement;
+    if (!subTableWrapper) return;
+
+    const parentTd = subTableWrapper.closest('td[data-row][data-col]') as HTMLElement;
+    if (!parentTd) return;
+
+    const parentRow = parseInt(parentTd.dataset['row'] || '0', 10);
+    const parentCol = parseInt(parentTd.dataset['col'] || '0', 10);
+
+    // Build subtable path by walking up through nested subtables
+    const subTablePath: Array<{row: number; col: number}> = [];
+    let currentWrapper: HTMLElement | null = subTableWrapper;
+    
+    while (currentWrapper && currentWrapper.classList.contains('sub-table-wrapper')) {
+      const parentCell = currentWrapper.closest('.sub-table-cell') as HTMLElement;
+      if (parentCell) {
+        const r = parseInt(parentCell.dataset['row'] || '0', 10);
+        const c = parseInt(parentCell.dataset['col'] || '0', 10);
+        subTablePath.unshift({ row: r, col: c });
+        
+        const nextWrapper = parentCell.closest('.sub-table-wrapper');
+        currentWrapper = nextWrapper !== currentWrapper ? nextWrapper as HTMLElement : null;
+      } else {
+        break;
+      }
+    }
+
+    // Get the subtable data
+    const subTable = this.getSubTableAtPath(parentRow, parentCol, subTablePath);
+    if (!subTable) return;
+
+    const rowSizes = subTable.rowSizes || [];
+    const colSizes = subTable.colSizes || [];
+
+    if (isHorizontal) {
+      if (index >= rowSizes.length - 1) return;
+      this.activeResize = {
+        type: 'subtable-row',
+        parentRow,
+        parentCol,
+        subTablePath,
+        index,
+        startClientY: event.clientY,
+        startRowSizes: [...rowSizes],
+        level
+      };
+    } else {
+      if (index >= colSizes.length - 1) return;
+      this.activeResize = {
+        type: 'subtable-col',
+        parentRow,
+        parentCol,
+        subTablePath,
+        index,
+        startClientX: event.clientX,
+        startColSizes: [...colSizes],
+        level
+      };
+    }
+
+    this.closeContextMenu();
+    this.designerState.selectElement(this.element.id);
+  }
+
+  private getSubTableAtPath(parentRow: number, parentCol: number, path: Array<{row: number; col: number}>): any | null {
+    const parentKey = `${parentRow}_${parentCol}`;
+    const subTablesMap = this.element.properties?.['tableCellSubTables'] as Record<string, any> | undefined;
+    
+    if (!subTablesMap || !subTablesMap[parentKey]) return null;
+
+    let currentSubTable = subTablesMap[parentKey];
+    
+    for (let i = 0; i < path.length; i++) {
+      const cellKey = `${path[i].row}_${path[i].col}`;
+      if (i < path.length - 1) {
+        // Navigate deeper
+        const nestedSubTables = currentSubTable.cellSubTables;
+        if (!nestedSubTables || !nestedSubTables[cellKey]) return null;
+        currentSubTable = nestedSubTables[cellKey];
+      }
+    }
+    
+    return currentSubTable;
+  }
+
   protected trackByIndex(index: number): number {
     return index;
   }
@@ -1284,6 +1414,10 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
       this.handleRowResize(event);
     } else if (this.activeResize.type === 'col') {
       this.handleColResize(event);
+    } else if (this.activeResize.type === 'subtable-row') {
+      this.handleSubTableRowResize(event);
+    } else if (this.activeResize.type === 'subtable-col') {
+      this.handleSubTableColResize(event);
     }
   }
 
@@ -1364,6 +1498,105 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
   private applyTableSizes(rowSizes: number[], colSizes: number[]): void {
     const properties = withTableSizes(this.element, rowSizes, colSizes);
     this.designerState.updateElement(this.element.id, { properties });
+  }
+
+  private handleSubTableRowResize(event: MouseEvent): void {
+    if (!this.activeResize || this.activeResize.type !== 'subtable-row') return;
+
+    const start = this.activeResize;
+    const deltaPx = event.clientY - start.startClientY;
+    
+    // Get parent cell dimensions to calculate the delta ratio
+    const rowSizes = this.getRowSizes();
+    const colSizes = this.getColSizes();
+    const parentCellHeightMm = this.element.height * rowSizes[start.parentRow];
+    const parentPadding = this.getCellPadding(start.parentRow, start.parentCol);
+    const availableHeightMm = parentCellHeightMm - parentPadding.top - parentPadding.bottom;
+    
+    const deltaMm = deltaPx / this.mmToPx;
+    const deltaRatio = deltaMm / availableHeightMm;
+
+    const startSizes = start.startRowSizes;
+    const index = start.index;
+    const pairTotal = startSizes[index] + startSizes[index + 1];
+
+    const minRatio = this.getMinRatio(availableHeightMm, pairTotal);
+    let newFirst = startSizes[index] + deltaRatio;
+    newFirst = Math.min(Math.max(newFirst, minRatio), pairTotal - minRatio);
+    const newSecond = pairTotal - newFirst;
+
+    const updatedRows = [...startSizes];
+    updatedRows[index] = newFirst;
+    updatedRows[index + 1] = newSecond;
+
+    this.applySubTableSizes(start.parentRow, start.parentCol, start.subTablePath, updatedRows, null);
+  }
+
+  private handleSubTableColResize(event: MouseEvent): void {
+    if (!this.activeResize || this.activeResize.type !== 'subtable-col') return;
+
+    const start = this.activeResize;
+    const deltaPx = event.clientX - start.startClientX;
+    
+    // Get parent cell dimensions to calculate the delta ratio
+    const rowSizes = this.getRowSizes();
+    const colSizes = this.getColSizes();
+    const parentCellWidthMm = this.element.width * colSizes[start.parentCol];
+    const parentPadding = this.getCellPadding(start.parentRow, start.parentCol);
+    const availableWidthMm = parentCellWidthMm - parentPadding.left - parentPadding.right;
+    
+    const deltaMm = deltaPx / this.mmToPx;
+    const deltaRatio = deltaMm / availableWidthMm;
+
+    const startSizes = start.startColSizes;
+    const index = start.index;
+    const pairTotal = startSizes[index] + startSizes[index + 1];
+
+    const minRatio = this.getMinRatio(availableWidthMm, pairTotal);
+    let newFirst = startSizes[index] + deltaRatio;
+    newFirst = Math.min(Math.max(newFirst, minRatio), pairTotal - minRatio);
+    const newSecond = pairTotal - newFirst;
+
+    const updatedCols = [...startSizes];
+    updatedCols[index] = newFirst;
+    updatedCols[index + 1] = newSecond;
+
+    this.applySubTableSizes(start.parentRow, start.parentCol, start.subTablePath, null, updatedCols);
+  }
+
+  private applySubTableSizes(parentRow: number, parentCol: number, path: Array<{row: number; col: number}>, rowSizes: number[] | null, colSizes: number[] | null): void {
+    const parentKey = `${parentRow}_${parentCol}`;
+    const subTablesMap = (this.element.properties?.['tableCellSubTables'] as Record<string, any> | undefined) || {};
+    
+    if (!subTablesMap[parentKey]) return;
+
+    // Navigate to the target subtable
+    let currentSubTable = subTablesMap[parentKey];
+    for (let i = 0; i < path.length - 1; i++) {
+      const cellKey = `${path[i].row}_${path[i].col}`;
+      if (!currentSubTable.cellSubTables || !currentSubTable.cellSubTables[cellKey]) return;
+      currentSubTable = currentSubTable.cellSubTables[cellKey];
+    }
+
+    // Apply the new sizes
+    if (rowSizes) {
+      currentSubTable.rowSizes = rowSizes;
+    }
+    if (colSizes) {
+      currentSubTable.colSizes = colSizes;
+    }
+
+    // Update element properties
+    const updatedProperties = {
+      ...this.element.properties,
+      tableCellSubTables: { ...subTablesMap }
+    };
+    
+    this.designerState.updateElement(this.element.id, { properties: updatedProperties });
+    
+    // Clear cache to force re-render
+    const cacheKey = `${this.element.id}_${parentKey}`;
+    this.subTableHtmlCache.delete(cacheKey);
   }
 
   private promptForSplit(axis: 'row' | 'col'): number | null {
