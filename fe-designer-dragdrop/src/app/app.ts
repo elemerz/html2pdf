@@ -100,14 +100,15 @@ export class App {
       this.showSaveDialog.set(false);
     } catch (error) {
       console.error('Failed to export layout:', error);
-      this.designerState.setStatusMessage('Failed to export layout');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to export layout';
+      this.designerState.setStatusMessage(errorMessage);
+      // Don't close dialog on validation error so user can fix it
+      if (errorMessage.includes('Validation Error')) {
+        alert(errorMessage);
+      } else {
+        this.showSaveDialog.set(false);
+      }
     }
-  }
-
-  handleOpen(layout: ReportLayout): void {
-    this.designerState.loadLayout(layout);
-    this.designerState.setStatusMessage(`Layout "${layout.name}" loaded`);
-    this.showOpenDialog.set(false);
   }
 
   closeSaveDialog(): void {
@@ -115,6 +116,12 @@ export class App {
   }
 
   closeOpenDialog(): void {
+    this.showOpenDialog.set(false);
+  }
+
+  handleOpen(layout: ReportLayout): void {
+    this.designerState.loadLayout(layout);
+    this.designerState.setStatusMessage(`Layout "${layout.name}" loaded`);
     this.showOpenDialog.set(false);
   }
 

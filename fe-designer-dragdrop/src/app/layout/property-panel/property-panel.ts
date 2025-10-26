@@ -56,6 +56,27 @@ export class PropertyPanelComponent {
     this.updateElement({ content });
   }
 
+  getElementId(element: CanvasElement): string {
+    return element.properties?.['elementId'] || '';
+  }
+
+  updateElementId(value: string) {
+    const el = this.selectedElement();
+    if (!el) return;
+    const trimmed = value.trim().substring(0, 20);
+    this.updateElementProperties({ elementId: trimmed });
+  }
+
+  getElementRole(element: CanvasElement): string {
+    return element.properties?.['elementRole'] || '';
+  }
+
+  updateElementRole(value: string) {
+    const el = this.selectedElement();
+    if (!el) return;
+    this.updateElementProperties({ elementRole: value });
+  }
+
   updateTableProperty(property: 'rows' | 'cols', value: number) {
     const el = this.selectedElement();
     if (!el || el.type !== 'table') return;

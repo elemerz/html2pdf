@@ -52,12 +52,29 @@
           </div>
 
           <div class="property-field">
-            <label class="property-label">Content</label>
-            <textarea 
-              class="property-textarea" 
-              [value]="element.content"
-              (input)="updateContent($any($event.target).value)"
-              data-testid="input-content"></textarea>
+            <label class="property-label">ID</label>
+            <input 
+              type="text" 
+              class="property-input" 
+              maxlength="20"
+              [value]="getElementId(element)"
+              (input)="updateElementId($any($event.target).value)"
+              placeholder="element-id"
+              data-testid="input-element-id" />
+          </div>
+
+          <div class="property-field">
+            <label class="property-label">Role</label>
+            <select 
+              class="property-input"
+              [value]="getElementRole(element)"
+              (change)="updateElementRole($any($event.target).value)"
+              data-testid="input-element-role">
+              <option value="">None</option>
+              <option value="report-header">Header</option>
+              <option value="report-body">Body</option>
+              <option value="report-footer">Footer</option>
+            </select>
           </div>
         </div>
       </section>

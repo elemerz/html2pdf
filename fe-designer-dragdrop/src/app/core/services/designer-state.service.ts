@@ -83,6 +83,18 @@ export class DesignerStateService {
     // Initialize history with empty state
     this.addToHistory([]);
 
+    // Load calibration scale from localStorage
+    const savedScale = localStorage.getItem('trueSizeScale');
+    if (savedScale) {
+      const parsed = parseFloat(savedScale);
+      if (Number.isFinite(parsed) && parsed > 0) {
+        this.calibrationScale.set(parsed);
+      }
+    }
+
+    // Set default zoom mode to actual size (1:1)
+    this.canvasZoomMode.set('actual');
+
     // Auto-save to localStorage on element changes
     effect(() => {
       const layout = this.currentLayoutSignal();
@@ -341,9 +353,59 @@ export class DesignerStateService {
     }
   }
 
+  /**
+   * Validate that elements with the same role are adjacent
+   * Throws error if validation fails
+   */
+  private validateRoleAdjacency(elements: CanvasElement[]): void {
+    const roledElements = elements.filter(el => el.properties?.['elementRole']);
+    
+    if (roledElements.length === 0) {
+      return; // No roles to validate
+    }
+
+    // Group elements by role and track their indices
+    const roleIndices = new Map<string, number[]>();
+    
+    roledElements.forEach((el, idx) => {
+      const role = el.properties?.['elementRole'];
+      if (role) {
+        // Find the actual index in the original elements array
+        const actualIndex = elements.indexOf(el);
+        if (!roleIndices.has(role)) {
+          roleIndices.set(role, []);
+        }
+        roleIndices.get(role)!.push(actualIndex);
+      }
+    });
+
+    // Check adjacency for each role
+    for (const [role, indices] of roleIndices.entries()) {
+      if (indices.length <= 1) {
+        continue; // Single element or no elements, always adjacent
+      }
+
+      // Sort indices
+      const sortedIndices = [...indices].sort((a, b) => a - b);
+      
+      // Check if all indices are consecutive
+      for (let i = 1; i < sortedIndices.length; i++) {
+        if (sortedIndices[i] !== sortedIndices[i - 1] + 1) {
+          throw new Error(
+            `Validation Error: Elements with role "${role}" are not adjacent. ` +
+            `Please group all ${role} elements together before saving.`
+          );
+        }
+      }
+    }
+  }
+
   generateXhtmlDocument(title: string): string {
     const safeTitle = this.escapeHtml(title || 'Layout');
     const elements = [...this.elementsSignal()];
+
+    // Validate role adjacency before saving
+    this.validateRoleAdjacency(elements);
 
     // Flow layout for tables (no absolute positioning). Non-table elements keep absolute for now.
     let lastFlowBottom = 0;
@@ -425,6 +487,12 @@ export class DesignerStateService {
     const effectiveRowSizes = rowSizes.length ? rowSizes : [1];
     const effectiveColSizes = colSizes.length ? colSizes : [1];
 
+    // Extract id and data-role attributes
+    const elementId = element.properties?.['elementId'] || '';
+    const elementRole = element.properties?.['elementRole'] || '';
+    const idAttr = elementId ? ` id="${this.escapeHtml(elementId)}"` : '';
+    const roleAttr = elementRole ? ` data-role="${this.escapeHtml(elementRole)}"` : '';
+
     const subTablesMap = element.properties?.['tableCellSubTables'] as Record<string, any> | undefined;
 
     const rowsMarkup = effectiveRowSizes
@@ -492,7 +560,7 @@ export class DesignerStateService {
       })
       .join('\n');
 
-    return `<table class="element element-table" style="${style}">\n` +
+    return `<table${idAttr}${roleAttr} class="element element-table" style="${style}">\n` +
       `    <tbody>\n${rowsMarkup}\n    </tbody>\n  </table>`;
   }
 
@@ -813,6 +881,10 @@ export class DesignerStateService {
     if (!position) {
       return null;
     }
+
+    // Extract id and data-role attributes
+    const elementId = table.getAttribute('id') || '';
+    const elementRole = table.getAttribute('data-role') || '';
     
     // Parse table structure
     const tbody = table.querySelector('tbody');
@@ -1014,6 +1086,8 @@ export class DesignerStateService {
         tableCellLineHeight,
         tableCellFontFamily,
         tableCellTextDecoration,
+        ...(elementId ? { elementId } : {}),
+        ...(elementRole ? { elementRole } : {}),
         ...(Object.keys(tableCellSubTables).length > 0 ? { tableCellSubTables } : {})
       }
     };
