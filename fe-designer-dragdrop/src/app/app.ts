@@ -7,7 +7,6 @@ import { ToolbarPanelComponent } from './layout/toolbar-panel/toolbar-panel';
 import { PropertyPanelComponent } from './layout/property-panel/property-panel';
 import { CanvasComponent } from './designer/canvas/canvas';
 import { SaveDialogComponent } from './layout/save-dialog/save-dialog';
-import { OpenDialogComponent } from './layout/open-dialog/open-dialog';
 import { OptionsDialogComponent } from './shared/dialogs/options-dialog/options-dialog';
 import { ScreenCalibrationDialogComponent } from './shared/dialogs/screen-calibration/screen-calibration-dialog';
 import { ReportLayout } from './shared/models/schema';
@@ -22,7 +21,6 @@ import { ReportLayout } from './shared/models/schema';
     PropertyPanelComponent,
     CanvasComponent,
     SaveDialogComponent,
-    OpenDialogComponent,
     OptionsDialogComponent,
     ScreenCalibrationDialogComponent
   ],
@@ -35,7 +33,6 @@ export class App {
 
   // Dialog visibility signals
   protected showSaveDialog = signal(false);
-  protected showOpenDialog = signal(false);
   protected showOptionsDialog = signal(false);
   protected showCalibrationDialog = signal(false);
 
@@ -64,7 +61,36 @@ export class App {
   }
 
   onOpenLayout(): void {
-    this.showOpenDialog.set(true);
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.xhtml,.html,.xml';
+    
+    input.onchange = (event: Event) => {
+      const file = (event.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      
+      reader.onload = (e) => {
+        try {
+          const xhtmlContent = e.target?.result as string;
+          const layout = this.designerState.parseXhtmlToLayout(xhtmlContent, file.name);
+          this.designerState.loadLayout(layout);
+          this.designerState.setStatusMessage(`Layout "${layout.name}" loaded`);
+        } catch (err) {
+          console.error('Error parsing XHTML:', err);
+          this.designerState.setStatusMessage('Failed to parse XHTML file: ' + (err as Error).message);
+        }
+      };
+
+      reader.onerror = () => {
+        this.designerState.setStatusMessage('Failed to read file');
+      };
+
+      reader.readAsText(file);
+    };
+
+    input.click();
   }
 
   onCloseLayout(): void {
@@ -113,16 +139,6 @@ export class App {
 
   closeSaveDialog(): void {
     this.showSaveDialog.set(false);
-  }
-
-  closeOpenDialog(): void {
-    this.showOpenDialog.set(false);
-  }
-
-  handleOpen(layout: ReportLayout): void {
-    this.designerState.loadLayout(layout);
-    this.designerState.setStatusMessage(`Layout "${layout.name}" loaded`);
-    this.showOpenDialog.set(false);
   }
 
   closeOptionsDialog(): void {

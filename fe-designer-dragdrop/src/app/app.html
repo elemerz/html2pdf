@@ -67,12 +67,6 @@
   (onSave)="handleSave($event)">
 </app-save-dialog>
 
-<app-open-dialog
-  [isOpen]="showOpenDialog()"
-  (onClose)="closeOpenDialog()"
-  (onOpen)="handleOpen($event)">
-</app-open-dialog>
-
 @if (showOptionsDialog()) {
   <app-options-dialog
     (close)="closeOptionsDialog()">
