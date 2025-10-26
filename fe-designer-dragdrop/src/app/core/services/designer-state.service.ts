@@ -820,7 +820,7 @@ export class DesignerStateService {
       return null;
     }
     
-    const rows = Array.from(tbody.querySelectorAll('tr')) as HTMLTableRowElement[];
+    const rows = Array.from(tbody.querySelectorAll(':scope > tr')) as HTMLTableRowElement[];
     const numRows = rows.length;
     
     if (numRows === 0) {
@@ -875,7 +875,7 @@ export class DesignerStateService {
     
     // Parse each cell
     rows.forEach((row, rowIndex) => {
-      const cells = Array.from(row.querySelectorAll('td')) as HTMLTableCellElement[];
+      const cells = Array.from(row.querySelectorAll(':scope > td')) as HTMLTableCellElement[];
       cells.forEach((cell, colIndex) => {
         const key = `${rowIndex}_${colIndex}`;
         
@@ -1056,17 +1056,46 @@ export class DesignerStateService {
 
     // Calculate row sizes
     for (const row of rows) {
-      const heightStr = row.style.height || row.getAttribute('style')?.match(/height:\s*([0-9.]+)%/)?.[1];
+      const heightStr = row.style.height || row.getAttribute('style')?.match(/height:\s*([0-9.]+)(?:mm|%)/)?.[1];
+      const heightUnit = row.getAttribute('style')?.match(/height:\s*[0-9.]+?(mm|%)/)?.[1];
       if (heightStr) {
-        rowSizes.push(parseFloat(heightStr) / 100);
+        if (heightUnit === 'mm') {
+          // Convert mm to ratio
+          rowSizes.push(parseFloat(heightStr) / parentHeightMm);
+        } else {
+          // Already a percentage
+          rowSizes.push(parseFloat(heightStr) / 100);
+        }
       }
     }
 
     // Calculate column sizes from first row
     for (const cell of firstRowCells) {
-      const widthStr = cell.style.width || cell.getAttribute('style')?.match(/width:\s*([0-9.]+)%/)?.[1];
+      const widthStr = cell.style.width || cell.getAttribute('style')?.match(/width:\s*([0-9.]+)(?:mm|%)/)?.[1];
+      const widthUnit = cell.getAttribute('style')?.match(/width:\s*[0-9.]+?(mm|%)/)?.[1];
       if (widthStr) {
-        colSizes.push(parseFloat(widthStr) / 100);
+        if (widthUnit === 'mm') {
+          // Convert mm to ratio
+          colSizes.push(parseFloat(widthStr) / parentWidthMm);
+        } else {
+          // Already a percentage
+          colSizes.push(parseFloat(widthStr) / 100);
+        }
+      }
+    }
+
+    // Normalize sizes to ensure they sum to 1.0
+    const rowSizeSum = rowSizes.reduce((sum, size) => sum + size, 0);
+    if (rowSizeSum > 0 && Math.abs(rowSizeSum - 1.0) > 0.01) {
+      for (let i = 0; i < rowSizes.length; i++) {
+        rowSizes[i] = rowSizes[i] / rowSizeSum;
+      }
+    }
+
+    const colSizeSum = colSizes.reduce((sum, size) => sum + size, 0);
+    if (colSizeSum > 0 && Math.abs(colSizeSum - 1.0) > 0.01) {
+      for (let i = 0; i < colSizes.length; i++) {
+        colSizes[i] = colSizes[i] / colSizeSum;
       }
     }
 

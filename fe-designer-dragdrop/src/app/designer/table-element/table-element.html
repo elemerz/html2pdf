@@ -137,9 +137,9 @@
   }
 </div>
 
-@if (showCellEditor()) {
+@if (showCellEditor() && editorCellSelection()) {
   <app-cell-editor-dialog
-    [initialContent]="getCellContentRaw(designerState.selectedTableCell()!.row, designerState.selectedTableCell()!.col)"
+    [initialContent]="getCellContentRaw(editorCellSelection()!.row, editorCellSelection()!.col)"
     (saved)="onCellEditorSaved($event)"
     (closed)="onCellEditorClosed()"
   ></app-cell-editor-dialog>

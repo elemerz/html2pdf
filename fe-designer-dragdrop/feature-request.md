@@ -30,9 +30,10 @@
   - Selected Objects as Reusable component.
 ##Ability to define Header, Body, Footer
 
-##Remove DIV-s intercalated between splitted cell and sub-Table
-## Default zoom 1:1 when Opening the App.
-
 ##SUPPORT <HEADER> and <FOOTER> and <DIV class="report-body"></DIV> Tags.
 
+
+- Remove DIV-s intercalated between splitted cell and sub-Table
+- Set Default zoom to 1:1 when Opening the App.
+- Allow sub-cells to be resized
  

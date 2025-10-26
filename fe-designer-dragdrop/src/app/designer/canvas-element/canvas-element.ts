@@ -31,18 +31,18 @@ export class CanvasElementComponent {
   @Input() gridSize: number = 10;
   @Input() mmToPx: number = 3.7795275591;
   @Input() pageGutters: PageGutters = { top: 0, right: 0, bottom: 0, left: 0 };
-  
+
   @HostBinding('style.left') get left() { return `${this.element.x}mm`; }
   @HostBinding('style.top') get top() { return `${this.element.y}mm`; }
   @HostBinding('style.width') get width() { return `${this.element.width}mm`; }
   @HostBinding('style.height') get height() { return `${this.element.height}mm`; }
-  
+
   private elementRef = inject(ElementRef);
   private designerState = inject(DesignerStateService);
-  
+
   protected showContextMenu = signal(false);
   protected contextMenuPosition = signal({ x: 0, y: 0 });
-  
+
   private isDragging = false;
   private dragStart = { x: 0, y: 0 };
   private activeResizeHandle: ResizeHandle | null = null;
@@ -50,13 +50,12 @@ export class CanvasElementComponent {
 
   onClick(event: MouseEvent) {
     const target = event.target as HTMLElement;
-    
+
     // Don't stop propagation if clicking on a sub-table cell - let table-element handle it
     if (target.closest('.sub-table-cell')) {
-      console.log('🟡 canvas-element: sub-table cell click, allowing propagation');
       return;
     }
-    
+
     event.stopPropagation();
     this.designerState.selectElement(this.element.id);
   }
@@ -64,11 +63,11 @@ export class CanvasElementComponent {
   onMouseDown(event: MouseEvent) {
     if (event.button !== 0) return;
     event.stopPropagation();
-    
+
     this.designerState.selectElement(this.element.id);
     this.isDragging = true;
     this.activeResizeHandle = null;
-    
+
     const rect = this.elementRef.nativeElement.getBoundingClientRect();
     this.dragStart = {
       x: event.clientX - rect.left,
@@ -107,17 +106,17 @@ export class CanvasElementComponent {
     }
 
     if (!this.isDragging) return;
-    
+
     const parent = this.elementRef.nativeElement.parentElement;
     if (!parent) return;
-    
+
     const canvasRect = parent.getBoundingClientRect();
     const pxX = event.clientX - canvasRect.left - this.dragStart.x;
     const pxY = event.clientY - canvasRect.top - this.dragStart.y;
-    
+
     const mmX = pxX / this.mmToPx;
     const mmY = pxY / this.mmToPx;
-    
+
     const newX = this.snapToGrid(mmX);
     const newY = this.snapToGrid(mmY);
 

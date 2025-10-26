@@ -2,4 +2,5 @@
 set -euo pipefail
 
 ./clean-full.sh
-./build.sh
+npm i -f
+ng serve

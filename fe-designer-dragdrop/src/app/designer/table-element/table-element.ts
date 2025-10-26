@@ -44,26 +44,17 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
     // Add DOCUMENT-level listener first for debugging
     const docListener = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
-      if (target.closest('.sub-table-cell')) {
-        console.log('🟢 DOCUMENT-LEVEL: Sub-table cell click detected!', target);
-        console.log('🟢 Closest sub-table-cell:', target.closest('.sub-table-cell'));
-      }
     };
     document.addEventListener('click', docListener, true);
-    
+
     // Add click listener at capture phase to intercept ALL clicks including sub-table cells
     this.clickListener = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
-      console.log('🔴 NATIVE CLICK EVENT CAPTURED!', target);
-      console.log('🔴 Event phase:', event.eventPhase, 'CAPTURING=1, AT_TARGET=2, BUBBLING=3');
-      console.log('🔴 Current target:', event.currentTarget);
       this.handleNativeClick(event);
     };
-    
+
     // Use capture phase to intercept before any other handlers
     this.hostRef.nativeElement.addEventListener('click', this.clickListener, true);
-    
-    console.log('✅ Native click listener attached to:', this.hostRef.nativeElement);
   }
 
   ngOnDestroy(): void {
@@ -78,35 +69,27 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
 
   private handleNativeClick(event: MouseEvent): void {
     const target = event.target as HTMLElement;
-    
-    console.log('🔴 Click detected on:', target, 'classes:', target.className);
-    
     // Check if click was on or inside a sub-table cell
     const subTableCell = target.closest('.sub-table-cell') as HTMLElement;
-    
-    console.log('🔴 Closest .sub-table-cell:', subTableCell);
-    
     if (subTableCell) {
       event.stopPropagation();
-      
+
       const subRow = parseInt(subTableCell.dataset['row'] || '0', 10);
       const subCol = parseInt(subTableCell.dataset['col'] || '0', 10);
       const level = parseInt(subTableCell.dataset['level'] || '1', 10);
-      
-      console.log('🔴 Sub-table cell data:', { subRow, subCol, level });
-      
+
       // Build the full path through all nesting levels
       const subTablePath: Array<{ row: number; col: number }> = [];
-      
+
       // Walk up from the clicked cell to collect all sub-table levels
       let currentCell: HTMLElement | null = subTableCell;
       while (currentCell && currentCell.classList.contains('sub-table-cell')) {
         const r = parseInt(currentCell.dataset['row'] || '0', 10);
         const c = parseInt(currentCell.dataset['col'] || '0', 10);
-        
+
         // Add to the FRONT of the path (we're walking up)
         subTablePath.unshift({ row: r, col: c });
-        
+
         // Move to parent sub-table cell (if any)
         const parentTable = currentCell.closest('table');
         if (parentTable) {
@@ -115,7 +98,7 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
           currentCell = null;
         }
       }
-      
+
       // Now find the root parent <td> (not a sub-table-cell)
       let parentTd = subTableCell.closest('td') as HTMLElement | null;
       while (parentTd && parentTd.classList.contains('sub-table-cell')) {
@@ -126,52 +109,36 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
           parentTd = null;
         }
       }
-      
-      console.log('🔴 Parent TD found:', parentTd);
-      
+
       if (!parentTd) return;
-      
+
       // Find parent row and col by searching through the table structure
       const mainTable = this.hostRef.nativeElement.querySelector('table:first-of-type');
       if (!mainTable) return;
-      
+
       const allTds = Array.from(mainTable.querySelectorAll(':scope > tbody > tr > td'));
       const parentIndex = allTds.indexOf(parentTd);
-      
-      console.log('🔴 Parent TD index:', parentIndex, 'Total TDs:', allTds.length);
-      
       if (parentIndex === -1) return;
-      
+
       const colSizes = this.getColSizes();
       const parentRow = Math.floor(parentIndex / colSizes.length);
       const parentCol = parentIndex % colSizes.length;
-      
-      console.log('🔴 Calculated parent position:', { parentRow, parentCol });
-      console.log('🔴 SubTablePath (full):', subTablePath);
-      
       // Build path and select - pass the FULL subTablePath to support all nesting levels
       this.designerState.selectElement(this.element.id);
       this.designerState.selectTableCell(this.element.id, parentRow, parentCol, subTablePath.length > 0 ? subTablePath : undefined);
-      
-      console.log(`✅ Sub-table cell selected: parent[${parentRow},${parentCol}] sub[${subRow},${subCol}] level:${level}`);
       return;
     }
-    
+
     // Check if click was on a parent cell (not sub-table)
     const parentTd = target.closest('td[data-row]') as HTMLElement;
     if (parentTd && !parentTd.classList.contains('sub-table-cell')) {
       const row = parseInt(parentTd.dataset['row'] || '0', 10);
       const col = parseInt(parentTd.dataset['col'] || '0', 10);
-      
-      console.log('🔵 Parent cell clicked:', { row, col });
-      
       this.designerState.selectElement(this.element.id);
       this.designerState.selectTableCell(this.element.id, row, col);
       this.closeContextMenu();
       return;
     }
-    
-    console.log('🔴 Not a cell click');
   }
 
   protected getRowSizes(): number[] {
@@ -191,8 +158,6 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
   protected getSelectedCellOffsets(): { left: number; top: number; width: number } | null {
     const selection = this.designerState.selectedTableCell();
     if (!selection || selection.elementId !== this.element.id) return null;
-
-    console.log('getSelectedCellOffsets - selection:', selection);
 
     const rowSizes = this.getRowSizes();
     const colSizes = this.getColSizes();
@@ -216,47 +181,43 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
     if (selection.subTablePath && selection.subTablePath.length > 0) {
       const parentKey = `${selection.row}_${selection.col}`;
       const subTablesMap = this.element.properties?.['tableCellSubTables'] as Record<string, any> | undefined;
-      
-      console.log('Sub-table path detected:', selection.subTablePath, 'parentKey:', parentKey);
-      console.log('subTablesMap:', subTablesMap);
-      
+
       if (subTablesMap && subTablesMap[parentKey]) {
         // Add parent cell padding once at the start
         const parentPadding = this.getCellPadding(selection.row, selection.col);
         top += parentPadding.top;
         left += parentPadding.left;
-        
+
         // Walk through each level of nesting
         let currentSubTable = subTablesMap[parentKey];
-        let currentWidth = width;
-        let currentHeight = height;
-        
+        // Subtract padding from available dimensions for subtable
+        let currentWidth = width - parentPadding.left - parentPadding.right;
+        let currentHeight = height - parentPadding.top - parentPadding.bottom;
+
         for (let level = 0; level < selection.subTablePath.length; level++) {
           const subCell: { row: number; col: number } = selection.subTablePath[level];
           const subRowSizes = currentSubTable.rowSizes || [];
           const subColSizes = currentSubTable.colSizes || [];
-          
-          console.log(`Processing level ${level}, subCell:`, subCell, 'sizes:', { subRowSizes, subColSizes });
-          
+
           // Calculate offset within current level
           let subTop = 0;
           for (let r = 0; r < subCell.row; r++) {
             subTop += subRowSizes[r] * currentHeight;
           }
-          
+
           let subLeft = 0;
           for (let c = 0; c < subCell.col; c++) {
             subLeft += subColSizes[c] * currentWidth;
           }
-          
+
           // Update position
           top += subTop;
           left += subLeft;
-          
+
           // Update dimensions for next level (or final dimensions)
           currentWidth = subColSizes[subCell.col] * currentWidth;
           currentHeight = subRowSizes[subCell.row] * currentHeight;
-          
+
           // If there's another level, get the nested sub-table
           if (level < selection.subTablePath.length - 1) {
             const nestedKey = `${subCell.row}_${subCell.col}`;
@@ -269,25 +230,23 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
             }
           }
         }
-        
+
         width = currentWidth;
-        console.log('Final nested cell offset calculated:', { left, top, width });
       }
     }
 
     const result = { left, top, width };
-    console.log('Returning offset:', result);
     return result;
   }
 
   protected getCellContentRaw(row: number, col: number): string {
     const selection = this.designerState.selectedTableCell();
-    
+
     // If we have a sub-table path, navigate into nested structure
     if (selection && selection.subTablePath && selection.subTablePath.length > 0) {
       return this.getNestedCellContent(row, col, selection.subTablePath);
     }
-    
+
     // Otherwise, get root cell content
     const contents = this.element.properties?.['tableCellContents'];
     if (contents && typeof contents === 'object') {
@@ -303,18 +262,18 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
   private getNestedCellContent(parentRow: number, parentCol: number, subTablePath: Array<{row: number; col: number}>): string {
     const parentKey = `${parentRow}_${parentCol}`;
     const subTablesMap = this.element.properties?.['tableCellSubTables'] as Record<string, any> | undefined;
-    
+
     if (!subTablesMap || !subTablesMap[parentKey]) {
       return '&nbsp;';
     }
-    
+
     // Navigate through each level of nesting
     let currentSubTable = subTablesMap[parentKey];
-    
+
     for (let level = 0; level < subTablePath.length; level++) {
       const subCell = subTablePath[level];
       const isLastLevel = level === subTablePath.length - 1;
-      
+
       if (isLastLevel) {
         // At the final level, get the content
         const cellKey = `${subCell.row}_${subCell.col}`;
@@ -324,31 +283,33 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
         // Navigate deeper into nested sub-tables
         const cellKey = `${subCell.row}_${subCell.col}`;
         const nestedSubTables = currentSubTable.cellSubTables as Record<string, any> | undefined;
-        
+
         if (!nestedSubTables || !nestedSubTables[cellKey]) {
           return '&nbsp;';
         }
-        
+
         currentSubTable = nestedSubTables[cellKey];
       }
     }
-    
+
     return '&nbsp;';
   }
 
   protected getCellContent(row: number, col: number): SafeHtml {
     const htmlString = this.getCellContentRaw(row, col);
-    
+
     // Bypass Angular's sanitization to preserve inline styles from Quill
     // This is safe because the content comes from our own Quill editor
     return this.sanitizer.bypassSecurityTrustHtml(htmlString);
   }
 
   protected showCellEditor = signal(false);
+  protected editorCellSelection = signal<{ row: number; col: number; subTablePath?: Array<{ row: number; col: number }> } | null>(null);
 
   protected onEditCellContent(): void {
     const selection = this.designerState.selectedTableCell();
     if (!selection || selection.elementId !== this.element.id) return;
+    this.editorCellSelection.set({ row: selection.row, col: selection.col, subTablePath: selection.subTablePath });
     this.showCellEditor.set(true);
     this.closeActionsToolbar();
   }
@@ -364,7 +325,7 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
   protected onSplitRowsFromToolbar(): void {
     const selection = this.designerState.selectedTableCell();
     if (!selection || selection.elementId !== this.element.id) return;
-    
+
     const parts = this.promptForSplit('row');
     if (!parts) {
       this.closeActionsToolbar();
@@ -395,7 +356,7 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
   protected onSplitColsFromToolbar(): void {
     const selection = this.designerState.selectedTableCell();
     if (!selection || selection.elementId !== this.element.id) return;
-    
+
     const parts = this.promptForSplit('col');
     if (!parts) {
       this.closeActionsToolbar();
@@ -426,16 +387,16 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
   protected onDeleteRowFromToolbar(): void {
     const selection = this.designerState.selectedTableCell();
     if (!selection || selection.elementId !== this.element.id) return;
-    
+
     const rowSizes = this.getRowSizes();
-    
+
     // Check minimum (can't delete last row)
     if (rowSizes.length <= 1) {
       alert("Cannot delete the last row. Table must have at least 1 row.");
       this.closeActionsToolbar();
       return;
     }
-    
+
     // Check for content (smart confirmation)
     const hasContent = this.rowHasContent(selection.row);
     if (hasContent) {
@@ -444,20 +405,20 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
         return;
       }
     }
-    
+
     // Remove the row and redistribute sizes proportionally
     const updatedRows = [...rowSizes];
     updatedRows.splice(selection.row, 1);
-    
+
     // Normalize to maintain total = 1 (proportional redistribution)
     const total = updatedRows.reduce((sum, size) => sum + size, 0);
     const normalized = updatedRows.map(size => size / total);
-    
+
     // Clean up cell properties for deleted row
     this.cleanupDeletedRow(selection.row, rowSizes.length);
-    
+
     this.applyTableSizes(normalized, this.getColSizes());
-    
+
     // Select safe cell after deletion
     const newRow = Math.min(selection.row, normalized.length - 1);
     this.designerState.selectTableCell(this.element.id, newRow, selection.col);
@@ -467,16 +428,16 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
   protected onDeleteColFromToolbar(): void {
     const selection = this.designerState.selectedTableCell();
     if (!selection || selection.elementId !== this.element.id) return;
-    
+
     const colSizes = this.getColSizes();
-    
+
     // Check minimum (can't delete last column)
     if (colSizes.length <= 1) {
       alert("Cannot delete the last column. Table must have at least 1 column.");
       this.closeActionsToolbar();
       return;
     }
-    
+
     // Check for content (smart confirmation)
     const hasContent = this.colHasContent(selection.col);
     if (hasContent) {
@@ -485,20 +446,20 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
         return;
       }
     }
-    
+
     // Remove the column and redistribute sizes proportionally
     const updatedCols = [...colSizes];
     updatedCols.splice(selection.col, 1);
-    
+
     // Normalize to maintain total = 1 (proportional redistribution)
     const total = updatedCols.reduce((sum, size) => sum + size, 0);
     const normalized = updatedCols.map(size => size / total);
-    
+
     // Clean up cell properties for deleted column
     this.cleanupDeletedCol(selection.col, colSizes.length);
-    
+
     this.applyTableSizes(this.getRowSizes(), normalized);
-    
+
     // Select safe cell after deletion
     const newCol = Math.min(selection.col, normalized.length - 1);
     this.designerState.selectTableCell(this.element.id, selection.row, newCol);
@@ -508,90 +469,90 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
   protected onSplitCellIntoSubTable(): void {
     const selection = this.designerState.selectedTableCell();
     if (!selection || selection.elementId !== this.element.id) return;
-    
+
     // Determine current level and get target for split
     let currentLevel = 0;
     let targetData: any = null;
     let targetKey = '';
-    
+
     if (selection.subTablePath && selection.subTablePath.length > 0) {
       // We're splitting a sub-table cell - walk through all nesting levels
       const parentKey = `${selection.row}_${selection.col}`;
       const subTablesMap = this.element.properties?.['tableCellSubTables'] as Record<string, any> | undefined;
-      
+
       if (subTablesMap && subTablesMap[parentKey]) {
         let currentSubTable = subTablesMap[parentKey];
         currentLevel = currentSubTable.level || 1;
-        
+
         // Walk through each level except the last one (which is the cell we're splitting)
         for (let i = 0; i < selection.subTablePath.length - 1; i++) {
           const subCell: { row: number; col: number } = selection.subTablePath[i];
           const cellKey = `${subCell.row}_${subCell.col}`;
-          
+
           if (!currentSubTable.cellSubTables) {
             currentSubTable.cellSubTables = {};
           }
-          
+
           if (!currentSubTable.cellSubTables[cellKey]) {
             console.error(`Sub-table path invalid at level ${i}, key: ${cellKey}`);
             this.closeActionsToolbar();
             return;
           }
-          
+
           currentSubTable = currentSubTable.cellSubTables[cellKey];
           currentLevel = currentSubTable.level || currentLevel + 1;
         }
-        
+
         // Now we're at the parent of the cell we want to split
         const finalSubCell = selection.subTablePath[selection.subTablePath.length - 1];
         targetKey = `${finalSubCell.row}_${finalSubCell.col}`;
-        
+
         // Initialize cellSubTables if needed
         if (!currentSubTable.cellSubTables) {
           currentSubTable.cellSubTables = {};
         }
-        
+
         // Check if this sub-cell already has a sub-table
         if (currentSubTable.cellSubTables[targetKey]) {
           currentLevel = currentSubTable.cellSubTables[targetKey].level || currentLevel + 1;
         }
-        
+
         targetData = currentSubTable;
       }
     } else {
       // We're splitting a parent table cell
       currentLevel = this.getCurrentNestingLevel(selection.row, selection.col);
     }
-    
+
     // Check nesting level
     if (currentLevel >= 5) {
       alert("Maximum nesting level (5) reached. Cannot create more nested tables.");
       this.closeActionsToolbar();
       return;
     }
-    
+
     // Prompt for dimensions
     const rowsInput = window.prompt("Split into how many rows?", "2");
     if (!rowsInput) {
       this.closeActionsToolbar();
       return;
     }
-    
+
     const colsInput = window.prompt("Split into how many columns?", "2");
     if (!colsInput) {
       this.closeActionsToolbar();
       return;
     }
-    
+
     const rows = parseInt(rowsInput, 10);
     const cols = parseInt(colsInput, 10);
-    
+
     if (!Number.isFinite(rows) || rows < 1 || !Number.isFinite(cols) || cols < 1) {
       alert("Invalid dimensions. Must be at least 1x1.");
       this.closeActionsToolbar();
       return;
     }
-    
+
     // Create sub-table
     if (targetData && targetKey) {
       // Creating nested sub-table within existing sub-table
@@ -600,13 +561,11 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
       // Creating sub-table in parent cell
       this.createSubTable(selection.row, selection.col, rows, cols, currentLevel + 1);
     }
-    
+
     this.closeActionsToolbar();
   }
 
   private createNestedSubTable(parentRow: number, parentCol: number, parentSubTable: any, subCellKey: string, rows: number, cols: number, level: number): void {
-    console.log(`Creating nested sub-table: level=${level}, rows=${rows}, cols=${cols}, parentLevel=${parentSubTable.level}, subCellKey=${subCellKey}`);
-    
     // Get properties from parent sub-cell to inherit
     const parentContent = parentSubTable.cellContents?.[subCellKey] || '';
     const parentPadding = parentSubTable.cellPadding?.[subCellKey] || [0, 0, 0, 0];
@@ -621,7 +580,7 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
     const parentFontStyle = parentSubTable.cellFontStyle?.[subCellKey] || '';
     const parentLineHeight = parentSubTable.cellLineHeight?.[subCellKey] || '';
     const parentTextDecoration = parentSubTable.cellTextDecoration?.[subCellKey] || '';
-    
+
     // Create nested sub-table data
     const nestedSubTable: any = {
       rows,
@@ -643,12 +602,12 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
       cellLineHeight: {},
       cellTextDecoration: {}
     };
-    
+
     // Move parent content to first nested sub-cell
     if (parentContent && parentContent !== '&nbsp;') {
       nestedSubTable.cellContents['0_0'] = parentContent;
     }
-    
+
     // Apply inherited properties to all nested sub-cells
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
@@ -667,22 +626,22 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
         if (parentTextDecoration) nestedSubTable.cellTextDecoration[nestedKey] = parentTextDecoration;
       }
     }
-    
+
     // Store nested sub-table
     if (!parentSubTable.cellSubTables) {
       parentSubTable.cellSubTables = {};
     }
     parentSubTable.cellSubTables[subCellKey] = nestedSubTable;
-    
+
     // Clear parent sub-cell content
     if (parentSubTable.cellContents) {
       parentSubTable.cellContents[subCellKey] = '';
     }
-    
+
     // Clear HTML cache for parent cell
     const cacheKey = `${this.element.id}_${parentRow}_${parentCol}`;
     this.subTableHtmlCache.delete(cacheKey);
-    
+
     // Trigger update
     this.designerState.updateElement(this.element.id, this.element);
   }
@@ -699,7 +658,7 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
 
   private createSubTable(row: number, col: number, rows: number, cols: number, level: number): void {
     const key = `${row}_${col}`;
-    
+
     // Initialize sub-tables map if needed
     if (!this.element.properties) {
       this.element.properties = {};
@@ -707,9 +666,9 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
     if (!this.element.properties['tableCellSubTables']) {
       this.element.properties['tableCellSubTables'] = {};
     }
-    
+
     const subTablesMap = this.element.properties['tableCellSubTables'] as Record<string, any>;
-    
+
     // Get parent cell properties to inherit
     const parentContent = this.getCellContentRaw(row, col);
     const parentPadding = this.getCellPadding(row, col);
@@ -717,7 +676,7 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
     const parentVAlign = this.getCellVAlign(row, col);
     const parentBorder = this.getCellBorderProps(row, col);
     const parentFont = this.getCellFontProps(row, col);
-    
+
     // Create sub-table data
     const subTable: any = {
       rows,
@@ -739,12 +698,12 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
       cellLineHeight: {},
       cellTextDecoration: {}
     };
-    
+
     // Move parent content to first sub-cell and inherit properties
     if (parentContent && parentContent !== '&nbsp;') {
       subTable.cellContents['0_0'] = parentContent;
     }
-    
+
     // Apply inherited properties to all sub-cells
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
@@ -763,20 +722,20 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
         if (parentFont.decoration) subTable.cellTextDecoration[subKey] = parentFont.decoration;
       }
     }
-    
+
     // Store sub-table
     subTablesMap[key] = subTable;
-    
+
     // Clear HTML cache for this cell
     const cacheKey = `${this.element.id}_${key}`;
     this.subTableHtmlCache.delete(cacheKey);
-    
+
     // Clear parent cell content (now in sub-table)
     const contentsMap = this.element.properties['tableCellContents'] as Record<string, string> | undefined;
     if (contentsMap) {
       contentsMap[key] = ''; // Empty parent cell
     }
-    
+
     // Trigger update
     this.designerState.updateElement(this.element.id, this.element);
   }
@@ -786,7 +745,7 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
     const widthMap = this.element.properties?.['tableCellBorderWidth'] as Record<string, number> | undefined;
     const styleMap = this.element.properties?.['tableCellBorderStyle'] as Record<string, string> | undefined;
     const colorMap = this.element.properties?.['tableCellBorderColor'] as Record<string, string> | undefined;
-    
+
     return {
       width: widthMap?.[key] || 1,
       style: styleMap?.[key] || 'solid',
@@ -794,11 +753,11 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
     };
   }
 
-  private getCellFontProps(row: number, col: number): { 
-    family?: string; 
-    size?: number; 
-    weight?: string; 
-    style?: string; 
+  private getCellFontProps(row: number, col: number): {
+    family?: string;
+    size?: number;
+    weight?: string;
+    style?: string;
     lineHeight?: number;
     decoration?: string;
   } {
@@ -809,7 +768,7 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
     const styleMap = this.element.properties?.['tableCellFontStyle'] as Record<string, string> | undefined;
     const lineHeightMap = this.element.properties?.['tableCellLineHeight'] as Record<string, number> | undefined;
     const decorationMap = this.element.properties?.['tableCellTextDecoration'] as Record<string, string> | undefined;
-    
+
     return {
       family: familyMap?.[key],
       size: sizeMap?.[key],
@@ -828,13 +787,13 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
 
   protected getSubTableHtml(row: number, col: number): SafeHtml {
     const key = `${row}_${col}`;
-    
+
     // Check cache first
     const cacheKey = `${this.element.id}_${key}`;
     if (this.subTableHtmlCache.has(cacheKey)) {
       return this.subTableHtmlCache.get(cacheKey)!;
     }
-    
+
     const subTablesMap = this.element.properties?.['tableCellSubTables'] as Record<string, any> | undefined;
     if (!subTablesMap || !subTablesMap[key]) {
       const emptyHtml = this.sanitizer.bypassSecurityTrustHtml('');
@@ -845,7 +804,7 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
     const subTable = subTablesMap[key];
     const html = this.generateSubTableHtml(subTable, 0); // Start with parent cell padding = 0
     const safeHtml = this.sanitizer.bypassSecurityTrustHtml(html);
-    
+
     // Cache it
     this.subTableHtmlCache.set(cacheKey, safeHtml);
     return safeHtml;
@@ -935,7 +894,7 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
     const colSizes = this.getColSizes();
     const contents = this.element.properties?.['tableCellContents'] as Record<string, string> | undefined;
     if (!contents) return false;
-    
+
     for (let col = 0; col < colSizes.length; col++) {
       const key = `${rowIndex}_${col}`;
       const content = contents[key];
@@ -950,7 +909,7 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
     const rowSizes = this.getRowSizes();
     const contents = this.element.properties?.['tableCellContents'] as Record<string, string> | undefined;
     if (!contents) return false;
-    
+
     for (let row = 0; row < rowSizes.length; row++) {
       const key = `${row}_${colIndex}`;
       const content = contents[key];
@@ -978,18 +937,18 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
       'tableCellFontFamily',
       'tableCellTextDecoration'
     ];
-    
+
     propertyMaps.forEach(mapName => {
       const map = this.element.properties?.[mapName] as Record<string, any> | undefined;
       if (!map) return;
-      
+
       const newMap: Record<string, any> = {};
-      
+
       // Reindex all cells
       for (let row = 0; row < totalRows; row++) {
         for (let col = 0; col < colSizes.length; col++) {
           const oldKey = `${row}_${col}`;
-          
+
           if (row === deletedRow) {
             // Skip deleted row
             continue;
@@ -1007,7 +966,7 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
           }
         }
       }
-      
+
       // Update the property map
       this.element.properties![mapName] = newMap;
     });
@@ -1030,18 +989,18 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
       'tableCellFontFamily',
       'tableCellTextDecoration'
     ];
-    
+
     propertyMaps.forEach(mapName => {
       const map = this.element.properties?.[mapName] as Record<string, any> | undefined;
       if (!map) return;
-      
+
       const newMap: Record<string, any> = {};
-      
+
       // Reindex all cells
       for (let row = 0; row < rowSizes.length; row++) {
         for (let col = 0; col < totalCols; col++) {
           const oldKey = `${row}_${col}`;
-          
+
           if (col === deletedCol) {
             // Skip deleted column
             continue;
@@ -1059,16 +1018,16 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
           }
         }
       }
-      
+
       // Update the property map
       this.element.properties![mapName] = newMap;
     });
   }
 
   protected onCellEditorSaved(html: string): void {
-    const selection = this.designerState.selectedTableCell();
-    if (!selection || selection.elementId !== this.element.id) return;
-    
+    const selection = this.editorCellSelection();
+    if (!selection) return;
+
     // If we have a sub-table path, save to nested structure
     if (selection.subTablePath && selection.subTablePath.length > 0) {
       this.saveNestedCellContent(selection.row, selection.col, selection.subTablePath, html);
@@ -1082,7 +1041,7 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
       } as Record<string, any>;
       this.designerState.updateElement(this.element.id, { properties: updatedProperties });
     }
-    
+
     // Clear cache to force re-render
     this.subTableHtmlCache.clear();
     this.showCellEditor.set(false);
@@ -1091,22 +1050,22 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
   private saveNestedCellContent(parentRow: number, parentCol: number, subTablePath: Array<{row: number; col: number}>, html: string): void {
     const parentKey = `${parentRow}_${parentCol}`;
     const subTablesMap = (this.element.properties?.['tableCellSubTables'] as Record<string, any>) || {};
-    
+
     if (!subTablesMap[parentKey]) {
       console.warn('No sub-table found at parent cell', parentKey);
       return;
     }
-    
+
     // Deep clone the entire sub-tables structure to avoid mutation issues
     const updatedSubTablesMap = JSON.parse(JSON.stringify(subTablesMap));
-    
+
     // Navigate through each level of nesting to find the target cell
     let currentSubTable = updatedSubTablesMap[parentKey];
-    
+
     for (let level = 0; level < subTablePath.length; level++) {
       const subCell = subTablePath[level];
       const isLastLevel = level === subTablePath.length - 1;
-      
+
       if (isLastLevel) {
         // At the final level, set the content
         const cellKey = `${subCell.row}_${subCell.col}`;
@@ -1117,46 +1076,45 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
       } else {
         // Navigate deeper into nested sub-tables
         const cellKey = `${subCell.row}_${subCell.col}`;
-        
+
         if (!currentSubTable.cellSubTables) {
           currentSubTable.cellSubTables = {};
         }
-        
+
         if (!currentSubTable.cellSubTables[cellKey]) {
           console.warn(`No nested sub-table found at level ${level}, key: ${cellKey}`);
           return;
         }
-        
+
         currentSubTable = currentSubTable.cellSubTables[cellKey];
       }
     }
-    
+
     // Update the element with the modified sub-tables structure
     const updatedProperties = {
       ...(this.element.properties || {}),
       tableCellSubTables: updatedSubTablesMap
     } as Record<string, any>;
-    
+
     this.designerState.updateElement(this.element.id, { properties: updatedProperties });
   }
 
   protected onCellEditorClosed(): void {
     this.showCellEditor.set(false);
+    this.editorCellSelection.set(null);
   }
 
   protected onCellClick(event: MouseEvent, row: number, col: number): void {
     const target = event.target as HTMLElement;
-    
+
     // Check if click is on or inside a sub-table cell
     const subTableCell = target.closest('.sub-table-cell');
     if (subTableCell) {
       // Let the native handler deal with sub-table cells
-      console.log('🟢 Click on sub-table cell detected in onCellClick, skipping');
       return; // Don't stop propagation, don't select parent cell
     }
-    
+
     // Normal cell click - DON'T stop propagation so native handler can process
-    console.log('🔵 Normal cell click, selecting parent cell');
     this.designerState.selectElement(this.element.id);
     this.designerState.selectTableCell(this.element.id, row, col);
     this.closeContextMenu();
