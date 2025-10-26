@@ -407,25 +407,67 @@ export class DesignerStateService {
     // Validate role adjacency before saving
     this.validateRoleAdjacency(elements);
 
-    // Flow layout for tables (no absolute positioning). Non-table elements keep absolute for now.
+    // Group consecutive elements by role
+    const groups: Array<{ role: string | null; elements: CanvasElement[] }> = [];
+    let currentGroup: { role: string | null; elements: CanvasElement[] } | null = null;
+
+    for (const el of elements) {
+      const role = el.properties?.['elementRole'] || null;
+      
+      if (!currentGroup || currentGroup.role !== role) {
+        // Start a new group
+        currentGroup = { role, elements: [el] };
+        groups.push(currentGroup);
+      } else {
+        // Add to current group
+        currentGroup.elements.push(el);
+      }
+    }
+
+    // Generate markup for each group
     let lastFlowBottom = 0;
     let firstFlow = true;
-    const elementsMarkup = elements
-      .map(el => {
-        if (el.type === 'table') {
-          const topMargin = firstFlow ? el.y : Math.max(0, el.y - lastFlowBottom);
+    
+    const bodyContent = groups
+      .map(group => {
+        const groupMarkup: string[] = [];
+        
+        for (const el of group.elements) {
+          if (el.type === 'table') {
+            const topMargin = firstFlow ? el.y : Math.max(0, el.y - lastFlowBottom);
             const leftMargin = el.x;
             lastFlowBottom = el.y + el.height;
             firstFlow = false;
-            const tableHtml = this.serializeTableElement(el, `margin-top:${this.formatMillimeters(topMargin)}mm;margin-left:${this.formatMillimeters(leftMargin)}mm;width:${this.formatMillimeters(el.width)}mm;`);
-            return tableHtml;
+            const tableHtml = this.serializeTableElement(
+              el, 
+              `margin-top:${this.formatMillimeters(topMargin)}mm;margin-left:${this.formatMillimeters(leftMargin)}mm;width:${this.formatMillimeters(el.width)}mm;`,
+              false // Don't include data-role on table, it will be on parent wrapper
+            );
+            groupMarkup.push(tableHtml);
+          } else {
+            const elementHtml = this.serializeElementToXhtml(el);
+            if (elementHtml) {
+              groupMarkup.push(elementHtml);
+            }
+          }
         }
-        return this.serializeElementToXhtml(el);
+
+        // Wrap group in appropriate parent tag based on role
+        const groupContent = groupMarkup.join('\n      ');
+        
+        if (group.role === 'report-header') {
+          return `    <header>\n      ${groupContent}\n    </header>`;
+        } else if (group.role === 'report-footer') {
+          return `    <footer>\n      ${groupContent}\n    </footer>`;
+        } else if (group.role === 'report-body') {
+          return `    <div class="report-body">\n      ${groupContent}\n    </div>`;
+        } else {
+          // No role or unrecognized role - output without wrapper
+          return groupContent ? `    ${groupContent}` : '';
+        }
       })
       .filter(Boolean)
-      .join('\n    ');
-
-    const bodyContent = elementsMarkup ? `    ${elementsMarkup}\n` : '';
+      .join('\n');
 
     const margins = this.pageGutters();
     const commonStylesRaw = this.getA4CommonStyles();
@@ -442,7 +484,7 @@ export class DesignerStateService {
       `${commonStyles}\n` +
       `    </style>\n` +
       `  </head>\n` +
-      `  <body>\n${bodyContent}  </body>\n</html>`;
+      `  <body>\n${bodyContent}\n  </body>\n</html>`;
   }
 
   private a4StylesCache: string | null = null; // Set by preload provider
@@ -480,7 +522,7 @@ export class DesignerStateService {
     }
   }
 
-  private serializeTableElement(element: CanvasElement, style: string): string {
+  private serializeTableElement(element: CanvasElement, style: string, includeDataRole: boolean = true): string {
     const rowSizes = getTableRowSizes(element);
     const colSizes = getTableColSizes(element);
 
@@ -491,7 +533,8 @@ export class DesignerStateService {
     const elementId = element.properties?.['elementId'] || '';
     const elementRole = element.properties?.['elementRole'] || '';
     const idAttr = elementId ? ` id="${this.escapeHtml(elementId)}"` : '';
-    const roleAttr = elementRole ? ` data-role="${this.escapeHtml(elementRole)}"` : '';
+    // Only include data-role if requested (not when wrapped in parent tag)
+    const roleAttr = (includeDataRole && elementRole) ? ` data-role="${this.escapeHtml(elementRole)}"` : '';
 
     const subTablesMap = element.properties?.['tableCellSubTables'] as Record<string, any> | undefined;
 
@@ -820,9 +863,42 @@ export class DesignerStateService {
     
     for (const elem of bodyElements) {
       try {
-        const parsed = this.parseXhtmlElement(elem, elementIdCounter++);
-        if (parsed) {
-          elements.push(parsed);
+        const tagName = elem.tagName.toLowerCase();
+        
+        // Handle wrapper tags: <header>, <footer>, <div class="report-body">
+        if (tagName === 'header') {
+          // Parse all table children and assign them 'report-header' role
+          const tables = Array.from(elem.querySelectorAll(':scope > table')) as HTMLElement[];
+          for (const table of tables) {
+            const parsed = this.parseXhtmlTable(table, elementIdCounter++, 'report-header');
+            if (parsed) {
+              elements.push(parsed);
+            }
+          }
+        } else if (tagName === 'footer') {
+          // Parse all table children and assign them 'report-footer' role
+          const tables = Array.from(elem.querySelectorAll(':scope > table')) as HTMLElement[];
+          for (const table of tables) {
+            const parsed = this.parseXhtmlTable(table, elementIdCounter++, 'report-footer');
+            if (parsed) {
+              elements.push(parsed);
+            }
+          }
+        } else if (tagName === 'div' && elem.classList.contains('report-body')) {
+          // Parse all table children and assign them 'report-body' role
+          const tables = Array.from(elem.querySelectorAll(':scope > table')) as HTMLElement[];
+          for (const table of tables) {
+            const parsed = this.parseXhtmlTable(table, elementIdCounter++, 'report-body');
+            if (parsed) {
+              elements.push(parsed);
+            }
+          }
+        } else {
+          // Regular element - parse normally
+          const parsed = this.parseXhtmlElement(elem, elementIdCounter++);
+          if (parsed) {
+            elements.push(parsed);
+          }
         }
       } catch (err) {
         console.warn('Failed to parse element:', elem, err);
@@ -874,7 +950,7 @@ export class DesignerStateService {
     };
   }
   
-  private parseXhtmlTable(table: HTMLElement, idCounter: number): CanvasElement | null {
+  private parseXhtmlTable(table: HTMLElement, idCounter: number, overrideRole?: string): CanvasElement | null {
     const style = table.getAttribute('style') || '';
     const position = this.parseStylePosition(style, true);
     
@@ -884,7 +960,8 @@ export class DesignerStateService {
 
     // Extract id and data-role attributes
     const elementId = table.getAttribute('id') || '';
-    const elementRole = table.getAttribute('data-role') || '';
+    // Use override role if provided (from wrapper tag), otherwise use data-role attribute
+    const elementRole = overrideRole || table.getAttribute('data-role') || '';
     
     // Parse table structure
     const tbody = table.querySelector('tbody');
