@@ -33,4 +33,6 @@
 ##Remove DIV-s intercalated between splitted cell and sub-Table
 ## Default zoom 1:1 when Opening the App.
 
+##SUPPORT <HEADER> and <FOOTER> and <DIV class="report-body"></DIV> Tags.
+
  

@@ -425,6 +425,8 @@ export class DesignerStateService {
     const effectiveRowSizes = rowSizes.length ? rowSizes : [1];
     const effectiveColSizes = colSizes.length ? colSizes : [1];
 
+    const subTablesMap = element.properties?.['tableCellSubTables'] as Record<string, any> | undefined;
+
     const rowsMarkup = effectiveRowSizes
       .map((rowRatio, rowIndex) => {
         const rowHeightMm = element.height * rowRatio;
@@ -434,10 +436,22 @@ export class DesignerStateService {
           .map((colRatio, colIndex) => {
             const colWidthMm = element.width * colRatio;
             const colWidthStr = this.formatMillimeters(colWidthMm);
-            const contents = (element.properties?.['tableCellContents'] as Record<string, string> | undefined) || {};
             const key = `${rowIndex}_${colIndex}`; // use explicit indices to avoid indexOf duplication
-            const raw = contents[key];
-            const cellContent = raw && raw.length ? raw : '&nbsp;';
+            
+            // Check if this cell has a sub-table
+            const subTable = subTablesMap?.[key];
+            let cellContent: string;
+            
+            if (subTable) {
+              // Serialize the sub-table recursively
+              cellContent = this.serializeSubTable(subTable, colWidthMm, rowHeightMm);
+            } else {
+              // Use regular cell content
+              const contents = (element.properties?.['tableCellContents'] as Record<string, string> | undefined) || {};
+              const raw = contents[key];
+              cellContent = raw && raw.length ? raw : '&nbsp;';
+            }
+            
             const padMap = element.properties?.['tableCellPadding'] as Record<string, number[]> | undefined;
             const paddings = padMap?.[key];
             const [pt, pr, pb, pl] = Array.isArray(paddings) && paddings.length === 4 ? paddings : [0,0,0,0];
@@ -480,6 +494,69 @@ export class DesignerStateService {
 
     return `<table class="element element-table" style="${style}">\n` +
       `    <tbody>\n${rowsMarkup}\n    </tbody>\n  </table>`;
+  }
+
+  private serializeSubTable(subTable: any, parentWidthMm: number, parentHeightMm: number): string {
+    const rows = subTable.rows || 1;
+    const cols = subTable.cols || 1;
+    const rowSizes = subTable.rowSizes || Array(rows).fill(1 / rows);
+    const colSizes = subTable.colSizes || Array(cols).fill(1 / cols);
+
+    const rowsMarkup = rowSizes
+      .map((rowRatio: number, rowIndex: number) => {
+        const rowHeightMm = parentHeightMm * rowRatio;
+        const rowHeightStr = this.formatMillimeters(rowHeightMm);
+
+        const cells = colSizes
+          .map((colRatio: number, colIndex: number) => {
+            const colWidthMm = parentWidthMm * colRatio;
+            const colWidthStr = this.formatMillimeters(colWidthMm);
+            const key = `${rowIndex}_${colIndex}`;
+
+            // Check if this sub-table cell has a nested sub-table
+            const nestedSubTable = subTable.cellSubTables?.[key];
+            let cellContent: string;
+
+            if (nestedSubTable) {
+              // Recursively serialize nested sub-table
+              cellContent = this.serializeSubTable(nestedSubTable, colWidthMm, rowHeightMm);
+            } else {
+              // Use sub-table cell content
+              const raw = subTable.cellContents?.[key];
+              cellContent = raw && raw.length ? raw : '&nbsp;';
+            }
+
+            const padding = subTable.cellPadding?.[key] || [0, 0, 0, 0];
+            const [pt, pr, pb, pl] = padding;
+            const hAlign = subTable.cellHAlign?.[key] || 'left';
+            const vAlignRaw = subTable.cellVAlign?.[key] || 'top';
+            const vAlign = vAlignRaw === 'middle' ? 'middle' : vAlignRaw;
+            const borderWidth = subTable.cellBorderWidth?.[key] || 1;
+            const borderStyle = subTable.cellBorderStyle?.[key] || 'solid';
+            const borderColor = subTable.cellBorderColor?.[key] || '#000000';
+            const borderCss = Number.isFinite(borderWidth) && borderWidth > 0
+              ? `border:${borderWidth}px ${borderStyle} ${borderColor};`
+              : '';
+            const fontStyle = subTable.cellFontStyle?.[key] || '';
+            const fontWeight = subTable.cellFontWeight?.[key] || '';
+            const fontSize = subTable.cellFontSize?.[key];
+            const lineHeight = subTable.cellLineHeight?.[key];
+            const fontFamily = subTable.cellFontFamily?.[key] || '';
+            const fontCss = (fontStyle ? `font-style:${fontStyle};` : '') +
+              (fontWeight ? `font-weight:${fontWeight};` : '') +
+              (Number.isFinite(fontSize) ? `font-size:${fontSize}pt;` : '') +
+              (Number.isFinite(lineHeight) ? `line-height:${lineHeight};` : '') +
+              (fontFamily ? `font-family:${fontFamily};` : '');
+
+            return `          <td style="width:${colWidthStr}mm;height:${rowHeightStr}mm;padding:${pt}mm ${pr}mm ${pb}mm ${pl}mm;text-align:${hAlign};vertical-align:${vAlign};${borderCss}${fontCss}">${cellContent}</td>`;
+          })
+          .join('\n');
+
+        return `        <tr style="height:${rowHeightStr}mm;">\n${cells}\n        </tr>`;
+      })
+      .join('\n');
+
+    return `<table style="width:100%;height:100%;border-collapse:collapse;">\n      <tbody>\n${rowsMarkup}\n      </tbody>\n    </table>`;
   }
 
   private formatContent(content: string | undefined | null): string {
@@ -772,6 +849,7 @@ export class DesignerStateService {
     const tableCellLineHeight: Record<string, number> = {};
     const tableCellFontFamily: Record<string, string> = {};
     const tableCellTextDecoration: Record<string, string> = {};
+    const tableCellSubTables: Record<string, any> = {};
     
     // Parse row and column sizes
     const rowSizes: number[] = [];
@@ -801,8 +879,20 @@ export class DesignerStateService {
       cells.forEach((cell, colIndex) => {
         const key = `${rowIndex}_${colIndex}`;
         
-        // Content
-        tableCellContents[key] = cell.innerHTML;
+        // Check if cell contains a nested table
+        const nestedTable = cell.querySelector(':scope > table') as HTMLElement | null;
+        
+        if (nestedTable) {
+          // Parse the nested table as a sub-table
+          const subTable = this.parseNestedSubTable(nestedTable, position.width * colSizes[colIndex], position.height * rowSizes[rowIndex], 1);
+          if (subTable) {
+            tableCellSubTables[key] = subTable;
+            tableCellContents[key] = ''; // Clear content as it's now in sub-table
+          }
+        } else {
+          // Content
+          tableCellContents[key] = cell.innerHTML;
+        }
         
         // Padding
         const paddingTop = this.parseStyleValue(cell.style.paddingTop || '0');
@@ -923,8 +1013,156 @@ export class DesignerStateService {
         tableCellFontSize,
         tableCellLineHeight,
         tableCellFontFamily,
-        tableCellTextDecoration
+        tableCellTextDecoration,
+        ...(Object.keys(tableCellSubTables).length > 0 ? { tableCellSubTables } : {})
       }
+    };
+  }
+
+  private parseNestedSubTable(table: HTMLElement, parentWidthMm: number, parentHeightMm: number, level: number): any | null {
+    const tbody = table.querySelector('tbody');
+    if (!tbody) {
+      return null;
+    }
+
+    const rows = Array.from(tbody.querySelectorAll(':scope > tr')) as HTMLTableRowElement[];
+    const numRows = rows.length;
+    if (numRows === 0) {
+      return null;
+    }
+
+    const firstRowCells = Array.from(rows[0].querySelectorAll(':scope > td')) as HTMLTableCellElement[];
+    const numCols = firstRowCells.length;
+    if (numCols === 0) {
+      return null;
+    }
+
+    const cellContents: Record<string, string> = {};
+    const cellPadding: Record<string, number[]> = {};
+    const cellHAlign: Record<string, string> = {};
+    const cellVAlign: Record<string, string> = {};
+    const cellBorderWidth: Record<string, number> = {};
+    const cellBorderStyle: Record<string, string> = {};
+    const cellBorderColor: Record<string, string> = {};
+    const cellFontStyle: Record<string, string> = {};
+    const cellFontWeight: Record<string, string> = {};
+    const cellFontSize: Record<string, number> = {};
+    const cellLineHeight: Record<string, number> = {};
+    const cellFontFamily: Record<string, string> = {};
+    const cellSubTables: Record<string, any> = {};
+
+    const rowSizes: number[] = [];
+    const colSizes: number[] = [];
+
+    // Calculate row sizes
+    for (const row of rows) {
+      const heightStr = row.style.height || row.getAttribute('style')?.match(/height:\s*([0-9.]+)%/)?.[1];
+      if (heightStr) {
+        rowSizes.push(parseFloat(heightStr) / 100);
+      }
+    }
+
+    // Calculate column sizes from first row
+    for (const cell of firstRowCells) {
+      const widthStr = cell.style.width || cell.getAttribute('style')?.match(/width:\s*([0-9.]+)%/)?.[1];
+      if (widthStr) {
+        colSizes.push(parseFloat(widthStr) / 100);
+      }
+    }
+
+    // Parse each cell
+    rows.forEach((row, rowIndex) => {
+      const cells = Array.from(row.querySelectorAll(':scope > td')) as HTMLTableCellElement[];
+      cells.forEach((cell, colIndex) => {
+        const key = `${rowIndex}_${colIndex}`;
+
+        // Check if cell contains a nested table
+        const nestedTable = cell.querySelector(':scope > table') as HTMLElement | null;
+
+        if (nestedTable) {
+          // Parse the nested table recursively
+          const nestedSubTable = this.parseNestedSubTable(
+            nestedTable,
+            parentWidthMm * colSizes[colIndex],
+            parentHeightMm * rowSizes[rowIndex],
+            level + 1
+          );
+          if (nestedSubTable) {
+            cellSubTables[key] = nestedSubTable;
+            cellContents[key] = ''; // Clear content as it's now in nested sub-table
+          }
+        } else {
+          // Content
+          cellContents[key] = cell.innerHTML;
+        }
+
+        // Parse padding
+        const paddingMatch = cell.style.padding?.match(/([0-9.]+)mm\s+([0-9.]+)mm\s+([0-9.]+)mm\s+([0-9.]+)mm/);
+        if (paddingMatch) {
+          cellPadding[key] = [
+            parseFloat(paddingMatch[1]),
+            parseFloat(paddingMatch[2]),
+            parseFloat(paddingMatch[3]),
+            parseFloat(paddingMatch[4])
+          ];
+        } else {
+          cellPadding[key] = [0, 0, 0, 0];
+        }
+
+        // Parse alignment
+        cellHAlign[key] = cell.style.textAlign || 'left';
+        cellVAlign[key] = cell.style.verticalAlign || 'top';
+
+        // Parse border
+        const cellStyle = cell.getAttribute('style') || '';
+        const borderMatch = cellStyle.match(/border:\s*([0-9.]+)px\s+(\w+)\s+(#[0-9a-f]{6}|#[0-9a-f]{3}|rgb\([^)]+\)|\w+)/i);
+        if (borderMatch) {
+          cellBorderWidth[key] = parseFloat(borderMatch[1]);
+          cellBorderStyle[key] = borderMatch[2];
+          cellBorderColor[key] = borderMatch[3];
+        }
+
+        // Parse font properties
+        if (cell.style.fontFamily) {
+          cellFontFamily[key] = cell.style.fontFamily.replace(/"/g, "'");
+        }
+        if (cell.style.fontSize) {
+          const fontSizeMatch = cell.style.fontSize.match(/([0-9.]+)pt/);
+          if (fontSizeMatch) {
+            cellFontSize[key] = parseFloat(fontSizeMatch[1]);
+          }
+        }
+        if (cell.style.fontWeight) {
+          cellFontWeight[key] = cell.style.fontWeight;
+        }
+        if (cell.style.fontStyle) {
+          cellFontStyle[key] = cell.style.fontStyle;
+        }
+        if (cell.style.lineHeight) {
+          cellLineHeight[key] = parseFloat(cell.style.lineHeight) || 1.5;
+        }
+      });
+    });
+
+    return {
+      rows: numRows,
+      cols: numCols,
+      rowSizes,
+      colSizes,
+      level,
+      cellContents,
+      cellPadding,
+      cellHAlign,
+      cellVAlign,
+      cellBorderWidth,
+      cellBorderStyle,
+      cellBorderColor,
+      cellFontFamily,
+      cellFontSize,
+      cellFontWeight,
+      cellFontStyle,
+      cellLineHeight,
+      ...(Object.keys(cellSubTables).length > 0 ? { cellSubTables } : {})
     };
   }
   

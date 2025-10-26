@@ -281,6 +281,14 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
   }
 
   protected getCellContentRaw(row: number, col: number): string {
+    const selection = this.designerState.selectedTableCell();
+    
+    // If we have a sub-table path, navigate into nested structure
+    if (selection && selection.subTablePath && selection.subTablePath.length > 0) {
+      return this.getNestedCellContent(row, col, selection.subTablePath);
+    }
+    
+    // Otherwise, get root cell content
     const contents = this.element.properties?.['tableCellContents'];
     if (contents && typeof contents === 'object') {
       const key = `${row}_${col}`;
@@ -289,6 +297,42 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
         return value;
       }
     }
+    return '&nbsp;';
+  }
+
+  private getNestedCellContent(parentRow: number, parentCol: number, subTablePath: Array<{row: number; col: number}>): string {
+    const parentKey = `${parentRow}_${parentCol}`;
+    const subTablesMap = this.element.properties?.['tableCellSubTables'] as Record<string, any> | undefined;
+    
+    if (!subTablesMap || !subTablesMap[parentKey]) {
+      return '&nbsp;';
+    }
+    
+    // Navigate through each level of nesting
+    let currentSubTable = subTablesMap[parentKey];
+    
+    for (let level = 0; level < subTablePath.length; level++) {
+      const subCell = subTablePath[level];
+      const isLastLevel = level === subTablePath.length - 1;
+      
+      if (isLastLevel) {
+        // At the final level, get the content
+        const cellKey = `${subCell.row}_${subCell.col}`;
+        const content = currentSubTable.cellContents?.[cellKey];
+        return (typeof content === 'string' && content.length) ? content : '&nbsp;';
+      } else {
+        // Navigate deeper into nested sub-tables
+        const cellKey = `${subCell.row}_${subCell.col}`;
+        const nestedSubTables = currentSubTable.cellSubTables as Record<string, any> | undefined;
+        
+        if (!nestedSubTables || !nestedSubTables[cellKey]) {
+          return '&nbsp;';
+        }
+        
+        currentSubTable = nestedSubTables[cellKey];
+      }
+    }
+    
     return '&nbsp;';
   }
 
@@ -1024,14 +1068,76 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
   protected onCellEditorSaved(html: string): void {
     const selection = this.designerState.selectedTableCell();
     if (!selection || selection.elementId !== this.element.id) return;
-    const key = `${selection.row}_${selection.col}`;
-    const existingContents = (this.element.properties?.['tableCellContents'] as Record<string, string>) || {};
+    
+    // If we have a sub-table path, save to nested structure
+    if (selection.subTablePath && selection.subTablePath.length > 0) {
+      this.saveNestedCellContent(selection.row, selection.col, selection.subTablePath, html);
+    } else {
+      // Otherwise, save to root cell content
+      const key = `${selection.row}_${selection.col}`;
+      const existingContents = (this.element.properties?.['tableCellContents'] as Record<string, string>) || {};
+      const updatedProperties = {
+        ...(this.element.properties || {}),
+        tableCellContents: { ...existingContents, [key]: html }
+      } as Record<string, any>;
+      this.designerState.updateElement(this.element.id, { properties: updatedProperties });
+    }
+    
+    // Clear cache to force re-render
+    this.subTableHtmlCache.clear();
+    this.showCellEditor.set(false);
+  }
+
+  private saveNestedCellContent(parentRow: number, parentCol: number, subTablePath: Array<{row: number; col: number}>, html: string): void {
+    const parentKey = `${parentRow}_${parentCol}`;
+    const subTablesMap = (this.element.properties?.['tableCellSubTables'] as Record<string, any>) || {};
+    
+    if (!subTablesMap[parentKey]) {
+      console.warn('No sub-table found at parent cell', parentKey);
+      return;
+    }
+    
+    // Deep clone the entire sub-tables structure to avoid mutation issues
+    const updatedSubTablesMap = JSON.parse(JSON.stringify(subTablesMap));
+    
+    // Navigate through each level of nesting to find the target cell
+    let currentSubTable = updatedSubTablesMap[parentKey];
+    
+    for (let level = 0; level < subTablePath.length; level++) {
+      const subCell = subTablePath[level];
+      const isLastLevel = level === subTablePath.length - 1;
+      
+      if (isLastLevel) {
+        // At the final level, set the content
+        const cellKey = `${subCell.row}_${subCell.col}`;
+        if (!currentSubTable.cellContents) {
+          currentSubTable.cellContents = {};
+        }
+        currentSubTable.cellContents[cellKey] = html;
+      } else {
+        // Navigate deeper into nested sub-tables
+        const cellKey = `${subCell.row}_${subCell.col}`;
+        
+        if (!currentSubTable.cellSubTables) {
+          currentSubTable.cellSubTables = {};
+        }
+        
+        if (!currentSubTable.cellSubTables[cellKey]) {
+          console.warn(`No nested sub-table found at level ${level}, key: ${cellKey}`);
+          return;
+        }
+        
+        currentSubTable = currentSubTable.cellSubTables[cellKey];
+      }
+    }
+    
+    // Update the element with the modified sub-tables structure
     const updatedProperties = {
       ...(this.element.properties || {}),
-      tableCellContents: { ...existingContents, [key]: html }
+      tableCellSubTables: updatedSubTablesMap
     } as Record<string, any>;
+    
     this.designerState.updateElement(this.element.id, { properties: updatedProperties });
-    this.showCellEditor.set(false);
   }
 
   protected onCellEditorClosed(): void {
