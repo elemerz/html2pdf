@@ -105,7 +105,7 @@ export class App {
     const entered = prompt('Enter report design file name', defaultName);
     const fileNameBase = (entered || defaultName).trim() || 'layout';
     const json = this.designerState.exportDesign();
-    this.triggerDownload(`${fileNameBase}.report-design.json`, json, 'application/json');
+    this.triggerDownload(`${fileNameBase}.json`, json, 'application/json');
     this.designerState.setStatusMessage('Report design saved');
   }
 
