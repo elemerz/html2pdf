@@ -100,6 +100,38 @@ export class App {
     }
   }
 
+  onSaveDesign(): void {
+    const defaultName = this.designerState.currentLayout().name || 'layout';
+    const entered = prompt('Enter report design file name', defaultName);
+    const fileNameBase = (entered || defaultName).trim() || 'layout';
+    const json = this.designerState.exportDesign();
+    this.triggerDownload(`${fileNameBase}.report-design.json`, json, 'application/json');
+    this.designerState.setStatusMessage('Report design saved');
+  }
+
+  onLoadDesign(): void {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.onchange = (event: Event) => {
+      const file = (event.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const jsonContent = e.target?.result as string;
+          this.designerState.importDesign(jsonContent);
+          this.designerState.setStatusMessage('Report design loaded');
+        } catch (err) {
+          console.error('Error loading design:', err);
+          this.designerState.setStatusMessage('Failed to load design: ' + (err as Error).message);
+        }
+      };
+      reader.readAsText(file);
+    };
+    input.click();
+  }
+
   onUndo(): void {
     this.designerState.undo();
   }

@@ -1410,10 +1410,11 @@ export class DesignerStateService {
 
   // Export current design to JSON
   exportDesign(): string {
+    // Ensure layout.elements reflects current elements
+    const layout = { ...this.currentLayoutSignal(), elements: this.elementsSignal() };
     const design = {
       version: 1,
-      layout: this.currentLayoutSignal(),
-      elements: this.elementsSignal(),
+      layout,
       pageGutters: this.pageGutters(),
       visualGridSize: this.visualGridSize(),
       logicalGridSize: this.logicalGridSize(),
@@ -1429,10 +1430,21 @@ export class DesignerStateService {
     if (!parsed || typeof parsed !== 'object') {
       throw new Error('Invalid design JSON');
     }
-    // Basic validation
-    const layout = parsed.layout;
-    if (!layout || !Array.isArray(layout.elements)) {
-      throw new Error('Design JSON missing layout.elements');
+    // Accept legacy format where elements were top-level
+    let layout = parsed.layout;
+    if (!layout) {
+      throw new Error('Design JSON missing layout');
+    }
+    if (!Array.isArray(layout.elements) || layout.elements.length === 0) {
+      if (Array.isArray(parsed.elements) && parsed.elements.length) {
+        layout = { ...layout, elements: parsed.elements };
+      } else {
+        layout = { ...layout, elements: [] };
+      }
+    }
+
+    if (!Array.isArray(layout.elements)) {
+      throw new Error('Design JSON layout.elements must be an array');
     }
 
     this.setLayout({
