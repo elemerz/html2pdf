@@ -20,6 +20,8 @@ export class MenuBarComponent {
   // Output events
   onNew = output<void>();
   onExportAsXhtml = output<void>();
+  onSaveDesign = output<void>();
+  onLoadDesign = output<void>();
   onOpen = output<void>();
   onClose = output<void>();
   onUndo = output<void>();
@@ -40,14 +42,18 @@ export class MenuBarComponent {
     this.onNew.emit();
     this.closeMenu();
   }
-
-  handleOpen() {
-    this.onOpen.emit();
+  handleExportAsXhtml() {
+    this.onExportAsXhtml.emit();
     this.closeMenu();
   }
 
-  handleExportAsXhtml() {
-    this.onExportAsXhtml.emit();
+  handleSaveDesign() {
+    this.onSaveDesign.emit();
+    this.closeMenu();
+  }
+
+  handleLoadDesign() {
+    this.onLoadDesign.emit();
     this.closeMenu();
   }
 

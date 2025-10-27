@@ -13,13 +13,15 @@
           <span>New</span>
           <span class="shortcut">Ctrl+N</span>
         </button>
-        <button class="dropdown-item" (click)="handleOpen()" data-testid="menu-file-open">
-          <span>Open</span>
-          <span class="shortcut">Ctrl+O</span>
-        </button>
         <button class="dropdown-item" (click)="handleExportAsXhtml()" data-testid="menu-file-save">
           <span>Export as Xhtml</span>
           <span class="shortcut">Ctrl+E</span>
+        </button>
+        <button class="dropdown-item" (click)="handleSaveDesign()" data-testid="menu-file-save-design">
+          <span>Save Report Design</span>
+        </button>
+        <button class="dropdown-item" (click)="handleLoadDesign()" data-testid="menu-file-load-design">
+          <span>Load Report Design</span>
         </button>
         <button class="dropdown-item" (click)="handleClose()" data-testid="menu-file-close">
           <span>Close</span>
