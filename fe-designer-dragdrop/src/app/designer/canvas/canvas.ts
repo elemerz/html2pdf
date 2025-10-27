@@ -163,7 +163,15 @@ export class CanvasComponent implements AfterViewInit, OnDestroy {
       yMm = this.dragDropService.snapToGrid(yMm, this.logicalGridSize());
 
       const clampedPosition = this.clampToContentArea(xMm, yMm, draggedItem.defaultWidth, draggedItem.defaultHeight);
-      const newElement = createDefaultCanvasElement(draggedItem.type, clampedPosition.x, clampedPosition.y, draggedItem);
+      let newElement = createDefaultCanvasElement(draggedItem.type, clampedPosition.x, clampedPosition.y, draggedItem);
+      if (draggedItem.type === 'table') {
+        // Layout table defaults: full available width and fixed height 40mm, positioned after previous element or at top margin
+        const gutters = this.pageGutters();
+        const contentWidth = Math.max(1, this.A4_WIDTH_MM - gutters.left - gutters.right);
+        const existing = this.elements();
+        const nextY = existing.length ? existing[existing.length - 1].y + existing[existing.length - 1].height : gutters.top;
+        newElement = { ...newElement, x: gutters.left, y: nextY, width: contentWidth, height: 40 };
+      }
       this.designerState.addElement({
         ...newElement,
         id: `el-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
