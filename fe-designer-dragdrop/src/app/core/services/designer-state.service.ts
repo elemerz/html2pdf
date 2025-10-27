@@ -438,9 +438,16 @@ export class DesignerStateService {
             const leftMargin = el.x;
             lastFlowBottom = el.y + el.height;
             firstFlow = false;
+            const tableStyle = [
+              `margin-top:${this.formatMillimeters(topMargin)}mm`,
+              `margin-left:${this.formatMillimeters(leftMargin)}mm`,
+              `width:${this.formatMillimeters(el.width)}mm`,
+              `height:${this.formatMillimeters(el.height)}mm`
+            ].join(';') + ';';
+
             const tableHtml = this.serializeTableElement(
-              el, 
-              `margin-top:${this.formatMillimeters(topMargin)}mm;margin-left:${this.formatMillimeters(leftMargin)}mm;width:${this.formatMillimeters(el.width)}mm;`,
+              el,
+              tableStyle,
               false // Don't include data-role on table, it will be on parent wrapper
             );
             groupMarkup.push(tableHtml);

@@ -11,7 +11,7 @@ import { DesignerStateService, CanvasZoomMode } from '../../core/services/design
 })
 export class MenuBarComponent {
   private designerState = inject(DesignerStateService);
-  
+
   protected openMenu = signal<string | null>(null);
   protected canUndo = this.designerState.canUndo;
   protected canRedo = this.designerState.canRedo;
@@ -19,7 +19,7 @@ export class MenuBarComponent {
 
   // Output events
   onNew = output<void>();
-  onSave = output<void>();
+  onExportAsXhtml = output<void>();
   onOpen = output<void>();
   onClose = output<void>();
   onUndo = output<void>();
@@ -46,8 +46,8 @@ export class MenuBarComponent {
     this.closeMenu();
   }
 
-  handleSave() {
-    this.onSave.emit();
+  handleExportAsXhtml() {
+    this.onExportAsXhtml.emit();
     this.closeMenu();
   }
 

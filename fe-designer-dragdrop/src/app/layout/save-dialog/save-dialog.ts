@@ -12,20 +12,20 @@ import { FormsModule } from '@angular/forms';
 export class SaveDialogComponent {
   isOpen = input.required<boolean>();
   onClose = output<void>();
-  onSave = output<string>();
+  onExportAsXhtml = output<string>();
 
-  layoutName = signal('');
+  fileName = signal('');
 
-  handleSave(): void {
-    const name = this.layoutName().trim();
+  handleExportAsXhtml(): void {
+    const name = this.fileName().trim();
     if (name) {
-      this.onSave.emit(name);
-      this.layoutName.set('');
+      this.onExportAsXhtml.emit(name);
+      this.fileName.set('');
     }
   }
 
   handleCancel(): void {
-    this.layoutName.set('');
+    this.fileName.set('');
     this.onClose.emit();
   }
 

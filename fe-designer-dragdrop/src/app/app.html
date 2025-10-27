@@ -4,7 +4,7 @@
   <div class="north-region">
     <app-menu-bar
       (onNew)="onNewLayout()"
-      (onSave)="onSaveLayout()"
+      (onExportAsXhtml)="onSaveLayout()"
       (onOpen)="onOpenLayout()"
       (onClose)="onCloseLayout()"
       (onUndo)="onUndo()"
@@ -64,7 +64,7 @@
 <app-save-dialog
   [isOpen]="showSaveDialog()"
   (onClose)="closeSaveDialog()"
-  (onSave)="handleSave($event)">
+  (onExportAsXhtml)="handleSave($event)">
 </app-save-dialog>
 
 @if (showOptionsDialog()) {

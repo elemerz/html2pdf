@@ -1,7 +1,7 @@
 <div class="menu-bar" data-testid="menubar">
   <!-- File Menu -->
   <div class="menu-item-container">
-    <button 
+    <button
       class="menu-button"
       (click)="toggleMenu('file')"
       data-testid="menu-file">
@@ -17,9 +17,9 @@
           <span>Open</span>
           <span class="shortcut">Ctrl+O</span>
         </button>
-        <button class="dropdown-item" (click)="handleSave()" data-testid="menu-file-save">
-          <span>Save</span>
-          <span class="shortcut">Ctrl+S</span>
+        <button class="dropdown-item" (click)="handleExportAsXhtml()" data-testid="menu-file-save">
+          <span>Export as Xhtml</span>
+          <span class="shortcut">Ctrl+E</span>
         </button>
         <button class="dropdown-item" (click)="handleClose()" data-testid="menu-file-close">
           <span>Close</span>
@@ -30,7 +30,7 @@
 
   <!-- Edit Menu -->
   <div class="menu-item-container">
-    <button 
+    <button
       class="menu-button"
       (click)="toggleMenu('edit')"
       data-testid="menu-edit">
@@ -38,18 +38,18 @@
     </button>
     @if (openMenu() === 'edit') {
       <div class="dropdown-menu" (click)="$event.stopPropagation()">
-        <button 
-          class="dropdown-item" 
+        <button
+          class="dropdown-item"
           [disabled]="!canUndo()"
-          (click)="handleUndo()" 
+          (click)="handleUndo()"
           data-testid="menu-edit-undo">
           <span>Undo</span>
           <span class="shortcut">Ctrl+Z</span>
         </button>
-        <button 
-          class="dropdown-item" 
+        <button
+          class="dropdown-item"
           [disabled]="!canRedo()"
-          (click)="handleRedo()" 
+          (click)="handleRedo()"
           data-testid="menu-edit-redo">
           <span>Redo</span>
           <span class="shortcut">Ctrl+Y</span>
@@ -63,7 +63,7 @@
 
   <!-- View Menu -->
   <div class="menu-item-container">
-    <button 
+    <button
       class="menu-button"
       (click)="toggleMenu('view')"
       data-testid="menu-view">
@@ -71,37 +71,37 @@
     </button>
     @if (openMenu() === 'view') {
       <div class="dropdown-menu" (click)="$event.stopPropagation()">
-        <button 
-          class="dropdown-item" 
-          (click)="handleZoom('fit')" 
+        <button
+          class="dropdown-item"
+          (click)="handleZoom('fit')"
           [class.active]="canvasZoomMode() === 'fit'"
           data-testid="menu-view-zoom-fit">
           <span>Zoom To Fit</span>
         </button>
-        <button 
-          class="dropdown-item" 
-          (click)="handleZoom('width')" 
+        <button
+          class="dropdown-item"
+          (click)="handleZoom('width')"
           [class.active]="canvasZoomMode() === 'width'"
           data-testid="menu-view-zoom-width">
           <span>Zoom To Width</span>
         </button>
-        <button 
-          class="dropdown-item" 
-          (click)="handleZoom('height')" 
+        <button
+          class="dropdown-item"
+          (click)="handleZoom('height')"
           [class.active]="canvasZoomMode() === 'height'"
           data-testid="menu-view-zoom-height">
           <span>Zoom To Height</span>
         </button>
-        <button 
-          class="dropdown-item" 
-          (click)="handleZoom('actual')" 
+        <button
+          class="dropdown-item"
+          (click)="handleZoom('actual')"
           [class.active]="canvasZoomMode() === 'actual'"
           data-testid="menu-view-zoom-actual">
           <span>Zoom 1:1 (Actual Size)</span>
         </button>
-        <button 
-          class="dropdown-item" 
-          (click)="openCalibration()" 
+        <button
+          class="dropdown-item"
+          (click)="openCalibration()"
           data-testid="menu-view-calibrate">
           <span>Calibrate Screen...</span>
         </button>
