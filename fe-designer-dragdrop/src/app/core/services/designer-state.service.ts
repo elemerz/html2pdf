@@ -1407,4 +1407,56 @@ export class DesignerStateService {
     const match = value.match(/([0-9.]+)/);
     return match ? parseFloat(match[1]) : 0;
   }
+
+  // Export current design to JSON
+  exportDesign(): string {
+    const design = {
+      version: 1,
+      layout: this.currentLayoutSignal(),
+      elements: this.elementsSignal(),
+      pageGutters: this.pageGutters(),
+      visualGridSize: this.visualGridSize(),
+      logicalGridSize: this.logicalGridSize(),
+      calibrationScale: this.calibrationScale(),
+      canvasZoomMode: this.canvasZoomMode()
+    };
+    return JSON.stringify(design, null, 2);
+  }
+
+  // Import design JSON
+  importDesign(jsonContent: string): void {
+    const parsed = JSON.parse(jsonContent);
+    if (!parsed || typeof parsed !== 'object') {
+      throw new Error('Invalid design JSON');
+    }
+    // Basic validation
+    const layout = parsed.layout;
+    if (!layout || !Array.isArray(layout.elements)) {
+      throw new Error('Design JSON missing layout.elements');
+    }
+
+    this.setLayout({
+      name: layout.name || 'Imported Layout',
+      elements: layout.elements,
+      gridSize: layout.gridSize || 10,
+      canvasWidth: layout.canvasWidth || 210,
+      canvasHeight: layout.canvasHeight || 297
+    });
+
+    if (parsed.pageGutters) {
+      this.setPageGutters(parsed.pageGutters);
+    }
+    if (Number.isFinite(parsed.visualGridSize)) {
+      this.setVisualGridSize(parsed.visualGridSize);
+    }
+    if (Number.isFinite(parsed.logicalGridSize)) {
+      this.setLogicalGridSize(parsed.logicalGridSize);
+    }
+    if (Number.isFinite(parsed.calibrationScale)) {
+      this.setCalibrationScale(parsed.calibrationScale);
+    }
+    if (parsed.canvasZoomMode) {
+      this.setCanvasZoomMode(parsed.canvasZoomMode);
+    }
+  }
 }
