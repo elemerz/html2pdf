@@ -870,27 +870,40 @@ export class DesignerStateService {
         if (tagName === 'header') {
           // Parse all table children and assign them 'report-header' role
           const tables = Array.from(elem.querySelectorAll(':scope > table')) as HTMLElement[];
+          let lastBottom = 0;
           for (const table of tables) {
             const parsed = this.parseXhtmlTable(table, elementIdCounter++, 'report-header');
             if (parsed) {
+              // margin-top in saved doc is relative to previous flow bottom
+              const absoluteY = lastBottom === 0 ? parsed.y : lastBottom + parsed.y;
+              parsed.y = absoluteY;
+              lastBottom = absoluteY + parsed.height;
               elements.push(parsed);
             }
           }
         } else if (tagName === 'footer') {
           // Parse all table children and assign them 'report-footer' role
           const tables = Array.from(elem.querySelectorAll(':scope > table')) as HTMLElement[];
+          let lastBottom = 0;
           for (const table of tables) {
             const parsed = this.parseXhtmlTable(table, elementIdCounter++, 'report-footer');
             if (parsed) {
+              const absoluteY = lastBottom === 0 ? parsed.y : lastBottom + parsed.y;
+              parsed.y = absoluteY;
+              lastBottom = absoluteY + parsed.height;
               elements.push(parsed);
             }
           }
         } else if (tagName === 'div' && elem.classList.contains('report-body')) {
           // Parse all table children and assign them 'report-body' role
           const tables = Array.from(elem.querySelectorAll(':scope > table')) as HTMLElement[];
+          let lastBottom = 0;
           for (const table of tables) {
             const parsed = this.parseXhtmlTable(table, elementIdCounter++, 'report-body');
             if (parsed) {
+              const absoluteY = lastBottom === 0 ? parsed.y : lastBottom + parsed.y;
+              parsed.y = absoluteY;
+              lastBottom = absoluteY + parsed.height;
               elements.push(parsed);
             }
           }
@@ -1006,21 +1019,32 @@ export class DesignerStateService {
     const colSizes: number[] = [];
     
     // Calculate row sizes
-    const totalHeight = position.height;
+    const rowHeightsMm: number[] = [];
     for (const row of rows) {
       const heightStr = row.style.height || row.getAttribute('style')?.match(/height:\s*([0-9.]+)mm/)?.[1];
       if (heightStr) {
-        rowSizes.push(parseFloat(heightStr) / totalHeight);
+        const h = parseFloat(heightStr);
+        if (isFinite(h) && h > 0) {
+          rowHeightsMm.push(h);
+        }
       }
     }
+    const elementHeight = rowHeightsMm.reduce((sum, h) => sum + h, 0) || 0;
+    const rowSizes = elementHeight > 0 ? rowHeightsMm.map(h => h / elementHeight) : [1];
     
     // Calculate column sizes from first row
     const totalWidth = position.width;
     for (const cell of firstRowCells) {
       const widthStr = cell.style.width || cell.getAttribute('style')?.match(/width:\s*([0-9.]+)mm/)?.[1];
       if (widthStr) {
-        colSizes.push(parseFloat(widthStr) / totalWidth);
+        const w = parseFloat(widthStr);
+        if (isFinite(w) && w > 0 && totalWidth > 0) {
+          colSizes.push(w / totalWidth);
+        }
       }
+    }
+    if (!colSizes.length) {
+      colSizes.push(1);
     }
     
     // Parse each cell
