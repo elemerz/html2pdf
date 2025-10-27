@@ -368,8 +368,7 @@ export class DesignerStateService {
     // Get unique roles
     const roles = new Set<string>();
     roledElements.forEach(el => {
-      const raw = el.properties?.['elementRole'];
-      const role = raw ? raw.trim() : '';
+      const role = el.properties?.['elementRole'];
       if (role) {
         roles.add(role);
       }
@@ -413,8 +412,8 @@ export class DesignerStateService {
     let currentGroup: { role: string | null; elements: CanvasElement[] } | null = null;
 
     for (const el of elements) {
-      const rawRole = el.properties?.['elementRole'];
-      const role = rawRole ? rawRole.trim() : null;
+      const role = el.properties?.['elementRole'] || null;
+      
       if (!currentGroup || currentGroup.role !== role) {
         // Start a new group
         currentGroup = { role, elements: [el] };
@@ -441,7 +440,7 @@ export class DesignerStateService {
             firstFlow = false;
             const tableHtml = this.serializeTableElement(
               el, 
-              `margin-top:${this.formatMillimeters(topMargin)}mm;margin-left:${this.formatMillimeters(leftMargin)}mm;width:${this.formatMillimeters(el.width)}mm;height:${this.formatMillimeters(el.height)}mm;`,
+              `margin-top:${this.formatMillimeters(topMargin)}mm;margin-left:${this.formatMillimeters(leftMargin)}mm;width:${this.formatMillimeters(el.width)}mm;`,
               false // Don't include data-role on table, it will be on parent wrapper
             );
             groupMarkup.push(tableHtml);
@@ -870,40 +869,27 @@ export class DesignerStateService {
         if (tagName === 'header') {
           // Parse all table children and assign them 'report-header' role
           const tables = Array.from(elem.querySelectorAll(':scope > table')) as HTMLElement[];
-          let lastBottom = 0;
           for (const table of tables) {
             const parsed = this.parseXhtmlTable(table, elementIdCounter++, 'report-header');
             if (parsed) {
-              // margin-top in saved doc is relative to previous flow bottom
-              const absoluteY = lastBottom === 0 ? parsed.y : lastBottom + parsed.y;
-              parsed.y = absoluteY;
-              lastBottom = absoluteY + parsed.height;
               elements.push(parsed);
             }
           }
         } else if (tagName === 'footer') {
           // Parse all table children and assign them 'report-footer' role
           const tables = Array.from(elem.querySelectorAll(':scope > table')) as HTMLElement[];
-          let lastBottom = 0;
           for (const table of tables) {
             const parsed = this.parseXhtmlTable(table, elementIdCounter++, 'report-footer');
             if (parsed) {
-              const absoluteY = lastBottom === 0 ? parsed.y : lastBottom + parsed.y;
-              parsed.y = absoluteY;
-              lastBottom = absoluteY + parsed.height;
               elements.push(parsed);
             }
           }
         } else if (tagName === 'div' && elem.classList.contains('report-body')) {
           // Parse all table children and assign them 'report-body' role
           const tables = Array.from(elem.querySelectorAll(':scope > table')) as HTMLElement[];
-          let lastBottom = 0;
           for (const table of tables) {
             const parsed = this.parseXhtmlTable(table, elementIdCounter++, 'report-body');
             if (parsed) {
-              const absoluteY = lastBottom === 0 ? parsed.y : lastBottom + parsed.y;
-              parsed.y = absoluteY;
-              lastBottom = absoluteY + parsed.height;
               elements.push(parsed);
             }
           }
@@ -1015,38 +1001,25 @@ export class DesignerStateService {
     const tableCellSubTables: Record<string, any> = {};
     
     // Parse row and column sizes
+    const rowSizes: number[] = [];
     const colSizes: number[] = [];
+    
     // Calculate row sizes
-    const rowHeightsMm: number[] = [];
+    const totalHeight = position.height;
     for (const row of rows) {
       const heightStr = row.style.height || row.getAttribute('style')?.match(/height:\s*([0-9.]+)mm/)?.[1];
       if (heightStr) {
-        const h = parseFloat(heightStr);
-        if (isFinite(h) && h > 0) {
-          rowHeightsMm.push(h);
-        }
+        rowSizes.push(parseFloat(heightStr) / totalHeight);
       }
     }
-    let elementHeight = rowHeightsMm.reduce((sum, h) => sum + h, 0) || 0;
-    // If explicit table height existed in style attribute (parseStylePosition captured it), prefer that when greater
-    if (position.height && position.height > 0 && elementHeight === 0) {
-      elementHeight = position.height;
-    }
-    const rowSizes: number[] = elementHeight > 0 ? rowHeightsMm.map(h => h / elementHeight) : [1];
     
     // Calculate column sizes from first row
     const totalWidth = position.width;
     for (const cell of firstRowCells) {
       const widthStr = cell.style.width || cell.getAttribute('style')?.match(/width:\s*([0-9.]+)mm/)?.[1];
       if (widthStr) {
-        const w = parseFloat(widthStr);
-        if (isFinite(w) && w > 0 && totalWidth > 0) {
-          colSizes.push(w / totalWidth);
-        }
+        colSizes.push(parseFloat(widthStr) / totalWidth);
       }
-    }
-    if (!colSizes.length) {
-      colSizes.push(1);
     }
     
     // Parse each cell
@@ -1175,8 +1148,8 @@ export class DesignerStateService {
       properties: {
         rows: numRows,
         cols: numCols,
-        rowSizes: rowSizes.slice(),
-        colSizes: colSizes.slice(),
+        rowSizes,
+        colSizes,
         tableCellContents,
         tableCellPadding,
         tableCellHAlign,
@@ -1380,7 +1353,6 @@ export class DesignerStateService {
     let x = 0, y = 0, width = 0, height = 0;
     
     if (isTable) {
-      const heightMatchInline = style.match(/height:\s*([0-9.]+)mm/);
       const marginTopMatch = style.match(/margin-top:\s*([0-9.]+)mm/);
       const marginLeftMatch = style.match(/margin-left:\s*([0-9.]+)mm/);
       const widthMatch = style.match(/width:\s*([0-9.]+)mm/);
@@ -1388,8 +1360,9 @@ export class DesignerStateService {
       if (marginTopMatch) y = parseFloat(marginTopMatch[1]);
       if (marginLeftMatch) x = parseFloat(marginLeftMatch[1]);
       if (widthMatch) width = parseFloat(widthMatch[1]);
-      if (heightMatchInline) height = parseFloat(heightMatchInline[1]); // Prefer explicit saved height
-      // Fallback height inferred from rows happens later in parseXhtmlTable
+      
+      // Height will be calculated from row heights
+      height = width > 0 ? 100 : 0; // Default height
     } else {
       const leftMatch = style.match(/left:\s*([0-9.]+)mm/);
       const topMatch = style.match(/top:\s*([0-9.]+)mm/);
