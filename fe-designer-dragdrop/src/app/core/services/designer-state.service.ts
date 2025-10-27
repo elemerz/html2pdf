@@ -368,7 +368,8 @@ export class DesignerStateService {
     // Get unique roles
     const roles = new Set<string>();
     roledElements.forEach(el => {
-      const role = el.properties?.['elementRole'];
+      const raw = el.properties?.['elementRole'];
+      const role = raw ? raw.trim() : '';
       if (role) {
         roles.add(role);
       }
@@ -412,8 +413,8 @@ export class DesignerStateService {
     let currentGroup: { role: string | null; elements: CanvasElement[] } | null = null;
 
     for (const el of elements) {
-      const role = el.properties?.['elementRole'] || null;
-      
+      const rawRole = el.properties?.['elementRole'];
+      const role = rawRole ? rawRole.trim() : null;
       if (!currentGroup || currentGroup.role !== role) {
         // Start a new group
         currentGroup = { role, elements: [el] };
