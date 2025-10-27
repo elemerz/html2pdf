@@ -1015,9 +1015,7 @@ export class DesignerStateService {
     const tableCellSubTables: Record<string, any> = {};
     
     // Parse row and column sizes
-    const rowSizes: number[] = [];
     const colSizes: number[] = [];
-    
     // Calculate row sizes
     const rowHeightsMm: number[] = [];
     for (const row of rows) {
@@ -1030,7 +1028,7 @@ export class DesignerStateService {
       }
     }
     const elementHeight = rowHeightsMm.reduce((sum, h) => sum + h, 0) || 0;
-    const rowSizes = elementHeight > 0 ? rowHeightsMm.map(h => h / elementHeight) : [1];
+    const rowSizes: number[] = elementHeight > 0 ? rowHeightsMm.map(h => h / elementHeight) : [1];
     
     // Calculate column sizes from first row
     const totalWidth = position.width;
@@ -1173,8 +1171,8 @@ export class DesignerStateService {
       properties: {
         rows: numRows,
         cols: numCols,
-        rowSizes,
-        colSizes,
+        rowSizes: rowSizes.slice(),
+        colSizes: colSizes.slice(),
         tableCellContents,
         tableCellPadding,
         tableCellHAlign,
