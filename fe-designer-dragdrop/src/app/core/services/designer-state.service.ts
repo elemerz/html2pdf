@@ -1380,6 +1380,7 @@ export class DesignerStateService {
     let x = 0, y = 0, width = 0, height = 0;
     
     if (isTable) {
+      const heightMatchInline = style.match(/height:\s*([0-9.]+)mm/);
       const marginTopMatch = style.match(/margin-top:\s*([0-9.]+)mm/);
       const marginLeftMatch = style.match(/margin-left:\s*([0-9.]+)mm/);
       const widthMatch = style.match(/width:\s*([0-9.]+)mm/);
