@@ -536,6 +536,16 @@ export class DesignerStateService {
     const effectiveRowSizes = rowSizes.length ? rowSizes : [1];
     const effectiveColSizes = colSizes.length ? colSizes : [1];
 
+    // Ensure exported tables always include explicit height in inline styles.
+    let normalizedStyle = (style ?? '').trim();
+    if (normalizedStyle.length && !normalizedStyle.endsWith(';')) {
+      normalizedStyle += ';';
+    }
+    if (!/(^|;)\s*height\s*:/i.test(normalizedStyle)) {
+      normalizedStyle += `height:${this.formatMillimeters(element.height)}mm;`;
+    }
+    style = normalizedStyle;
+
     // Extract id and data-role attributes
     const elementId = element.properties?.['elementId'] || '';
     const elementRole = element.properties?.['elementRole'] || '';
@@ -1363,13 +1373,17 @@ export class DesignerStateService {
       const marginTopMatch = style.match(/margin-top:\s*([0-9.]+)mm/);
       const marginLeftMatch = style.match(/margin-left:\s*([0-9.]+)mm/);
       const widthMatch = style.match(/width:\s*([0-9.]+)mm/);
+      const heightMatch = style.match(/(^|;)\s*height:\s*([0-9.]+)mm/);
       
       if (marginTopMatch) y = parseFloat(marginTopMatch[1]);
       if (marginLeftMatch) x = parseFloat(marginLeftMatch[1]);
       if (widthMatch) width = parseFloat(widthMatch[1]);
-      
-      // Height will be calculated from row heights
-      height = width > 0 ? 100 : 0; // Default height
+      if (heightMatch) {
+        height = parseFloat(heightMatch[2]);
+      } else {
+        // Height will be calculated from row heights when it's missing
+        height = width > 0 ? 100 : 0;
+      }
     } else {
       const leftMatch = style.match(/left:\s*([0-9.]+)mm/);
       const topMatch = style.match(/top:\s*([0-9.]+)mm/);
