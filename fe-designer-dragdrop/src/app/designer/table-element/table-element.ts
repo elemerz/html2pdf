@@ -1269,17 +1269,25 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
   protected onCellClick(event: MouseEvent, row: number, col: number): void {
     const target = event.target as HTMLElement;
 
-    // Check if click is on or inside a sub-table cell
     const subTableCell = target.closest('.sub-table-cell');
     if (subTableCell) {
-      // Let the native handler deal with sub-table cells
-      return; // Don't stop propagation, don't select parent cell
+      return;
     }
 
-    // Normal cell click - DON'T stop propagation so native handler can process
     this.designerState.selectElement(this.element.id);
     this.designerState.selectTableCell(this.element.id, row, col);
     this.closeContextMenu();
+  }
+
+  protected onCellDoubleClick(event: MouseEvent, row: number, col: number): void {
+    const target = event.target as HTMLElement;
+    const subTableCell = target.closest('.sub-table-cell');
+    if (subTableCell) {
+      return; // Don't open editor for parent when double-clicking nested sub-table cell
+    }
+    this.designerState.selectElement(this.element.id);
+    this.designerState.selectTableCell(this.element.id, row, col);
+    this.onEditCellContent();
   }
 
   protected onCellContextMenu(event: MouseEvent, row: number, col: number): void {
