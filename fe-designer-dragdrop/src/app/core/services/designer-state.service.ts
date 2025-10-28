@@ -609,13 +609,13 @@ export class DesignerStateService {
             const fontFamilyMap = element.properties?.['tableCellFontFamily'] as Record<string, string> | undefined;
             const fontStyle = fontStyleMap?.[key];
             const fontWeight = fontWeightMap?.[key];
-            const fontSize = fontSizeMap?.[key];
-            const lineHeight = lineHeightMap?.[key];
-            const fontFamily = fontFamilyMap?.[key];
+            const fontSize = Number.isFinite(fontSizeMap?.[key]) ? fontSizeMap![key]! : 9;
+            const lineHeightRaw = lineHeightMap?.[key];
+            const fontFamily = fontFamilyMap?.[key] || 'Roboto, sans-serif';
             const fontCss = (fontStyle ? `font-style:${fontStyle};` : '') +
               (fontWeight ? `font-weight:${fontWeight};` : '') +
-              (Number.isFinite(fontSize) ? `font-size:${fontSize}pt;` : '') +
-              (Number.isFinite(lineHeight) ? `line-height:${lineHeight};` : '') +
+              (fontSize ? `font-size:${fontSize}pt;` : '') +
+              (Number.isFinite(lineHeightRaw) ? `line-height:${lineHeightRaw};` : '') +
               (fontFamily ? `font-family:${fontFamily};` : '');
             return `        <td style="width:${colWidthStr}mm;height:${rowHeightStr}mm;padding:${pt}mm ${pr}mm ${pb}mm ${pl}mm;text-align:${hAlign};vertical-align:${vAlign};${borderCss}${fontCss}">${cellContent}</td>`;
           })
@@ -678,12 +678,12 @@ export class DesignerStateService {
             const borderCss = `border-top:${cellBorderTopCss};border-right:${cellBorderRightCss};border-bottom:${cellBorderBottomCss};border-left:${cellBorderLeftCss};`;
             const fontStyle = subTable.cellFontStyle?.[key] || '';
             const fontWeight = subTable.cellFontWeight?.[key] || '';
-            const fontSize = subTable.cellFontSize?.[key];
+            const fontSize = Number.isFinite(subTable.cellFontSize?.[key]) ? subTable.cellFontSize![key]! : 9;
             const lineHeight = subTable.cellLineHeight?.[key];
-            const fontFamily = subTable.cellFontFamily?.[key] || '';
+            const fontFamily = subTable.cellFontFamily?.[key] || 'Roboto, sans-serif';
             const fontCss = (fontStyle ? `font-style:${fontStyle};` : '') +
               (fontWeight ? `font-weight:${fontWeight};` : '') +
-              (Number.isFinite(fontSize) ? `font-size:${fontSize}pt;` : '') +
+              (fontSize ? `font-size:${fontSize}pt;` : '') +
               (Number.isFinite(lineHeight) ? `line-height:${lineHeight};` : '') +
               (fontFamily ? `font-family:${fontFamily};` : '');
 

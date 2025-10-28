@@ -30,11 +30,13 @@ export class CellEditorDialogComponent implements OnInit {
         'trebuchet',
         'times-new-roman',
         'georgia',
+        'calibri',
         'roboto',
         'open-sans',
         'lato',
         'montserrat',
-        'poppins'
+        'poppins',
+        'kix-barcode'
       ] }],
       [{ 'size': ['6pt','7pt','8pt','9pt','10pt','11pt','12pt','13pt','14pt','15pt','16pt','17pt','18pt','20pt','24pt','28pt','32pt'] }],
       [{ 'color': [] }, { 'background': [] }],
@@ -72,13 +74,15 @@ export class CellEditorDialogComponent implements OnInit {
         'trebuchet': '"Trebuchet MS", sans-serif',
         'times-new-roman': '"Times New Roman", Times, serif',
         'georgia': 'Georgia, serif',
+        'calibri': '"Calibri", sans-serif',
         'roboto': 'Roboto, sans-serif',
         'open-sans': '"Open Sans", sans-serif',
         'lato': 'Lato, sans-serif',
         'montserrat': 'Montserrat, sans-serif',
-        'poppins': 'Poppins, sans-serif'
+        'poppins': 'Poppins, sans-serif',
+        'kix-barcode': '"KIX Barcode"'
       };
-      
+
       const reverseFontMap: Record<string, string> = {
         'Arial, Helvetica, sans-serif': 'arial',
         'Helvetica, sans-serif': 'helvetica',
@@ -87,11 +91,15 @@ export class CellEditorDialogComponent implements OnInit {
         '"Trebuchet MS", sans-serif': 'trebuchet',
         '"Times New Roman", Times, serif': 'times-new-roman',
         'Georgia, serif': 'georgia',
+        '"Calibri", sans-serif': 'calibri',
+        'Calibri, sans-serif': 'calibri',
         'Roboto, sans-serif': 'roboto',
         '"Open Sans", sans-serif': 'open-sans',
         'Lato, sans-serif': 'lato',
         'Montserrat, sans-serif': 'montserrat',
-        'Poppins, sans-serif': 'poppins'
+        'Poppins, sans-serif': 'poppins',
+        '"KIX Barcode"': 'kix-barcode',
+        'KIX Barcode': 'kix-barcode'
       };
       
       // Create custom font attributor

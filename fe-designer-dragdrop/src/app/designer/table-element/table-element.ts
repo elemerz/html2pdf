@@ -977,8 +977,8 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
         const borderRight = this.getSubTableCellBorderCss(subTable, cellKey, 'right');
         const borderBottom = this.getSubTableCellBorderCss(subTable, cellKey, 'bottom');
         const borderLeft = this.getSubTableCellBorderCss(subTable, cellKey, 'left');
-        const fontFamily = subTable.cellFontFamily?.[cellKey] || '';
-        const fontSize = subTable.cellFontSize?.[cellKey] || '';
+        const fontFamily = subTable.cellFontFamily?.[cellKey] || 'Roboto, sans-serif';
+        const fontSize = subTable.cellFontSize?.[cellKey] || 9;
         const fontWeight = subTable.cellFontWeight?.[cellKey] || '';
         const fontStyleProp = subTable.cellFontStyle?.[cellKey] || '';
         const lineHeight = subTable.cellLineHeight?.[cellKey] || '';
@@ -1795,7 +1795,7 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
     const key = `${row}_${col}`;
     const map = this.element.properties?.['tableCellFontSize'] as Record<string, number> | undefined;
     const size = map?.[key];
-    return Number.isFinite(size) ? `${size}pt` : '12pt';
+    return Number.isFinite(size) ? `${size}pt` : '9pt';
   }
 
   protected getCellLineHeight(row: number, col: number): string {
@@ -1808,7 +1808,7 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
   protected getCellFontFamily(row: number, col: number): string {
     const key = `${row}_${col}`;
     const map = this.element.properties?.['tableCellFontFamily'] as Record<string, string> | undefined;
-    return map?.[key] || 'sans-serif';
+    return map?.[key] || 'Roboto, sans-serif';
   }
 
   protected getCellTextDecoration(row: number, col: number): string {
