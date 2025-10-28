@@ -349,7 +349,7 @@ export class PropertyPanelComponent {
     if (!selection || !el || el.id !== selection.elementId) return null;
     const map = el.properties?.['tableCellLineHeight'] as Record<string, number> | undefined;
     const v = map?.[this.cellKey(selection.row, selection.col)];
-    return Number.isFinite(v) ? v! : 1.5;
+    return Number.isFinite(v) ? v! : 1;
   }
   getSelectedCellFontFamily(): string | null {
     const selection = this.selectedTableCell();
@@ -385,7 +385,7 @@ export class PropertyPanelComponent {
       nextProps['tableCellFontSize'] = { ...map, [key]: Math.max(1, Number(value) || 12) };
     } else if (part === 'lineHeight') {
       const map = (el.properties?.['tableCellLineHeight'] as Record<string, number>) || {};
-      nextProps['tableCellLineHeight'] = { ...map, [key]: Math.max(0.5, Number(value) || 1.5) };
+      nextProps['tableCellLineHeight'] = { ...map, [key]: Math.max(0.5, Number(value) || 1) };
     } else if (part === 'family') {
       const map = (el.properties?.['tableCellFontFamily'] as Record<string, string>) || {};
       nextProps['tableCellFontFamily'] = { ...map, [key]: String(value) };

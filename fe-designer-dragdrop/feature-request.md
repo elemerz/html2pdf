@@ -39,6 +39,6 @@
 
 To fix:
 -  Allow cel resize for any nesting level => Ok
-- Text align apply to any level.
+- Text align apply to any level. => ok.
 - Apply borders individually
 - Make cell selection easier

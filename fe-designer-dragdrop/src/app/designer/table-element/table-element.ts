@@ -1705,7 +1705,7 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
     const key = `${row}_${col}`;
     const map = this.element.properties?.['tableCellLineHeight'] as Record<string, number> | undefined;
     const lineHeight = map?.[key];
-    return Number.isFinite(lineHeight) ? String(lineHeight) : '1.5';
+    return Number.isFinite(lineHeight) ? String(lineHeight) : '1';
   }
 
   protected getCellFontFamily(row: number, col: number): string {

@@ -1128,7 +1128,7 @@ export class DesignerStateService {
         }
         
         if (cell.style.lineHeight) {
-          tableCellLineHeight[key] = parseFloat(cell.style.lineHeight) || 1.5;
+          tableCellLineHeight[key] = parseFloat(cell.style.lineHeight) || 1;
         } else {
           const lineHeightMatch = cellStyle.match(/line-height:\s*([0-9.]+)/i);
           if (lineHeightMatch) tableCellLineHeight[key] = parseFloat(lineHeightMatch[1]);
@@ -1336,7 +1336,7 @@ export class DesignerStateService {
           cellFontStyle[key] = cell.style.fontStyle;
         }
         if (cell.style.lineHeight) {
-          cellLineHeight[key] = parseFloat(cell.style.lineHeight) || 1.5;
+          cellLineHeight[key] = parseFloat(cell.style.lineHeight) || 1;
         }
       });
     });
