@@ -584,7 +584,7 @@ export class DesignerStateService {
               // Use regular cell content
               const contents = (element.properties?.['tableCellContents'] as Record<string, string> | undefined) || {};
               const raw = contents[key];
-              cellContent = raw && raw.length ? raw : '&nbsp;';
+              cellContent = raw && raw.length ? raw.replace(/&nbsp;/g, '&#160;') : '&#160;'; // numeric nbsp entity
             }
             
             const padMap = element.properties?.['tableCellPadding'] as Record<string, number[]> | undefined;
@@ -661,7 +661,7 @@ export class DesignerStateService {
             } else {
               // Use sub-table cell content
               const raw = subTable.cellContents?.[key];
-              cellContent = raw && raw.length ? raw : '&nbsp;';
+              cellContent = raw && raw.length ? raw.replace(/&nbsp;/g, '&#160;') : '&#160;'; // numeric nbsp entity
             }
 
             const padding = subTable.cellPadding?.[key] || [0, 0, 0, 0];
@@ -701,7 +701,8 @@ export class DesignerStateService {
   private formatContent(content: string | undefined | null): string {
     const escaped = this.escapeHtml(content ?? '');
     const withBreaks = escaped.replace(/\r?\n/g, '<br />');
-    return withBreaks.length ? withBreaks : '&nbsp;';
+    const normalized = withBreaks.replace(/&nbsp;/g, '&#160;');
+    return normalized.length ? normalized : '&#160;'; // Use numeric nbsp entity for XHTML compliance
   }
 
   private getTableDimension(element: CanvasElement, property: 'rows' | 'cols'): number {

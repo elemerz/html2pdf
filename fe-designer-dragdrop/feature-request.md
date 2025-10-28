@@ -38,17 +38,21 @@
 - Allow sub-cells to be resized
 
 To fix:
+- !!! &nbsp; problem in converting XHTML exported by designer!
 -  Allow cel resize for any nesting level => Ok
 - Text align apply to any level. => ok.
-- Apply borders individually
+- Apply borders individually => Ok
 - Make cell selection easier
+
 ## Still to implement (Not in POC)
+
 - Own Database support
 - Support Dynamic report variables
 - Support QRCode and Barcode in designer
 - Custom Font management
 - Logo image management
 - Image optimizations (at least png, if possible also SVG)
-- Extend scalability above virtual threads (Kafka, etc)
 - Pass data via REST API instead of physical files
 - Use anchor-positioning for resize handles, cog and .action-toolbar
+- Implement Undo / Redo
+- Extend scalability above virtual threads (Kafka, etc)
