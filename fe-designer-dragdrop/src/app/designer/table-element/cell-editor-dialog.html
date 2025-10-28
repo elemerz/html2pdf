@@ -1,6 +1,6 @@
 <div class="cell-editor-backdrop" (click)="close()"></div>
-<div class="cell-editor-dialog" (mousedown)="$event.stopPropagation()" (click)="$event.stopPropagation()">
-  <div class="dialog-header">
+<div class="cell-editor-dialog" (mousedown)="$event.stopPropagation()" (click)="$event.stopPropagation()" #dialogRoot>
+  <div class="dialog-header" (mousedown)="beginDrag($event)">
     <span>Cell Content</span>
     <button type="button" class="close-btn" (click)="close()">✕</button>
   </div>
@@ -10,7 +10,7 @@
     (onEditorCreated)="onEditorCreated($event)"
     [modules]="quillModules"
     format="html"
-    [styles]="{height: '480px'}"
+    [styles]="{height: '384px'}"
     placeholder="Enter cell content..."
   ></quill-editor>
   <div class="dialog-actions">

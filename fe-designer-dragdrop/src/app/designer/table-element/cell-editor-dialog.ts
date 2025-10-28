@@ -1,4 +1,4 @@
-import {Component, Input, Output, EventEmitter, OnInit} from '@angular/core';
+import {Component, Input, Output, EventEmitter, OnInit, ElementRef, ViewChild, HostListener} from '@angular/core';
 import Quill from 'quill';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -17,6 +17,10 @@ export class CellEditorDialogComponent implements OnInit {
   @Output() saved = new EventEmitter<string>();
 
   quill!: Quill;
+  @ViewChild('dialogRoot') dialogRoot!: ElementRef<HTMLDivElement>;
+  private dragging = false;
+  private dragOffsetX = 0;
+  private dragOffsetY = 0;
   contentValue = '';
 
   quillModules = {
@@ -148,6 +152,34 @@ export class CellEditorDialogComponent implements OnInit {
 
 
     this.contentValue = this.initialContent && this.initialContent !== '&nbsp;' ? this.initialContent : '';
+  }
+
+  beginDrag(ev: MouseEvent): void {
+    if (ev.button !== 0) return; // only left button
+    if (!this.dialogRoot) return;
+    const el = this.dialogRoot.nativeElement;
+    // Keep original centered positioning (top:50%, left:50%, transform:-50%,-50%)
+    // Just record starting mouse position; movement will adjust transform with pixel deltas off the centered base.
+    this.dragging = true;
+    this.dragOffsetX = ev.clientX;
+    this.dragOffsetY = ev.clientY;
+    el.style.willChange = 'transform';
+    ev.preventDefault();
+  }
+
+  @HostListener('document:mouseup', ['$event'])
+  endDrag(_: MouseEvent): void {
+    this.dragging = false;
+  }
+
+  @HostListener('document:mousemove', ['$event'])
+  onDrag(ev: MouseEvent): void {
+    if (!this.dragging) return;
+    const el = this.dialogRoot.nativeElement;
+    const dx = ev.clientX - this.dragOffsetX;
+    const dy = ev.clientY - this.dragOffsetY;
+    // Apply delta relative to original centered transform
+    el.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
   }
 
   save(): void {
