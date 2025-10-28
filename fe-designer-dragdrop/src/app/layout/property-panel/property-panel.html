@@ -318,6 +318,18 @@
               <header class="subsection-header">Font</header>
               <div class="property-grid">
                 <div class="property-field">
+                  <label class="property-label">Font Family</label>
+                  <select class="property-input"
+                          [value]="getSelectedCellFontFamily() || 'Roboto, sans-serif'"
+                          (change)="updateSelectedCellFont('family', $any($event.target).value)">
+                    <option value="Arial, Helvetica, sans-serif">Arial</option>
+                    <option value="&quot;Times New Roman&quot;, Times, serif">Times New Roman</option>
+                    <option value="&quot;Calibri&quot;, sans-serif">Calibri</option>
+                    <option value="Roboto, sans-serif">Roboto (Default)</option>
+                    <option value="&quot;KIX Barcode&quot;">KIX Barcode</option>
+                  </select>
+                </div>
+                <div class="property-field">
                   <label class="property-label">Font Weight</label>
                   <select class="property-input"
                           [value]="getSelectedCellFontWeight()"

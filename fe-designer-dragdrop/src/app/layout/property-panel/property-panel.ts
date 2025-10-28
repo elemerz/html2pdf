@@ -612,7 +612,7 @@ export class PropertyPanelComponent {
     if (!selection || !el || el.id !== selection.elementId) return null;
     const map = el.properties?.['tableCellFontSize'] as Record<string, number> | undefined;
     const v = map?.[this.cellKey(selection.row, selection.col)];
-    return Number.isFinite(v) ? v! : 12;
+    return Number.isFinite(v) ? v! : 9;
   }
   getSelectedCellLineHeight(): number | null {
     const selection = this.selectedTableCell();
@@ -628,7 +628,7 @@ export class PropertyPanelComponent {
     if (!selection || !el || el.id !== selection.elementId) return null;
     const map = el.properties?.['tableCellFontFamily'] as Record<string, string> | undefined;
     const v = map?.[this.cellKey(selection.row, selection.col)];
-    return typeof v === 'string' ? v : 'sans-serif';
+    return typeof v === 'string' && v.length > 0 ? v : 'Roboto, sans-serif';
   }
   getSelectedCellTextDecoration(): string | null {
     const selection = this.selectedTableCell();
@@ -653,13 +653,24 @@ export class PropertyPanelComponent {
       nextProps['tableCellFontWeight'] = { ...map, [key]: String(value) };
     } else if (part === 'size') {
       const map = (el.properties?.['tableCellFontSize'] as Record<string, number>) || {};
-      nextProps['tableCellFontSize'] = { ...map, [key]: Math.max(1, Number(value) || 12) };
+      nextProps['tableCellFontSize'] = { ...map, [key]: Math.max(1, Number(value) || 9) };
     } else if (part === 'lineHeight') {
       const map = (el.properties?.['tableCellLineHeight'] as Record<string, number>) || {};
       nextProps['tableCellLineHeight'] = { ...map, [key]: Math.max(0.5, Number(value) || 1) };
     } else if (part === 'family') {
       const map = (el.properties?.['tableCellFontFamily'] as Record<string, string>) || {};
-      nextProps['tableCellFontFamily'] = { ...map, [key]: String(value) };
+      const normalized = String(value || '').trim();
+      const updatedMap = { ...map };
+      if (normalized.length === 0 || normalized === 'Roboto, sans-serif') {
+        delete updatedMap[key];
+      } else {
+        updatedMap[key] = normalized;
+      }
+      if (Object.keys(updatedMap).length > 0) {
+        nextProps['tableCellFontFamily'] = updatedMap;
+      } else if (nextProps['tableCellFontFamily']) {
+        delete nextProps['tableCellFontFamily'];
+      }
     } else if (part === 'decoration') {
       const map = (el.properties?.['tableCellTextDecoration'] as Record<string, string>) || {};
       nextProps['tableCellTextDecoration'] = { ...map, [key]: String(value) };
