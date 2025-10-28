@@ -78,6 +78,9 @@
   pointer-events: none;
   font-size: 11px;
   color: @sidebar-foreground;
+  flex-wrap: wrap;
+  gap: 4px;
+  text-align:center;
   
   h3 {
     margin: 0;
@@ -126,5 +129,15 @@
     text-decoration: underline;
     font-size: 11px;
     cursor: grab;
+  }
+  .passive-note {
+    width:100%;
+    padding:12px 8px;
+    background: fade(@sidebar-foreground,6%);
+    border:1px dashed fade(@sidebar-border,50%);
+    border-radius:@radius-sm;
+    font-size:12px;
+    font-weight:600;
+    letter-spacing:0.5px;
   }
 }

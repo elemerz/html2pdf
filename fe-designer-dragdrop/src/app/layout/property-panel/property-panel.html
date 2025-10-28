@@ -4,13 +4,42 @@
       <h3 class="panel-title">Element Properties</h3>
       
       <section class="property-section">
-        <header class="section-header">General</header>
-        <div class="section-body">
+        <header class="section-header" (click)="toggleSection('general')">
+          <span>General</span>
+          <button type="button" class="section-toggle" (click)="toggleSection('general'); $event.stopPropagation()">{{ collapsed('general') ? '▸' : '▾' }}</button>
+        </header>
+        <div class="section-body" *ngIf="!collapsed('general')">
           <div class="property-field">
             <label class="property-label">Type</label>
             <input class="property-input" [value]="element.type" disabled />
           </div>
 
+          @if (isTable(element)) {
+          <div class="property-grid" style="grid-template-columns:repeat(2,minmax(0,1fr));">
+            <div class="property-field">
+              <label class="property-label">Rows</label>
+              <input 
+                type="number" 
+                min="1"
+                step="1"
+                class="property-input"
+                [value]="tableProperty(element, 'rows')"
+                (input)="updateTableProperty('rows', +$any($event.target).value)"
+                data-testid="input-table-rows" />
+            </div>
+            <div class="property-field">
+              <label class="property-label">Columns</label>
+              <input 
+                type="number" 
+                min="1"
+                step="1"
+                class="property-input"
+                [value]="tableProperty(element, 'cols')"
+                (input)="updateTableProperty('cols', +$any($event.target).value)"
+                data-testid="input-table-cols" />
+            </div>
+          </div>
+          }
           <div class="property-field">
             <label class="property-label">Position (mm)</label>
             <div class="property-row">
@@ -79,44 +108,12 @@
         </div>
       </section>
 
-      @if (isTable(element)) {
-        <section class="property-section">
-          <header class="section-header">Table</header>
-          <div class="section-body">
-            <div class="property-grid">
-              <div class="property-field">
-                <label class="property-label">Rows</label>
-                <input 
-                  type="number" 
-                  min="1"
-                  step="1"
-                  class="property-input"
-                  [value]="tableProperty(element, 'rows')"
-                  (input)="updateTableProperty('rows', +$any($event.target).value)"
-                  data-testid="input-table-rows" />
-              </div>
-              <div class="property-field">
-                <label class="property-label">Columns</label>
-                <input 
-                  type="number" 
-                  min="1"
-                  step="1"
-                  class="property-input"
-                  [value]="tableProperty(element, 'cols')"
-                  (input)="updateTableProperty('cols', +$any($event.target).value)"
-                  data-testid="input-table-cols" />
-              </div>
-            </div>
 
-
-          </div>
-        </section>
-      }
 
       @if (hasSelectedCell()) {
         @let padding = getSelectedCellPadding();
         <section class="property-section">
-          <header class="section-header">Cell</header>
+          <header class="section-header" (click)="toggleSection('cell')"><span>Cell</span><button type="button" class="section-toggle" (click)="toggleSection('cell'); $event.stopPropagation()">{{ collapsed('cell') ? '▸' : '▾' }}</button></header>
           <div class="section-body">
             <div class="property-grid">
               <div class="property-field">
@@ -145,20 +142,25 @@
               </div>
             </div>
 
-            <div class="property-field">
-              <label class="property-label">Horizontal Align</label>
-              <div class="align-buttons-row">
-                <button type="button" class="align-btn" [class.active]="getSelectedCellHAlign()==='left'" (click)="updateSelectedCellAlignment('h','left')"><span class="ico-align_horizontal_left"></span></button>
-                <button type="button" class="align-btn" [class.active]="getSelectedCellHAlign()==='center'" (click)="updateSelectedCellAlignment('h','center')"><span class="ico-align_horizontal_center"></span></button>
-                <button type="button" class="align-btn" [class.active]="getSelectedCellHAlign()==='right'" (click)="updateSelectedCellAlignment('h','right')"><span class="ico-align_horizontal_right"></span></button>
-              </div>
-            </div>
-            <div class="property-field">
-              <label class="property-label">Vertical Align</label>
-              <div class="align-buttons-row">
-                <button type="button" class="align-btn" [class.active]="getSelectedCellVAlign()==='top'" (click)="updateSelectedCellAlignment('v','top')"><span class="ico-align_vertical_top"></span></button>
-                <button type="button" class="align-btn" [class.active]="getSelectedCellVAlign()==='middle'" (click)="updateSelectedCellAlignment('v','middle')"><span class="ico-align_vertical_center"></span></button>
-                <button type="button" class="align-btn" [class.active]="getSelectedCellVAlign()==='bottom'" (click)="updateSelectedCellAlignment('v','bottom')"><span class="ico-align_vertical_bottom"></span></button>
+            <div class="property-subsection">
+              <header class="subsection-header">Alignment</header>
+              <div class="property-grid" style="grid-template-columns:1fr 1fr;">
+                <div class="property-field">
+                  <label class="property-label">Horizontal</label>
+                  <div class="align-buttons-row">
+                    <button type="button" class="align-btn" [class.active]="getSelectedCellHAlign()==='left'" (click)="updateSelectedCellAlignment('h','left')"><span class="ico-align_horizontal_left"></span></button>
+                    <button type="button" class="align-btn" [class.active]="getSelectedCellHAlign()==='center'" (click)="updateSelectedCellAlignment('h','center')"><span class="ico-align_horizontal_center"></span></button>
+                    <button type="button" class="align-btn" [class.active]="getSelectedCellHAlign()==='right'" (click)="updateSelectedCellAlignment('h','right')"><span class="ico-align_horizontal_right"></span></button>
+                  </div>
+                </div>
+                <div class="property-field">
+                  <label class="property-label">Vertical</label>
+                  <div class="align-buttons-row">
+                    <button type="button" class="align-btn" [class.active]="getSelectedCellVAlign()==='top'" (click)="updateSelectedCellAlignment('v','top')"><span class="ico-align_vertical_top"></span></button>
+                    <button type="button" class="align-btn" [class.active]="getSelectedCellVAlign()==='middle'" (click)="updateSelectedCellAlignment('v','middle')"><span class="ico-align_vertical_center"></span></button>
+                    <button type="button" class="align-btn" [class.active]="getSelectedCellVAlign()==='bottom'" (click)="updateSelectedCellAlignment('v','bottom')"><span class="ico-align_vertical_bottom"></span></button>
+                  </div>
+                </div>
               </div>
             </div>
 

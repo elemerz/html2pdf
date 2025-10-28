@@ -42,7 +42,9 @@ To fix:
 -  Allow cel resize for any nesting level => Ok
 - Text align apply to any level. => ok.
 - Apply borders individually => Ok
-- In left-side Layout Pane leave only one element the Table element. Remove all the others, along with their categories.
+- In left-side Layout Pane leave only one element the Table element. 
+  Remove all the others, along with their categories. =>
+- Arial,Calibri,Roboto,Times New Roman,Kix Barcode
 - Style: face-lifting on "Element Properties pane":
   - More compact, expand / collapsible regions
   - Engraved Sections with border.
@@ -50,7 +52,9 @@ To fix:
 - Make cell selection easier: Clicking in an area where cell is covered by content ==> 
   Cell does not become selected, cog does not appear. ==> Ok
 - OnCellDblClick: open contentEditor => Ok
-- Align ContentEditor more elegantly on Open. =>...
+- Align ContentEditor more elegantly on Open. => Ok
+- Merge "ROWS" and "COLUMNS" 	from ".property-section": "TABLE" into the "GENERAL" section.
+  Place "ROWS", "COLUMNS" after the "TYPE" .property-field.
 
 ## Still to implement (Not in POC)
 

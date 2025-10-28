@@ -12,21 +12,21 @@ import { DragDropService } from '../../core/services/drag-drop.service';
 })
 export class ToolbarPanelComponent {
   private dragDropService = inject(DragDropService);
-  
-  protected toolbarElements = toolbarElements;
-  protected expandedCategory = signal<ToolbarCategory | null>('layout');
 
-  protected categories: { id: ToolbarCategory; label: string }[] = [
-    { id: 'layout', label: 'Layout Pane' },
-    { id: 'containers', label: 'Containers' },
-    { id: 'text', label: 'Text Elements' },
+  protected toolbarElements = toolbarElements;
+  protected expandedCategory = signal<string | null>('layout'); // allow passive categories
+
+  protected categories: { id: string; label: string; passive?: boolean }[] = [
+    { id: 'layout', label: 'Layout' },
+    { id: 'manage-fonts', label: 'Manage Fonts', passive: true },
+    { id: 'manage-images', label: 'Manage Images', passive: true }
   ];
 
-  getElementsForCategory(category: ToolbarCategory): ToolbarElement[] {
+  getElementsForCategory(category: string): ToolbarElement[] {
     return this.toolbarElements.filter(el => el.category === category);
   }
 
-  toggleCategory(category: ToolbarCategory) {
+  toggleCategory(category: string) {
     this.expandedCategory.update(current => current === category ? null : category);
   }
 
@@ -37,11 +37,11 @@ export class ToolbarPanelComponent {
     }
     const target = event.currentTarget as HTMLElement | null;
     if (!target) return;
-    
+
     const rect = target.getBoundingClientRect();
     const offsetX = event.clientX - rect.left;
     const offsetY = event.clientY - rect.top;
-    
+
     this.dragDropService.startToolbarDrag(
       element,
       event.clientX,

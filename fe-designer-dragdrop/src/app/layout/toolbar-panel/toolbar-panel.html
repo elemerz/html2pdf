@@ -1,34 +1,38 @@
 <div class="toolbar-panel" data-testid="toolbar-panel">
   @for (category of categories; track category.id) {
     <div class="accordion-item">
-      <button 
+      <button
         class="accordion-header"
         (click)="toggleCategory(category.id)"
         [attr.data-testid]="'category-' + category.id">
         <span>{{ category.label }}</span>
         <span class="chevron" [class.expanded]="expandedCategory() === category.id">›</span>
       </button>
-      
+
       @if (expandedCategory() === category.id) {
         <div class="accordion-content">
-          <div class="elements-grid">
-            @for (element of getElementsForCategory(category.id); track element.type) {
-              <div 
-                class="element-item"
-                draggable="true"
-                (dragstart)="onDragStart($event, element)"
-                (dragend)="onDragEnd()"
-                [attr.data-testid]="'element-' + element.type">
-                <div class="element-preview">
-                  @switch (element.type) {
-                    @case ('text') { <p>Rich Text</p> }
-                    @case ('div') { <div class="container-preview">Div</div> }
-                    @case ('table') { <div class="container-preview">Table</div> }
-                  }
+          @if (!category.passive) {
+            <div class="elements-grid">
+              @for (element of getElementsForCategory(category.id); track element.type) {
+                <div
+                  class="element-item"
+                  draggable="true"
+                  (dragstart)="onDragStart($event, element)"
+                  (dragend)="onDragEnd()"
+                  [attr.data-testid]="'element-' + element.type">
+                  <div class="element-preview">
+                    @switch (element.type) {
+                      @case ('text') { <p>Rich Text</p> }
+                      @case ('div') { <div class="container-preview">Div</div> }
+                      @case ('table') { <div class="container-preview">Define Layout</div> }
+                    }
+                  </div>
                 </div>
-              </div>
-            }
-          </div>
+              }
+            </div>
+          } @else {
+            <div class="element-preview passive-note">To be implemented</div>
+          }
         </div>
       }
     </div>

@@ -88,13 +88,7 @@ export interface ToolbarElement {
 }
 
 export const toolbarElements: ToolbarElement[] = [
-  // Text Elements
-  { type: "text", label: "Rich Text", icon: "text", defaultWidth: 200, defaultHeight: 50, category: "text" },
-
-  // Container Elements
-  { type: "div", label: "Div", icon: "square", defaultWidth: 150, defaultHeight: 100, category: "containers" },
-
-  // Layout Elements
+  // Only Table element retained
   { type: "table", label: "Table", icon: "table", defaultWidth: 200, defaultHeight: 150, category: "layout" },
 ];
 

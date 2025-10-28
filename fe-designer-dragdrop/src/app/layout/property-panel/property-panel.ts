@@ -16,6 +16,9 @@ type BorderPart = 'width' | 'style' | 'color';
   standalone: true
 })
 export class PropertyPanelComponent {
+  protected collapsedSections: Record<string, boolean> = { general: false, table: false, cell: false };
+  collapsed(id: string): boolean { return !!this.collapsedSections[id]; }
+  toggleSection(id: string): void { this.collapsedSections[id] = !this.collapsedSections[id]; }
   private designerState = inject(DesignerStateService);
   
   protected selectedElement = this.designerState.selectedElement;
