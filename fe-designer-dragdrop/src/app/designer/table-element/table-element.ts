@@ -151,6 +151,9 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
       // Build path and select - pass the FULL subTablePath to support all nesting levels
       this.designerState.selectElement(this.element.id);
       this.designerState.selectTableCell(this.element.id, parentRow, parentCol, subTablePath.length > 0 ? subTablePath : undefined);
+      if (event.detail === 2) {
+        this.onEditCellContent();
+      }
       return;
     }
 
@@ -161,6 +164,9 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
       const col = parseInt(parentTd.dataset['col'] || '0', 10);
       this.designerState.selectElement(this.element.id);
       this.designerState.selectTableCell(this.element.id, row, col);
+      if (event.detail === 2) {
+        this.onEditCellContent();
+      }
       this.closeContextMenu();
       return;
     }

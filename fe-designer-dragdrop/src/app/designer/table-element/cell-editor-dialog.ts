@@ -218,12 +218,12 @@ export class CellEditorDialogComponent implements OnInit {
     if (ev.button !== 0) return; // only left button
     if (!this.dialogRoot) return;
     const el = this.dialogRoot.nativeElement;
-    // Keep original centered positioning (top:50%, left:50%, transform:-50%,-50%)
-    // Just record starting mouse position; movement will adjust transform with pixel deltas off the centered base.
+    // Record offsets relative to current position (top fixed, left centered)
+    const rect = el.getBoundingClientRect();
     this.dragging = true;
-    this.dragOffsetX = ev.clientX;
-    this.dragOffsetY = ev.clientY;
-    el.style.willChange = 'transform';
+    this.dragOffsetX = ev.clientX - rect.left;
+    this.dragOffsetY = ev.clientY - rect.top;
+    el.style.willChange = 'top,left';
     ev.preventDefault();
   }
 
@@ -236,10 +236,11 @@ export class CellEditorDialogComponent implements OnInit {
   onDrag(ev: MouseEvent): void {
     if (!this.dragging) return;
     const el = this.dialogRoot.nativeElement;
-    const dx = ev.clientX - this.dragOffsetX;
-    const dy = ev.clientY - this.dragOffsetY;
-    // Apply delta relative to original centered transform
-    el.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+    const newLeft = ev.clientX - this.dragOffsetX;
+    const newTop = ev.clientY - this.dragOffsetY;
+    el.style.transform = 'none';
+    el.style.left = newLeft + 'px';
+    el.style.top = Math.max(8, newTop) + 'px'; // keep slight top gap
   }
 
   applyFontSize(): void {

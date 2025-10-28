@@ -38,11 +38,19 @@
 - Allow sub-cells to be resized
 
 To fix:
-- !!! &nbsp; problem in converting XHTML exported by designer!
+- !!! &nbsp; problem in converting XHTML exported by designer! => Ok.
 -  Allow cel resize for any nesting level => Ok
 - Text align apply to any level. => ok.
 - Apply borders individually => Ok
-- Make cell selection easier
+- In left-side Layout Pane leave only one element the Table element. Remove all the others, along with their categories.
+- Style: face-lifting on "Element Properties pane":
+  - More compact, expand / collapsible regions
+  - Engraved Sections with border.
+  
+- Make cell selection easier: Clicking in an area where cell is covered by content ==> 
+  Cell does not become selected, cog does not appear. ==> Ok
+- OnCellDblClick: open contentEditor => Ok
+- Align ContentEditor more elegantly on Open. =>...
 
 ## Still to implement (Not in POC)
 
