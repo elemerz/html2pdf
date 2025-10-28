@@ -42,3 +42,12 @@ To fix:
 - Text align apply to any level. => ok.
 - Apply borders individually
 - Make cell selection easier
+## Still to implement (Not in POC)
+- Own Database support
+- Support Dynamic report variables
+- Support QRCode and Barcode in designer
+- Custom Font management
+- Logo image management
+- Image optimizations (at least png, if possible also SVG)
+- Extend scalability above virtual threads (Kafka, etc)
+- Pass data via REST API instead of physical files

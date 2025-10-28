@@ -1,5 +1,5 @@
 import { Injectable, signal, computed, effect } from '@angular/core';
-import { CanvasElement, ReportLayout, createDefaultLayout, A4_WIDTH_MM, A4_HEIGHT_MM } from '../../shared/models/schema';
+import { CanvasElement, ReportLayout, createDefaultLayout, A4_WIDTH_MM, A4_HEIGHT_MM, TableCellBorderConfig, TableCellBorderSpec } from '../../shared/models/schema';
 import { getTableRowSizes, getTableColSizes } from '../../shared/utils/table-utils';
 
 export interface PageGutters {
@@ -20,6 +20,8 @@ export interface TableCellSelection {
   col: number;
   subTablePath?: Array<{row: number; col: number}>; // Path to nested sub-cell
 }
+
+type BorderSide = 'all' | 'top' | 'right' | 'bottom' | 'left';
 
 export type CanvasZoomMode = 'fit' | 'width' | 'height' | 'actual';
 
@@ -555,6 +557,11 @@ export class DesignerStateService {
 
     const subTablesMap = element.properties?.['tableCellSubTables'] as Record<string, any> | undefined;
 
+    const borderConfigMap = element.properties?.['tableCellBorders'] as Record<string, TableCellBorderConfig> | undefined;
+    const borderWidthMap = element.properties?.['tableCellBorderWidth'] as Record<string, number> | undefined;
+    const borderStyleMap = element.properties?.['tableCellBorderStyle'] as Record<string, string> | undefined;
+    const borderColorMap = element.properties?.['tableCellBorderColor'] as Record<string, string> | undefined;
+
     const rowsMarkup = effectiveRowSizes
       .map((rowRatio, rowIndex) => {
         const rowHeightMm = element.height * rowRatio;
@@ -588,15 +595,13 @@ export class DesignerStateService {
             const hAlign = (hAlignMap?.[key] === 'center' || hAlignMap?.[key] === 'right') ? hAlignMap?.[key] : 'left';
             const vAlignRaw = (vAlignMap?.[key] === 'middle' || vAlignMap?.[key] === 'bottom') ? vAlignMap?.[key] : 'top';
             const vAlign = vAlignRaw === 'middle' ? 'middle' : vAlignRaw; // 'top' | 'middle' | 'bottom'
-            const borderWidthMap = element.properties?.['tableCellBorderWidth'] as Record<string, number> | undefined;
-            const borderStyleMap = element.properties?.['tableCellBorderStyle'] as Record<string, string> | undefined;
-            const borderColorMap = element.properties?.['tableCellBorderColor'] as Record<string, string> | undefined;
-            const borderWidth = borderWidthMap?.[key];
-            const borderStyle = borderStyleMap?.[key];
-            const borderColor = borderColorMap?.[key];
-            const borderCss = (Number.isFinite(borderWidth) && borderWidth! > 0) 
-              ? `border:${borderWidth}px ${borderStyle || 'solid'} ${borderColor || '#000000'};` 
-              : '';
+            const borderConfig = borderConfigMap?.[key];
+            const legacyBorder = this.legacyBorderSpecFromMaps(borderWidthMap, borderStyleMap, borderColorMap, key);
+            const borderTopCss = this.borderSpecToCss(this.composeBorderSpec(borderConfig, legacyBorder, 'top'));
+            const borderRightCss = this.borderSpecToCss(this.composeBorderSpec(borderConfig, legacyBorder, 'right'));
+            const borderBottomCss = this.borderSpecToCss(this.composeBorderSpec(borderConfig, legacyBorder, 'bottom'));
+            const borderLeftCss = this.borderSpecToCss(this.composeBorderSpec(borderConfig, legacyBorder, 'left'));
+            const borderCss = `border-top:${borderTopCss};border-right:${borderRightCss};border-bottom:${borderBottomCss};border-left:${borderLeftCss};`;
             const fontStyleMap = element.properties?.['tableCellFontStyle'] as Record<string, string> | undefined;
             const fontWeightMap = element.properties?.['tableCellFontWeight'] as Record<string, string> | undefined;
             const fontSizeMap = element.properties?.['tableCellFontSize'] as Record<string, number> | undefined;
@@ -630,6 +635,11 @@ export class DesignerStateService {
     const rowSizes = subTable.rowSizes || Array(rows).fill(1 / rows);
     const colSizes = subTable.colSizes || Array(cols).fill(1 / cols);
 
+    const cellBorderConfigMap = subTable.cellBorders as Record<string, TableCellBorderConfig> | undefined;
+    const cellBorderWidthMap = subTable.cellBorderWidth as Record<string, number> | undefined;
+    const cellBorderStyleMap = subTable.cellBorderStyle as Record<string, string> | undefined;
+    const cellBorderColorMap = subTable.cellBorderColor as Record<string, string> | undefined;
+
     const rowsMarkup = rowSizes
       .map((rowRatio: number, rowIndex: number) => {
         const rowHeightMm = parentHeightMm * rowRatio;
@@ -659,12 +669,13 @@ export class DesignerStateService {
             const hAlign = subTable.cellHAlign?.[key] || 'left';
             const vAlignRaw = subTable.cellVAlign?.[key] || 'top';
             const vAlign = vAlignRaw === 'middle' ? 'middle' : vAlignRaw;
-            const borderWidth = subTable.cellBorderWidth?.[key] || 1;
-            const borderStyle = subTable.cellBorderStyle?.[key] || 'solid';
-            const borderColor = subTable.cellBorderColor?.[key] || '#000000';
-            const borderCss = Number.isFinite(borderWidth) && borderWidth > 0
-              ? `border:${borderWidth}px ${borderStyle} ${borderColor};`
-              : '';
+            const cellBorderConfig = cellBorderConfigMap?.[key];
+            const nestedLegacy = this.legacyBorderSpecFromMaps(cellBorderWidthMap, cellBorderStyleMap, cellBorderColorMap, key);
+            const cellBorderTopCss = this.borderSpecToCss(this.composeBorderSpec(cellBorderConfig, nestedLegacy, 'top'));
+            const cellBorderRightCss = this.borderSpecToCss(this.composeBorderSpec(cellBorderConfig, nestedLegacy, 'right'));
+            const cellBorderBottomCss = this.borderSpecToCss(this.composeBorderSpec(cellBorderConfig, nestedLegacy, 'bottom'));
+            const cellBorderLeftCss = this.borderSpecToCss(this.composeBorderSpec(cellBorderConfig, nestedLegacy, 'left'));
+            const borderCss = `border-top:${cellBorderTopCss};border-right:${cellBorderRightCss};border-bottom:${cellBorderBottomCss};border-left:${cellBorderLeftCss};`;
             const fontStyle = subTable.cellFontStyle?.[key] || '';
             const fontWeight = subTable.cellFontWeight?.[key] || '';
             const fontSize = subTable.cellFontSize?.[key];
@@ -1009,6 +1020,7 @@ export class DesignerStateService {
     const tableCellBorderWidth: Record<string, number> = {};
     const tableCellBorderStyle: Record<string, string> = {};
     const tableCellBorderColor: Record<string, string> = {};
+    const tableCellBorders: Record<string, TableCellBorderConfig> = {};
     const tableCellFontStyle: Record<string, string> = {};
     const tableCellFontWeight: Record<string, string> = {};
     const tableCellFontSize: Record<string, number> = {};
@@ -1087,6 +1099,19 @@ export class DesignerStateService {
           if (borderWidthMatch) tableCellBorderWidth[key] = parseFloat(borderWidthMatch[1]);
           if (borderStyleMatch) tableCellBorderStyle[key] = borderStyleMatch[1];
           if (borderColorMatch) tableCellBorderColor[key] = borderColorMatch[1];
+        }
+
+        const borderWidthValue = tableCellBorderWidth[key];
+        const borderStyleValue = tableCellBorderStyle[key];
+        const borderColorValue = tableCellBorderColor[key];
+        if (borderWidthValue !== undefined || borderStyleValue !== undefined || borderColorValue !== undefined) {
+          tableCellBorders[key] = {
+            all: {
+              width: borderWidthValue ?? 0,
+              style: borderStyleValue ?? 'solid',
+              color: borderColorValue ?? '#000000'
+            }
+          };
         }
         
         // Font properties from <td> element's inline style (generic cell properties)
@@ -1174,6 +1199,7 @@ export class DesignerStateService {
         tableCellBorderWidth,
         tableCellBorderStyle,
         tableCellBorderColor,
+        ...(Object.keys(tableCellBorders).length > 0 ? { tableCellBorders } : {}),
         tableCellFontStyle,
         tableCellFontWeight,
         tableCellFontSize,
@@ -1212,6 +1238,7 @@ export class DesignerStateService {
     const cellBorderWidth: Record<string, number> = {};
     const cellBorderStyle: Record<string, string> = {};
     const cellBorderColor: Record<string, string> = {};
+    const cellBorders: Record<string, TableCellBorderConfig> = {};
     const cellFontStyle: Record<string, string> = {};
     const cellFontWeight: Record<string, string> = {};
     const cellFontSize: Record<string, number> = {};
@@ -1319,6 +1346,16 @@ export class DesignerStateService {
           cellBorderColor[key] = borderMatch[3];
         }
 
+        if (cellBorderWidth[key] !== undefined || cellBorderStyle[key] !== undefined || cellBorderColor[key] !== undefined) {
+          cellBorders[key] = {
+            all: {
+              width: cellBorderWidth[key] ?? 0,
+              style: cellBorderStyle[key] ?? 'solid',
+              color: cellBorderColor[key] ?? '#000000'
+            }
+          };
+        }
+
         // Parse font properties
         if (cell.style.fontFamily) {
           cellFontFamily[key] = cell.style.fontFamily.replace(/"/g, "'");
@@ -1354,6 +1391,7 @@ export class DesignerStateService {
       cellBorderWidth,
       cellBorderStyle,
       cellBorderColor,
+      ...(Object.keys(cellBorders).length > 0 ? { cellBorders } : {}),
       cellFontFamily,
       cellFontSize,
       cellFontWeight,
@@ -1401,6 +1439,60 @@ export class DesignerStateService {
     }
     
     return { x, y, width, height };
+  }
+
+  private defaultBorderSpec(): TableCellBorderSpec {
+    return { width: 0, style: 'solid', color: '#000000' };
+  }
+
+  private normalizeBorderSpec(spec?: TableCellBorderSpec | null): TableCellBorderSpec {
+    if (!spec) {
+      return this.defaultBorderSpec();
+    }
+    return {
+      width: Number.isFinite(spec.width) ? spec.width : 0,
+      style: typeof spec.style === 'string' ? spec.style : 'solid',
+      color: typeof spec.color === 'string' ? spec.color : '#000000'
+    };
+  }
+
+  private legacyBorderSpecFromMaps(
+    widthMap: Record<string, number> | undefined,
+    styleMap: Record<string, string> | undefined,
+    colorMap: Record<string, string> | undefined,
+    key: string
+  ): TableCellBorderSpec | null {
+    if (widthMap?.[key] === undefined && styleMap?.[key] === undefined && colorMap?.[key] === undefined) {
+      return null;
+    }
+    return {
+      width: Number.isFinite(widthMap?.[key]) ? widthMap![key]! : 0,
+      style: typeof styleMap?.[key] === 'string' ? styleMap![key]! : 'solid',
+      color: typeof colorMap?.[key] === 'string' ? colorMap![key]! : '#000000'
+    };
+  }
+
+  private composeBorderSpec(
+    config: TableCellBorderConfig | undefined,
+    legacy: TableCellBorderSpec | null,
+    side: BorderSide
+  ): TableCellBorderSpec {
+    const base = this.normalizeBorderSpec(config?.all ?? legacy ?? this.defaultBorderSpec());
+    if (side === 'all') {
+      return base;
+    }
+    const override = config?.[side];
+    if (!override) {
+      return base;
+    }
+    return this.normalizeBorderSpec(override);
+  }
+
+  private borderSpecToCss(spec: TableCellBorderSpec): string {
+    if (spec.width <= 0 || spec.style === 'none') {
+      return 'none';
+    }
+    return `${spec.width}px ${spec.style} ${spec.color}`;
   }
   
   private parseStyleValue(value: string): number {

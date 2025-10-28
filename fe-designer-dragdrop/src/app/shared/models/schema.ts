@@ -23,6 +23,20 @@ export interface CanvasElement {
   content: string;
 }
 
+export interface TableCellBorderSpec {
+  width: number;
+  style: string;
+  color: string;
+}
+
+export interface TableCellBorderConfig {
+  all?: TableCellBorderSpec;
+  top?: TableCellBorderSpec;
+  right?: TableCellBorderSpec;
+  bottom?: TableCellBorderSpec;
+  left?: TableCellBorderSpec;
+}
+
 // Sub-table data structure for nested tables within cells
 export interface SubTableData {
   rows: number;
@@ -37,6 +51,7 @@ export interface SubTableData {
   cellBorderWidth: Record<string, number>;
   cellBorderStyle: Record<string, string>;
   cellBorderColor: Record<string, string>;
+  cellBorders?: Record<string, TableCellBorderConfig>;
   cellFontFamily: Record<string, string>;
   cellFontSize: Record<string, number>;
   cellFontWeight: Record<string, string>;

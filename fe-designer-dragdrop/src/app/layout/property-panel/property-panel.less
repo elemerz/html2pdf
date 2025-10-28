@@ -141,6 +141,114 @@
   span { line-height: 1; }
 }
 
+.border-settings {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px;
+  background-color: fade(@background, 6%);
+  border: 1px dashed fade(@border, 70%);
+  border-radius: @radius-sm;
+}
+
+.border-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.border-button {
+  position: relative;
+  display: inline-flex;
+  justify-content: center;
+}
+
+.border-btn {
+  min-width: 96px;
+  padding: 6px 14px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  background-color: @background;
+  border: 1px solid @border;
+  border-radius: 999px;
+  color: @foreground;
+  cursor: pointer;
+  transition: background-color @transition-fast, border-color @transition-fast, color @transition-fast;
+
+  &:hover {
+    border-color: @ring;
+    background-color: fade(@foreground, 8%);
+  }
+
+  &.active {
+    background-color: @primary;
+    color: @primary-foreground;
+    border-color: @primary;
+  }
+}
+
+.border-btn-all {
+  width: 48px;
+  height: 48px;
+  min-width: 48px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.border-popover {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  min-width: 100px;
+  background-color: @popover;
+  border: 1px solid @popover-border;
+  border-radius: @radius-sm;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-shadow: 0 8px 24px fade(@background, 45%);
+  z-index: @z-popover;
+}
+
+.border-popover::before {
+  content: '';
+  position: absolute;
+  top: -6px;
+  left: 50%;
+  width: 12px;
+  height: 12px;
+  background-color: @popover;
+  border-left: 1px solid @popover-border;
+  border-top: 1px solid @popover-border;
+  transform: translateX(-50%) rotate(45deg);
+}
+
+.border-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  label {
+    font-size: 11px;
+    font-weight: 600;
+    color: @muted-foreground;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+
+  .property-input {
+    font-size: 12px;
+  }
+}
+
 .delete-button {
   padding: 8px 16px;
   background-color: @destructive;

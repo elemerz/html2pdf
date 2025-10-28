@@ -1,9 +1,12 @@
-import { Component, inject } from '@angular/core';
+import { Component, HostListener, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DesignerStateService, TableCellSelection } from '../../core/services/designer-state.service';
-import { CanvasElement } from '../../shared/models/schema';
+import { CanvasElement, TableCellBorderConfig, TableCellBorderSpec } from '../../shared/models/schema';
 import { reconcileSizeArray, withTableSizes } from '../../shared/utils/table-utils';
+
+type BorderSide = 'all' | 'top' | 'right' | 'bottom' | 'left';
+type BorderPart = 'width' | 'style' | 'color';
 
 @Component({
   selector: 'app-property-panel',
@@ -17,6 +20,8 @@ export class PropertyPanelComponent {
   
   protected selectedElement = this.designerState.selectedElement;
   protected selectedTableCell = this.designerState.selectedTableCell;
+  protected activeBorderPopover: BorderSide | null = null;
+  protected borderStyleOptions: string[] = ['none', 'solid', 'dashed', 'dotted', 'double'];
   
   updateElement(updates: Partial<CanvasElement>) {
     const el = this.selectedElement();
@@ -275,47 +280,313 @@ export class PropertyPanelComponent {
   // Removed table-level border helpers (migrated to cell-level)
 
   // Cell border helpers
-  getSelectedCellBorderWidth(): number | null {
-    const selection = this.selectedTableCell();
-    const el = this.selectedElement();
-    if (!selection || !el || el.id !== selection.elementId) return null;
-    const map = el.properties?.['tableCellBorderWidth'] as Record<string, number> | undefined;
-    const v = map?.[this.cellKey(selection.row, selection.col)];
-    return Number.isFinite(v) ? v! : 0;
+  protected isBorderPopoverOpen(side: BorderSide): boolean {
+    return this.activeBorderPopover === side;
   }
-  getSelectedCellBorderStyle(): string | null {
-    const selection = this.selectedTableCell();
-    const el = this.selectedElement();
-    if (!selection || !el || el.id !== selection.elementId) return null;
-    const map = el.properties?.['tableCellBorderStyle'] as Record<string, string> | undefined;
-    const v = map?.[this.cellKey(selection.row, selection.col)];
-    return typeof v === 'string' ? v : 'solid';
+
+  protected toggleBorderPopover(side: BorderSide, event: MouseEvent): void {
+    event.stopPropagation();
+    this.activeBorderPopover = this.activeBorderPopover === side ? null : side;
   }
-  getSelectedCellBorderColor(): string | null {
-    const selection = this.selectedTableCell();
-    const el = this.selectedElement();
-    if (!selection || !el || el.id !== selection.elementId) return null;
-    const map = el.properties?.['tableCellBorderColor'] as Record<string, string> | undefined;
-    const v = map?.[this.cellKey(selection.row, selection.col)];
-    return typeof v === 'string' ? v : '#000000';
+
+  protected onBorderPopoverClick(event: MouseEvent): void {
+    event.stopPropagation();
   }
-  updateSelectedCellBorder(part: 'width' | 'style' | 'color', value: any) {
+
+  protected getBorderSpec(side: BorderSide): TableCellBorderSpec {
     const selection = this.selectedTableCell();
     const el = this.selectedElement();
-    if (!selection || !el || el.id !== selection.elementId) return;
-    const key = this.cellKey(selection.row, selection.col);
-    const widthMap = (el.properties?.['tableCellBorderWidth'] as Record<string, number>) || {};
-    const styleMap = (el.properties?.['tableCellBorderStyle'] as Record<string, string>) || {};
-    const colorMap = (el.properties?.['tableCellBorderColor'] as Record<string, string>) || {};
-    let nextProps: Record<string, any> = { ...(el.properties||{}) };
-    if (part === 'width') {
-      nextProps['tableCellBorderWidth'] = { ...widthMap, [key]: Math.max(0, Number(value) || 0) };
-    } else if (part === 'style') {
-      nextProps['tableCellBorderStyle'] = { ...styleMap, [key]: String(value) };
-    } else if (part === 'color') {
-      nextProps['tableCellBorderColor'] = { ...colorMap, [key]: String(value) };
+    if (!selection || !el || el.id !== selection.elementId) {
+      return this.defaultBorderSpec();
     }
+
+    if (selection.subTablePath && selection.subTablePath.length > 0) {
+      const context = this.resolveNestedCellContext(el, selection);
+      if (!context) {
+        return this.defaultBorderSpec();
+      }
+      const configMap = context.table.cellBorders as Record<string, TableCellBorderConfig> | undefined;
+      const config = configMap?.[context.cellKey];
+      const legacy = this.legacyBorderSpecForNested(context.table, context.cellKey);
+      return this.composeBorderSpec(config, legacy, side);
+    }
+
+    const key = this.cellKey(selection.row, selection.col);
+    const configMap = el.properties?.['tableCellBorders'] as Record<string, TableCellBorderConfig> | undefined;
+    const config = configMap?.[key];
+    const legacy = this.legacyBorderSpecForRoot(el, key);
+    return this.composeBorderSpec(config, legacy, side);
+  }
+
+  protected onBorderInput(side: BorderSide, part: BorderPart, value: any): void {
+    this.updateBorderSpec(side, part, value);
+  }
+
+  @HostListener('document:click')
+  closeBorderPopoverOnOutsideClick(): void {
+    this.activeBorderPopover = null;
+  }
+
+  private updateBorderSpec(side: BorderSide, part: BorderPart, value: any): void {
+    const selection = this.selectedTableCell();
+    const el = this.selectedElement();
+    if (!selection || !el || el.id !== selection.elementId) {
+      return;
+    }
+
+    const current = this.getBorderSpec(side);
+    const next: TableCellBorderSpec = { ...current };
+
+    if (part === 'width') {
+      next.width = Math.max(0, Number(value) || 0);
+    } else if (part === 'style') {
+      next.style = String(value || 'none');
+    } else if (part === 'color') {
+      next.color = typeof value === 'string' && value ? value : '#000000';
+    }
+
+    if (selection.subTablePath && selection.subTablePath.length > 0) {
+      this.applyNestedBorderSpec(selection, el, side, next);
+    } else {
+      this.applyRootBorderSpec(selection, el, side, next);
+    }
+  }
+
+  private applyRootBorderSpec(selection: TableCellSelection, el: CanvasElement, side: BorderSide, spec: TableCellBorderSpec): void {
+    const key = this.cellKey(selection.row, selection.col);
+    const existingMap = (el.properties?.['tableCellBorders'] as Record<string, TableCellBorderConfig>) || {};
+    const existingConfig = existingMap[key];
+    const baseSpec = side === 'all' ? spec : this.composeBorderSpec(existingConfig, this.legacyBorderSpecForRoot(el, key), 'all');
+
+    const nextConfig: TableCellBorderConfig = { ...(existingConfig || {}) };
+
+    if (side === 'all') {
+      nextConfig.all = { ...spec };
+      delete nextConfig.top;
+      delete nextConfig.right;
+      delete nextConfig.bottom;
+      delete nextConfig.left;
+    } else {
+      nextConfig.all = nextConfig.all ? { ...nextConfig.all } : { ...baseSpec };
+      nextConfig[side] = { ...spec };
+      if (this.borderSpecsEqual(nextConfig[side], nextConfig.all)) {
+        delete nextConfig[side];
+      }
+    }
+
+    const nextMap: Record<string, TableCellBorderConfig> = { ...existingMap };
+    const hasOverrides = !!(nextConfig.top || nextConfig.right || nextConfig.bottom || nextConfig.left);
+    const hasAll = !!nextConfig.all && !this.borderSpecsEqual(nextConfig.all, this.defaultBorderSpec());
+
+    if (hasAll || hasOverrides) {
+      nextMap[key] = nextConfig;
+    } else {
+      delete nextMap[key];
+    }
+
+    const nextProps: Record<string, any> = { ...(el.properties || {}) };
+    if (Object.keys(nextMap).length > 0) {
+      nextProps['tableCellBorders'] = nextMap;
+    } else if (nextProps['tableCellBorders']) {
+      delete nextProps['tableCellBorders'];
+    }
+
+    if (side === 'all') {
+      const widthMap = { ...(el.properties?.['tableCellBorderWidth'] as Record<string, number> || {}) };
+      const styleMap = { ...(el.properties?.['tableCellBorderStyle'] as Record<string, string> || {}) };
+      const colorMap = { ...(el.properties?.['tableCellBorderColor'] as Record<string, string> || {}) };
+
+      if (hasAll || hasOverrides) {
+        widthMap[key] = spec.width;
+        styleMap[key] = spec.style;
+        colorMap[key] = spec.color;
+      } else {
+        delete widthMap[key];
+        delete styleMap[key];
+        delete colorMap[key];
+      }
+
+      if (Object.keys(widthMap).length > 0) {
+        nextProps['tableCellBorderWidth'] = widthMap;
+      } else if (nextProps['tableCellBorderWidth']) {
+        delete nextProps['tableCellBorderWidth'];
+      }
+
+      if (Object.keys(styleMap).length > 0) {
+        nextProps['tableCellBorderStyle'] = styleMap;
+      } else if (nextProps['tableCellBorderStyle']) {
+        delete nextProps['tableCellBorderStyle'];
+      }
+
+      if (Object.keys(colorMap).length > 0) {
+        nextProps['tableCellBorderColor'] = colorMap;
+      } else if (nextProps['tableCellBorderColor']) {
+        delete nextProps['tableCellBorderColor'];
+      }
+    }
+
     this.updateElement({ properties: nextProps });
+  }
+
+  private applyNestedBorderSpec(selection: TableCellSelection, el: CanvasElement, side: BorderSide, spec: TableCellBorderSpec): void {
+    const parentKey = this.cellKey(selection.row, selection.col);
+    const subTables = (el.properties?.['tableCellSubTables'] as Record<string, any>) || {};
+    if (!subTables[parentKey]) {
+      return;
+    }
+
+    const subPath = selection.subTablePath;
+    if (!subPath || subPath.length === 0) {
+      return;
+    }
+
+    const clonedSubTables: Record<string, any> = JSON.parse(JSON.stringify(subTables));
+    let currentTable = clonedSubTables[parentKey];
+
+    for (let i = 0; i < subPath.length; i++) {
+      const step = subPath[i];
+      const stepKey = this.cellKey(step.row, step.col);
+      const isLast = i === subPath.length - 1;
+
+      if (isLast) {
+        const existingConfig = currentTable.cellBorders?.[stepKey] as TableCellBorderConfig | undefined;
+        const legacy = this.legacyBorderSpecForNested(currentTable, stepKey);
+        const baseSpec = side === 'all' ? spec : this.composeBorderSpec(existingConfig, legacy, 'all');
+
+        const nextConfig: TableCellBorderConfig = { ...(existingConfig || {}) };
+        if (side === 'all') {
+          nextConfig.all = { ...spec };
+          delete nextConfig.top;
+          delete nextConfig.right;
+          delete nextConfig.bottom;
+          delete nextConfig.left;
+        } else {
+          nextConfig.all = nextConfig.all ? { ...nextConfig.all } : { ...baseSpec };
+          nextConfig[side] = { ...spec };
+          if (this.borderSpecsEqual(nextConfig[side], nextConfig.all)) {
+            delete nextConfig[side];
+          }
+        }
+
+        if (!currentTable.cellBorders) {
+          currentTable.cellBorders = {};
+        }
+
+        const hasOverrides = !!(nextConfig.top || nextConfig.right || nextConfig.bottom || nextConfig.left);
+        const hasAll = !!nextConfig.all && !this.borderSpecsEqual(nextConfig.all, this.defaultBorderSpec());
+
+        if (hasAll || hasOverrides) {
+          currentTable.cellBorders[stepKey] = nextConfig;
+        } else if (currentTable.cellBorders[stepKey]) {
+          delete currentTable.cellBorders[stepKey];
+        }
+
+        if (currentTable.cellBorders && Object.keys(currentTable.cellBorders).length === 0) {
+          delete currentTable.cellBorders;
+        }
+
+        if (side === 'all') {
+          const widthMap = { ...(currentTable.cellBorderWidth || {}) };
+          const styleMap = { ...(currentTable.cellBorderStyle || {}) };
+          const colorMap = { ...(currentTable.cellBorderColor || {}) };
+
+          if (hasAll || hasOverrides) {
+            widthMap[stepKey] = spec.width;
+            styleMap[stepKey] = spec.style;
+            colorMap[stepKey] = spec.color;
+          } else {
+            delete widthMap[stepKey];
+            delete styleMap[stepKey];
+            delete colorMap[stepKey];
+          }
+
+          currentTable.cellBorderWidth = widthMap;
+          currentTable.cellBorderStyle = styleMap;
+          currentTable.cellBorderColor = colorMap;
+
+          if (Object.keys(widthMap).length === 0) {
+            delete currentTable.cellBorderWidth;
+          }
+          if (Object.keys(styleMap).length === 0) {
+            delete currentTable.cellBorderStyle;
+          }
+          if (Object.keys(colorMap).length === 0) {
+            delete currentTable.cellBorderColor;
+          }
+        }
+      } else {
+        if (!currentTable.cellSubTables || !currentTable.cellSubTables[stepKey]) {
+          return;
+        }
+        currentTable = currentTable.cellSubTables[stepKey];
+      }
+    }
+
+    const nextProps: Record<string, any> = { ...(el.properties || {}) };
+    nextProps['tableCellSubTables'] = clonedSubTables;
+    this.updateElement({ properties: nextProps });
+  }
+
+  private legacyBorderSpecForRoot(el: CanvasElement, key: string): TableCellBorderSpec | null {
+    const widthMap = el.properties?.['tableCellBorderWidth'] as Record<string, number> | undefined;
+    const styleMap = el.properties?.['tableCellBorderStyle'] as Record<string, string> | undefined;
+    const colorMap = el.properties?.['tableCellBorderColor'] as Record<string, string> | undefined;
+    if (widthMap?.[key] === undefined && styleMap?.[key] === undefined && colorMap?.[key] === undefined) {
+      return null;
+    }
+    return {
+      width: Number.isFinite(widthMap?.[key]) ? widthMap![key]! : 0,
+      style: typeof styleMap?.[key] === 'string' ? styleMap![key]! : 'solid',
+      color: typeof colorMap?.[key] === 'string' ? colorMap![key]! : '#000000'
+    };
+  }
+
+  private legacyBorderSpecForNested(table: any, key: string): TableCellBorderSpec | null {
+    const widthMap = table.cellBorderWidth as Record<string, number> | undefined;
+    const styleMap = table.cellBorderStyle as Record<string, string> | undefined;
+    const colorMap = table.cellBorderColor as Record<string, string> | undefined;
+    if (widthMap?.[key] === undefined && styleMap?.[key] === undefined && colorMap?.[key] === undefined) {
+      return null;
+    }
+    return {
+      width: Number.isFinite(widthMap?.[key]) ? widthMap![key]! : 0,
+      style: typeof styleMap?.[key] === 'string' ? styleMap![key]! : 'solid',
+      color: typeof colorMap?.[key] === 'string' ? colorMap![key]! : '#000000'
+    };
+  }
+
+  private composeBorderSpec(config: TableCellBorderConfig | undefined, legacy: TableCellBorderSpec | null, side: BorderSide): TableCellBorderSpec {
+    const base = this.normalizeBorderSpec(config?.all ?? legacy ?? this.defaultBorderSpec());
+    if (side === 'all') {
+      return base;
+    }
+    const override = config?.[side];
+    if (!override) {
+      return base;
+    }
+    return this.normalizeBorderSpec(override);
+  }
+
+  private normalizeBorderSpec(spec?: TableCellBorderSpec | null): TableCellBorderSpec {
+    if (!spec) {
+      return this.defaultBorderSpec();
+    }
+    return {
+      width: Number.isFinite(spec.width) ? spec.width : 0,
+      style: typeof spec.style === 'string' ? spec.style : 'solid',
+      color: typeof spec.color === 'string' ? spec.color : '#000000'
+    };
+  }
+
+  private defaultBorderSpec(): TableCellBorderSpec {
+    return { width: 0, style: 'solid', color: '#000000' };
+  }
+
+  private borderSpecsEqual(a?: TableCellBorderSpec, b?: TableCellBorderSpec): boolean {
+    if (!a || !b) {
+      return false;
+    }
+    return a.width === b.width && a.style === b.style && a.color === b.color;
   }
 
   // Cell font helpers

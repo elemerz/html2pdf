@@ -164,30 +164,152 @@
 
             <div class="property-subsection">
               <header class="subsection-header">Cell Border</header>
-              <div class="property-grid">
-                <div class="property-field">
-                  <label class="property-label">Width (px)</label>
-                  <input type="number" min="0" step="1" class="property-input"
-                         [value]="getSelectedCellBorderWidth()"
-                         (input)="updateSelectedCellBorder('width', $any($event.target).value)" />
+              <div class="border-settings">
+                <div class="border-row border-row-top">
+                  <div class="border-button">
+                    <button type="button" class="border-btn border-btn-top"
+                            [class.active]="isBorderPopoverOpen('top')"
+                            (click)="toggleBorderPopover('top', $event)">
+                      Top Border
+                    </button>
+                    <div class="border-popover" *ngIf="isBorderPopoverOpen('top')" (click)="onBorderPopoverClick($event)">
+                      <div class="border-field">
+                        <label>Style</label>
+                        <select class="property-input" [value]="getBorderSpec('top').style"
+                                (change)="onBorderInput('top','style',$any($event.target).value)">
+                          <option *ngFor="let option of borderStyleOptions" [value]="option">{{ option }}</option>
+                        </select>
+                      </div>
+                      <div class="border-field">
+                        <label>Width (px)</label>
+                        <input class="property-input" type="number" min="0" step="1"
+                               [value]="getBorderSpec('top').width"
+                               (input)="onBorderInput('top','width',$any($event.target).value)" />
+                      </div>
+                      <div class="border-field">
+                        <label>Color</label>
+                        <input class="property-input" type="color"
+                               [value]="getBorderSpec('top').color"
+                               (input)="onBorderInput('top','color',$any($event.target).value)" />
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <div class="property-field">
-                  <label class="property-label">Style</label>
-                  <select class="property-input"
-                          [value]="getSelectedCellBorderStyle()"
-                          (change)="updateSelectedCellBorder('style', $any($event.target).value)">
-                    <option value="none">none</option>
-                    <option value="solid">solid</option>
-                    <option value="dashed">dashed</option>
-                    <option value="dotted">dotted</option>
-                    <option value="double">double</option>
-                  </select>
+                <div class="border-row border-row-middle">
+                  <div class="border-button">
+                    <button type="button" class="border-btn border-btn-left"
+                            [class.active]="isBorderPopoverOpen('left')"
+                            (click)="toggleBorderPopover('left', $event)">
+                      Left
+                    </button>
+                    <div class="border-popover" *ngIf="isBorderPopoverOpen('left')" (click)="onBorderPopoverClick($event)">
+                      <div class="border-field">
+                        <label>Style</label>
+                        <select class="property-input" [value]="getBorderSpec('left').style"
+                                (change)="onBorderInput('left','style',$any($event.target).value)">
+                          <option *ngFor="let option of borderStyleOptions" [value]="option">{{ option }}</option>
+                        </select>
+                      </div>
+                      <div class="border-field">
+                        <label>Width (px)</label>
+                        <input class="property-input" type="number" min="0" step="1"
+                               [value]="getBorderSpec('left').width"
+                               (input)="onBorderInput('left','width',$any($event.target).value)" />
+                      </div>
+                      <div class="border-field">
+                        <label>Color</label>
+                        <input class="property-input" type="color"
+                               [value]="getBorderSpec('left').color"
+                               (input)="onBorderInput('left','color',$any($event.target).value)" />
+                      </div>
+                    </div>
+                  </div>
+                  <div class="border-button">
+                    <button type="button" class="border-btn border-btn-all"
+                            [class.active]="isBorderPopoverOpen('all')"
+                            (click)="toggleBorderPopover('all', $event)">
+                      All
+                    </button>
+                    <div class="border-popover" *ngIf="isBorderPopoverOpen('all')" (click)="onBorderPopoverClick($event)">
+                      <div class="border-field">
+                        <label>Style</label>
+                        <select class="property-input" [value]="getBorderSpec('all').style"
+                                (change)="onBorderInput('all','style',$any($event.target).value)">
+                          <option *ngFor="let option of borderStyleOptions" [value]="option">{{ option }}</option>
+                        </select>
+                      </div>
+                      <div class="border-field">
+                        <label>Width (px)</label>
+                        <input class="property-input" type="number" min="0" step="1"
+                               [value]="getBorderSpec('all').width"
+                               (input)="onBorderInput('all','width',$any($event.target).value)" />
+                      </div>
+                      <div class="border-field">
+                        <label>Color</label>
+                        <input class="property-input" type="color"
+                               [value]="getBorderSpec('all').color"
+                               (input)="onBorderInput('all','color',$any($event.target).value)" />
+                      </div>
+                    </div>
+                  </div>
+                  <div class="border-button">
+                    <button type="button" class="border-btn border-btn-right"
+                            [class.active]="isBorderPopoverOpen('right')"
+                            (click)="toggleBorderPopover('right', $event)">
+                      Right
+                    </button>
+                    <div class="border-popover" *ngIf="isBorderPopoverOpen('right')" (click)="onBorderPopoverClick($event)">
+                      <div class="border-field">
+                        <label>Style</label>
+                        <select class="property-input" [value]="getBorderSpec('right').style"
+                                (change)="onBorderInput('right','style',$any($event.target).value)">
+                          <option *ngFor="let option of borderStyleOptions" [value]="option">{{ option }}</option>
+                        </select>
+                      </div>
+                      <div class="border-field">
+                        <label>Width (px)</label>
+                        <input class="property-input" type="number" min="0" step="1"
+                               [value]="getBorderSpec('right').width"
+                               (input)="onBorderInput('right','width',$any($event.target).value)" />
+                      </div>
+                      <div class="border-field">
+                        <label>Color</label>
+                        <input class="property-input" type="color"
+                               [value]="getBorderSpec('right').color"
+                               (input)="onBorderInput('right','color',$any($event.target).value)" />
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <div class="property-field">
-                  <label class="property-label">Color</label>
-                  <input type="color" class="property-input"
-                         [value]="getSelectedCellBorderColor()"
-                         (input)="updateSelectedCellBorder('color', $any($event.target).value)" />
+                <div class="border-row border-row-bottom">
+                  <div class="border-button">
+                    <button type="button" class="border-btn border-btn-bottom"
+                            [class.active]="isBorderPopoverOpen('bottom')"
+                            (click)="toggleBorderPopover('bottom', $event)">
+                      Bottom Border
+                    </button>
+                    <div class="border-popover" *ngIf="isBorderPopoverOpen('bottom')" (click)="onBorderPopoverClick($event)">
+                      <div class="border-field">
+                        <label>Style</label>
+                        <select class="property-input" [value]="getBorderSpec('bottom').style"
+                                (change)="onBorderInput('bottom','style',$any($event.target).value)">
+                          <option *ngFor="let option of borderStyleOptions" [value]="option">{{ option }}</option>
+                        </select>
+                      </div>
+                      <div class="border-field">
+                        <label>Width (px)</label>
+                        <input class="property-input" type="number" min="0" step="1"
+                               [value]="getBorderSpec('bottom').width"
+                               (input)="onBorderInput('bottom','width',$any($event.target).value)" />
+                      </div>
+                      <div class="border-field">
+                        <label>Color</label>
+                        <input class="property-input" type="color"
+                               [value]="getBorderSpec('bottom').color"
+                               (input)="onBorderInput('bottom','color',$any($event.target).value)" />
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>

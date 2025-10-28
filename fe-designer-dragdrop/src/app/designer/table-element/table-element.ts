@@ -2,7 +2,7 @@ import { Component, HostListener, Input, signal, inject, ElementRef, AfterViewIn
 import { CellEditorDialogComponent } from './cell-editor-dialog';
 import { CommonModule } from '@angular/common';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
-import { CanvasElement } from '../../shared/models/schema';
+import { CanvasElement, TableCellBorderConfig, TableCellBorderSpec } from '../../shared/models/schema';
 import { DesignerStateService } from '../../core/services/designer-state.service';
 import { getTableColSizes, getTableRowSizes, withTableSizes } from '../../shared/utils/table-utils';
 
@@ -11,6 +11,9 @@ type ResizeMode =
   | { type: 'col'; index: number; startClientX: number; startColSizes: number[] }
   | { type: 'subtable-row'; parentRow: number; parentCol: number; subTablePath: Array<{row: number; col: number}>; index: number; startClientY: number; startRowSizes: number[]; level: number }
   | { type: 'subtable-col'; parentRow: number; parentCol: number; subTablePath: Array<{row: number; col: number}>; index: number; startClientX: number; startColSizes: number[]; level: number };
+
+type BorderSide = 'all' | 'top' | 'right' | 'bottom' | 'left';
+type BorderEdge = 'top' | 'right' | 'bottom' | 'left';
 
 interface ContextMenuCell {
   row: number;
@@ -598,9 +601,7 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
     const parentPadding = parentSubTable.cellPadding?.[subCellKey] || [0, 0, 0, 0];
     const parentHAlign = parentSubTable.cellHAlign?.[subCellKey] || 'left';
     const parentVAlign = parentSubTable.cellVAlign?.[subCellKey] || 'top';
-    const parentBorderWidth = parentSubTable.cellBorderWidth?.[subCellKey] || 1;
-    const parentBorderStyle = parentSubTable.cellBorderStyle?.[subCellKey] || 'solid';
-    const parentBorderColor = parentSubTable.cellBorderColor?.[subCellKey] || '#000000';
+    const parentBorder = this.getSubTableCellBorderSpec(parentSubTable, subCellKey, 'all');
     const parentFontFamily = parentSubTable.cellFontFamily?.[subCellKey] || '';
     const parentFontSize = parentSubTable.cellFontSize?.[subCellKey] || '';
     const parentFontWeight = parentSubTable.cellFontWeight?.[subCellKey] || '';
@@ -622,6 +623,7 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
       cellBorderWidth: {},
       cellBorderStyle: {},
       cellBorderColor: {},
+      cellBorders: {},
       cellFontFamily: {},
       cellFontSize: {},
       cellFontWeight: {},
@@ -642,9 +644,10 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
         nestedSubTable.cellPadding[nestedKey] = parentPadding;
         nestedSubTable.cellHAlign[nestedKey] = parentHAlign;
         nestedSubTable.cellVAlign[nestedKey] = parentVAlign;
-        nestedSubTable.cellBorderWidth[nestedKey] = parentBorderWidth;
-        nestedSubTable.cellBorderStyle[nestedKey] = parentBorderStyle;
-        nestedSubTable.cellBorderColor[nestedKey] = parentBorderColor;
+        nestedSubTable.cellBorderWidth[nestedKey] = parentBorder.width;
+        nestedSubTable.cellBorderStyle[nestedKey] = parentBorder.style;
+        nestedSubTable.cellBorderColor[nestedKey] = parentBorder.color;
+        nestedSubTable.cellBorders[nestedKey] = { all: { ...parentBorder } };
         if (parentFontFamily) nestedSubTable.cellFontFamily[nestedKey] = parentFontFamily;
         if (parentFontSize) nestedSubTable.cellFontSize[nestedKey] = parentFontSize;
         if (parentFontWeight) nestedSubTable.cellFontWeight[nestedKey] = parentFontWeight;
@@ -718,6 +721,7 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
       cellBorderWidth: {},
       cellBorderStyle: {},
       cellBorderColor: {},
+      cellBorders: {},
       cellFontFamily: {},
       cellFontSize: {},
       cellFontWeight: {},
@@ -741,6 +745,7 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
         subTable.cellBorderWidth[subKey] = parentBorder.width;
         subTable.cellBorderStyle[subKey] = parentBorder.style;
         subTable.cellBorderColor[subKey] = parentBorder.color;
+        subTable.cellBorders[subKey] = { all: { ...parentBorder } };
         if (parentFont.family) subTable.cellFontFamily[subKey] = parentFont.family;
         if (parentFont.size) subTable.cellFontSize[subKey] = parentFont.size;
         if (parentFont.weight) subTable.cellFontWeight[subKey] = parentFont.weight;
@@ -767,17 +772,120 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
     this.designerState.updateElement(this.element.id, this.element);
   }
 
-  private getCellBorderProps(row: number, col: number): { width: number; style: string; color: string } {
+  private getBorderConfigMap(): Record<string, TableCellBorderConfig> | undefined {
+    return this.element.properties?.['tableCellBorders'] as Record<string, TableCellBorderConfig> | undefined;
+  }
+
+  private getCellBorderConfig(row: number, col: number): TableCellBorderConfig {
     const key = `${row}_${col}`;
+    const configMap = this.getBorderConfigMap();
+    if (configMap && configMap[key]) {
+      return configMap[key];
+    }
+
     const widthMap = this.element.properties?.['tableCellBorderWidth'] as Record<string, number> | undefined;
     const styleMap = this.element.properties?.['tableCellBorderStyle'] as Record<string, string> | undefined;
     const colorMap = this.element.properties?.['tableCellBorderColor'] as Record<string, string> | undefined;
 
+    if ((widthMap && widthMap[key] !== undefined) || (styleMap && styleMap[key] !== undefined) || (colorMap && colorMap[key] !== undefined)) {
+      return {
+        all: {
+          width: Number.isFinite(widthMap?.[key]) ? widthMap![key]! : 0,
+          style: typeof styleMap?.[key] === 'string' ? styleMap![key]! : 'solid',
+          color: typeof colorMap?.[key] === 'string' ? colorMap![key]! : '#000000'
+        }
+      };
+    }
+
+    return {};
+  }
+
+  private normalizeBorderSpec(spec?: TableCellBorderSpec): TableCellBorderSpec {
+    if (!spec) {
+      return { width: 0, style: 'solid', color: '#000000' };
+    }
+
     return {
-      width: widthMap?.[key] || 1,
-      style: styleMap?.[key] || 'solid',
-      color: colorMap?.[key] || '#000000'
+      width: Number.isFinite(spec.width) ? spec.width : 0,
+      style: typeof spec.style === 'string' ? spec.style : 'solid',
+      color: typeof spec.color === 'string' ? spec.color : '#000000'
     };
+  }
+
+  private getCellBorderSpec(row: number, col: number, side: BorderSide): TableCellBorderSpec {
+    const config = this.getCellBorderConfig(row, col);
+    const base = this.normalizeBorderSpec(config.all);
+
+    if (side === 'all') {
+      return base;
+    }
+
+    const override = (config as Record<BorderSide, TableCellBorderSpec | undefined>)[side];
+    if (!override) {
+      return base;
+    }
+
+    const normalizedOverride = this.normalizeBorderSpec(override);
+    return normalizedOverride;
+  }
+
+  protected getCellBorderCss(row: number, col: number, side: BorderEdge): string {
+    const spec = this.getCellBorderSpec(row, col, side);
+    if (spec.width <= 0 || spec.style === 'none') {
+      return 'none';
+    }
+    return `${spec.width}px ${spec.style} ${spec.color}`;
+  }
+
+  private getCellBorderProps(row: number, col: number): TableCellBorderSpec {
+    return this.getCellBorderSpec(row, col, 'all');
+  }
+
+  private getSubTableCellBorderConfig(subTable: any, cellKey: string): TableCellBorderConfig {
+    const configMap = subTable.cellBorders as Record<string, TableCellBorderConfig> | undefined;
+    if (configMap && configMap[cellKey]) {
+      return configMap[cellKey];
+    }
+
+    const widthMap = subTable.cellBorderWidth as Record<string, number> | undefined;
+    const styleMap = subTable.cellBorderStyle as Record<string, string> | undefined;
+    const colorMap = subTable.cellBorderColor as Record<string, string> | undefined;
+
+    if ((widthMap && widthMap[cellKey] !== undefined) || (styleMap && styleMap[cellKey] !== undefined) || (colorMap && colorMap[cellKey] !== undefined)) {
+      return {
+        all: {
+          width: Number.isFinite(widthMap?.[cellKey]) ? widthMap![cellKey]! : 0,
+          style: typeof styleMap?.[cellKey] === 'string' ? styleMap![cellKey]! : 'solid',
+          color: typeof colorMap?.[cellKey] === 'string' ? colorMap![cellKey]! : '#000000'
+        }
+      };
+    }
+
+    return {};
+  }
+
+  private getSubTableCellBorderSpec(subTable: any, cellKey: string, side: BorderSide): TableCellBorderSpec {
+    const config = this.getSubTableCellBorderConfig(subTable, cellKey);
+    const base = this.normalizeBorderSpec(config.all);
+
+    if (side === 'all') {
+      return base;
+    }
+
+    const override = (config as Record<BorderSide, TableCellBorderSpec | undefined>)[side];
+    if (!override) {
+      return base;
+    }
+
+    return this.normalizeBorderSpec(override);
+  }
+
+  private getSubTableCellBorderCss(subTable: any, cellKey: string, side: BorderEdge): string {
+    const spec = this.getSubTableCellBorderSpec(subTable, cellKey, side);
+    if (spec.width <= 0 || spec.style === 'none') {
+      return 'none';
+    }
+    return `${spec.width}px ${spec.style} ${spec.color}`;
   }
 
   private getCellFontProps(row: number, col: number): {
@@ -865,9 +973,10 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
         const padding = subTable.cellPadding?.[cellKey] || [0, 0, 0, 0];
         const hAlign = subTable.cellHAlign?.[cellKey] || 'left';
         const vAlign = subTable.cellVAlign?.[cellKey] || 'top';
-        const borderWidth = subTable.cellBorderWidth?.[cellKey] || 1;
-        const borderStyle = subTable.cellBorderStyle?.[cellKey] || 'solid';
-        const borderColor = subTable.cellBorderColor?.[cellKey] || '#000000';
+        const borderTop = this.getSubTableCellBorderCss(subTable, cellKey, 'top');
+        const borderRight = this.getSubTableCellBorderCss(subTable, cellKey, 'right');
+        const borderBottom = this.getSubTableCellBorderCss(subTable, cellKey, 'bottom');
+        const borderLeft = this.getSubTableCellBorderCss(subTable, cellKey, 'left');
         const fontFamily = subTable.cellFontFamily?.[cellKey] || '';
         const fontSize = subTable.cellFontSize?.[cellKey] || '';
         const fontWeight = subTable.cellFontWeight?.[cellKey] || '';
@@ -876,7 +985,7 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
         const textDecoration = subTable.cellTextDecoration?.[cellKey] || '';
 
         const [pt, pr, pb, pl] = padding;
-        const borderCss = `border:${borderWidth}px ${borderStyle} ${borderColor};`;
+        const borderCss = `border-top:${borderTop};border-right:${borderRight};border-bottom:${borderBottom};border-left:${borderLeft};`;
         const fontCss = (fontFamily ? `font-family:${fontFamily};` : '') +
           (fontSize ? `font-size:${fontSize}pt;` : '') +
           (fontWeight ? `font-weight:${fontWeight};` : '') +
@@ -977,6 +1086,7 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
       'tableCellBorderWidth',
       'tableCellBorderStyle',
       'tableCellBorderColor',
+      'tableCellBorders',
       'tableCellFontStyle',
       'tableCellFontWeight',
       'tableCellFontSize',
@@ -1029,6 +1139,7 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
       'tableCellBorderWidth',
       'tableCellBorderStyle',
       'tableCellBorderColor',
+      'tableCellBorders',
       'tableCellFontStyle',
       'tableCellFontWeight',
       'tableCellFontSize',
@@ -1666,20 +1777,6 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
     if (v === 'middle') return 'center';
     if (v === 'bottom') return 'flex-end';
     return 'flex-start';
-  }
-
-  protected getCellBorder(row: number, col: number): string {
-    const key = `${row}_${col}`;
-    const widthMap = this.element.properties?.['tableCellBorderWidth'] as Record<string, number> | undefined;
-    const styleMap = this.element.properties?.['tableCellBorderStyle'] as Record<string, string> | undefined;
-    const colorMap = this.element.properties?.['tableCellBorderColor'] as Record<string, string> | undefined;
-    const w = widthMap?.[key];
-    const s = styleMap?.[key];
-    const c = colorMap?.[key];
-    const width = Number.isFinite(w) ? w! : 0;
-    const style = typeof s === 'string' ? s : 'solid';
-    const color = typeof c === 'string' ? c : '#000000';
-    return width > 0 ? `${width}px ${style} ${color}` : 'none';
   }
 
   protected getCellFontStyle(row: number, col: number): string {
