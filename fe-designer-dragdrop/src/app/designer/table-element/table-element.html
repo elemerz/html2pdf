@@ -56,7 +56,9 @@
         [style.top.%]="getRowHandleOffset(rowSizes, rowIndex)"
         [class.resizing]="isResizing('row', rowIndex)"
         (mousedown)="startRowResize(rowIndex, $event)"
-      ></div>
+      >
+        <span class="resize-handle resize-handle-top" aria-hidden="true"></span>
+      </div>
     }
   }
 
@@ -67,7 +69,9 @@
         [style.left.%]="getColHandleOffset(colSizes, colIndex)"
         [class.resizing]="isResizing('col', colIndex)"
         (mousedown)="startColResize(colIndex, $event)"
-      ></div>
+      >
+        <span class="resize-handle resize-handle-left" aria-hidden="true"></span>
+      </div>
     }
   }
 

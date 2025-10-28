@@ -51,3 +51,4 @@ To fix:
 - Image optimizations (at least png, if possible also SVG)
 - Extend scalability above virtual threads (Kafka, etc)
 - Pass data via REST API instead of physical files
+- Use anchor-positioning for resize handles, cog and .action-toolbar

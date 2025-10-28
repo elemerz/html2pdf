@@ -1018,7 +1018,9 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
     for (let r = 0; r < rows - 1; r++) {
       cumulativeTop += rowSizes[r];
       const topPercent = (cumulativeTop * 100).toFixed(2);
-      html += `<div class="sub-table-resize-handle horizontal" data-level="${level}" data-row="${r}" style="position:absolute;left:0;right:0;height:10px;top:${topPercent}%;transform:translateY(-50%);cursor:ns-resize;z-index:10;"></div>`;
+      html += `<div class="sub-table-resize-handle horizontal" data-level="${level}" data-row="${r}" style="position:absolute;left:0;right:0;height:10px;top:${topPercent}%;transform:translateY(-50%);cursor:ns-resize;z-index:10;">`;
+      html += `<span class="resize-handle resize-handle-top" aria-hidden="true"></span>`;
+      html += `</div>`;
     }
 
     // Add resize handles for columns (vertical)
@@ -1026,7 +1028,9 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
     for (let c = 0; c < cols - 1; c++) {
       cumulativeLeft += colSizes[c];
       const leftPercent = (cumulativeLeft * 100).toFixed(2);
-      html += `<div class="sub-table-resize-handle vertical" data-level="${level}" data-col="${c}" style="position:absolute;top:0;bottom:0;width:10px;left:${leftPercent}%;transform:translateX(-50%);cursor:ew-resize;z-index:10;"></div>`;
+      html += `<div class="sub-table-resize-handle vertical" data-level="${level}" data-col="${c}" style="position:absolute;top:0;bottom:0;width:10px;left:${leftPercent}%;transform:translateX(-50%);cursor:ew-resize;z-index:10;">`;
+      html += `<span class="resize-handle resize-handle-left" aria-hidden="true"></span>`;
+      html += `</div>`;
     }
 
     html += '</div>'; // close wrapper

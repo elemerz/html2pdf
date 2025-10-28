@@ -82,6 +82,7 @@
   position: absolute;
   z-index: 5;
   background-color: transparent;
+  pointer-events: auto;
 
   &.horizontal {
     left: 0;
@@ -103,7 +104,7 @@
     content: '';
     position: absolute;
     background-color: fade(@primary, 40%);
-    opacity: 0;
+    opacity: 0.4;
     transition: opacity @transition-fast;
     pointer-events: none;
   }
@@ -126,14 +127,48 @@
 
   &:hover::after,
   &.resizing::after {
+    opacity: 0.85;
+  }
+
+  .resize-handle {
+    position: absolute;
+    display: block;
+    background-color: @primary;
+    opacity: 0.95;
+    border-radius: 6px;
+    box-shadow: 0 0 0 1px fade(@primary-foreground, 45%);
+    transition: transform @transition-fast, opacity @transition-fast;
+  }
+
+  &.horizontal .resize-handle {
+    width: 28px;
+    height: 6px;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    cursor: ns-resize;
+  }
+
+  &.vertical .resize-handle {
+    width: 6px;
+    height: 28px;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    cursor: ew-resize;
+  }
+
+  &:hover .resize-handle,
+  &.resizing .resize-handle {
     opacity: 1;
   }
 }
 
-.sub-table-resize-handle {
+:host ::ng-deep .sub-table-resize-handle {
   position: absolute;
   z-index: 10;
   background-color: transparent;
+  pointer-events: auto;
 
   &.horizontal {
     left: 0;
@@ -153,7 +188,7 @@
     content: '';
     position: absolute;
     background-color: fade(@primary, 50%);
-    opacity: 0;
+    opacity: 0.45;
     transition: opacity @transition-fast;
     pointer-events: none;
   }
@@ -175,6 +210,38 @@
   }
 
   &:hover::after {
+    opacity: 0.9;
+  }
+
+  .resize-handle {
+    position: absolute;
+    display: block;
+    background-color: @primary;
+    opacity: 0.95;
+    border-radius: 6px;
+    box-shadow: 0 0 0 1px fade(@primary-foreground, 45%);
+    transition: transform @transition-fast, opacity @transition-fast;
+  }
+
+  &.horizontal .resize-handle {
+    width: 24px;
+    height: 5px;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    cursor: ns-resize;
+  }
+
+  &.vertical .resize-handle {
+    width: 5px;
+    height: 24px;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    cursor: ew-resize;
+  }
+
+  &:hover .resize-handle {
     opacity: 1;
   }
 }
