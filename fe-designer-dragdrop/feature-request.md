@@ -36,4 +36,9 @@
 - Remove DIV-s intercalated between splitted cell and sub-Table
 - Set Default zoom to 1:1 when Opening the App.
 - Allow sub-cells to be resized
- 
+
+To fix:
+-  Allow cel resize for any nesting level => Ok
+- Text align apply to any level.
+- Apply borders individually
+- Make cell selection easier

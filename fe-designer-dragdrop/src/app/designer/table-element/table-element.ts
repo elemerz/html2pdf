@@ -1312,31 +1312,36 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
     const subTableWrapper = handle.closest('.sub-table-wrapper') as HTMLElement;
     if (!subTableWrapper) return;
 
-    const parentTd = subTableWrapper.closest('td[data-row][data-col]') as HTMLElement;
+    // Ascend to top-level layout table cell (exclude nested sub-table cells)
+    let parentTd = subTableWrapper.closest('td[data-row][data-col]') as HTMLElement | null;
+    while (parentTd && parentTd.classList.contains('sub-table-cell')) {
+      const parentTable = parentTd.closest('table');
+      if (!parentTable) break;
+      parentTd = parentTable.closest('td[data-row][data-col]') as HTMLElement | null;
+    }
     if (!parentTd) return;
 
     const parentRow = parseInt(parentTd.dataset['row'] || '0', 10);
     const parentCol = parseInt(parentTd.dataset['col'] || '0', 10);
 
-    // Build subtable path by walking up through nested subtables
+    // Build subtable path by walking DOWN from top-level cell into nested hierarchy for accurate path
     const subTablePath: Array<{row: number; col: number}> = [];
+    // Walk from the wrapper up collecting sub-table-cell ancestors, then reverse to get top-down order
+    const ancestors: Array<{row: number; col: number}> = [];
     let currentWrapper: HTMLElement | null = subTableWrapper;
-    
     while (currentWrapper && currentWrapper.classList.contains('sub-table-wrapper')) {
-      const parentCell = currentWrapper.closest('.sub-table-cell') as HTMLElement;
-      if (parentCell) {
-        const r = parseInt(parentCell.dataset['row'] || '0', 10);
-        const c = parseInt(parentCell.dataset['col'] || '0', 10);
-        subTablePath.unshift({ row: r, col: c });
-        
-        const nextWrapper = parentCell.closest('.sub-table-wrapper');
-        currentWrapper = nextWrapper !== currentWrapper ? nextWrapper as HTMLElement : null;
-      } else {
-        break;
-      }
+      const parentCell = currentWrapper.closest('.sub-table-cell') as HTMLElement | null;
+      if (!parentCell) break;
+      const r = parseInt(parentCell.dataset['row'] || '0', 10);
+      const c = parseInt(parentCell.dataset['col'] || '0', 10);
+      ancestors.push({ row: r, col: c });
+      currentWrapper = parentCell.closest('.sub-table-wrapper');
+      if (currentWrapper === parentCell) break; // safety
     }
+    // ancestors collected from innermost to outermost; reverse to get proper traversal order
+    subTablePath.push(...ancestors.reverse());
 
-    // Get the subtable data
+    // Get the subtable data (empty path means first-level subtable under parent cell)
     const subTable = this.getSubTableAtPath(parentRow, parentCol, subTablePath);
     if (!subTable) return;
 
@@ -1376,21 +1381,19 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
   private getSubTableAtPath(parentRow: number, parentCol: number, path: Array<{row: number; col: number}>): any | null {
     const parentKey = `${parentRow}_${parentCol}`;
     const subTablesMap = this.element.properties?.['tableCellSubTables'] as Record<string, any> | undefined;
-    
     if (!subTablesMap || !subTablesMap[parentKey]) return null;
 
     let currentSubTable = subTablesMap[parentKey];
-    
+    if (path.length === 0) {
+      return currentSubTable; // first-level sub-table
+    }
+
     for (let i = 0; i < path.length; i++) {
       const cellKey = `${path[i].row}_${path[i].col}`;
-      if (i < path.length - 1) {
-        // Navigate deeper
-        const nestedSubTables = currentSubTable.cellSubTables;
-        if (!nestedSubTables || !nestedSubTables[cellKey]) return null;
-        currentSubTable = nestedSubTables[cellKey];
-      }
+      const nestedSubTables = currentSubTable.cellSubTables;
+      if (!nestedSubTables || !nestedSubTables[cellKey]) return null;
+      currentSubTable = nestedSubTables[cellKey];
     }
-    
     return currentSubTable;
   }
 
@@ -1530,6 +1533,8 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
     updatedRows[index + 1] = newSecond;
 
     this.applySubTableSizes(start.parentRow, start.parentCol, start.subTablePath, updatedRows, null);
+    // Clear cache for redraw
+    this.subTableHtmlCache.clear();
   }
 
   private handleSubTableColResize(event: MouseEvent): void {
@@ -1562,6 +1567,8 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
     updatedCols[index + 1] = newSecond;
 
     this.applySubTableSizes(start.parentRow, start.parentCol, start.subTablePath, null, updatedCols);
+    // Clear cache for redraw
+    this.subTableHtmlCache.clear();
   }
 
   private applySubTableSizes(parentRow: number, parentCol: number, path: Array<{row: number; col: number}>, rowSizes: number[] | null, colSizes: number[] | null): void {
@@ -1570,9 +1577,9 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
     
     if (!subTablesMap[parentKey]) return;
 
-    // Navigate to the target subtable
+    // Navigate to the target subtable (empty path refers to first-level subtable)
     let currentSubTable = subTablesMap[parentKey];
-    for (let i = 0; i < path.length - 1; i++) {
+    for (let i = 0; i < path.length; i++) {
       const cellKey = `${path[i].row}_${path[i].col}`;
       if (!currentSubTable.cellSubTables || !currentSubTable.cellSubTables[cellKey]) return;
       currentSubTable = currentSubTable.cellSubTables[cellKey];
@@ -1580,10 +1587,10 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
 
     // Apply the new sizes
     if (rowSizes) {
-      currentSubTable.rowSizes = rowSizes;
+      currentSubTable.rowSizes = [...rowSizes];
     }
     if (colSizes) {
-      currentSubTable.colSizes = colSizes;
+      currentSubTable.colSizes = [...colSizes];
     }
 
     // Update element properties
@@ -1594,9 +1601,8 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
     
     this.designerState.updateElement(this.element.id, { properties: updatedProperties });
     
-    // Clear cache to force re-render
-    const cacheKey = `${this.element.id}_${parentKey}`;
-    this.subTableHtmlCache.delete(cacheKey);
+    // Clear cache to force re-render (clear all nested references for simplicity)
+    this.subTableHtmlCache.clear();
   }
 
   private promptForSplit(axis: 'row' | 'col'): number | null {
