@@ -17,6 +17,7 @@ export class CellEditorDialogComponent implements OnInit {
   @Output() saved = new EventEmitter<string>();
 
   quill!: Quill;
+  currentFontSize: number = 12; // pt default
   @ViewChild('dialogRoot') dialogRoot!: ElementRef<HTMLDivElement>;
   private dragging = false;
   private dragOffsetX = 0;
@@ -42,7 +43,7 @@ export class CellEditorDialogComponent implements OnInit {
         'poppins',
         'kix-barcode'
       ] }],
-      [{ 'size': ['6pt','7pt','8pt','9pt','10pt','11pt','12pt','13pt','14pt','15pt','16pt','17pt','18pt','20pt','24pt','28pt','32pt'] }],
+
       [{ 'color': [] }, { 'background': [] }],
       // lineheight pending proper custom toolbar module, removed for now
       ['link', 'image']
@@ -51,6 +52,57 @@ export class CellEditorDialogComponent implements OnInit {
 
   onEditorCreated(q: Quill) {
     this.quill = q;
+    // Track selection to update spinner
+    // Inject custom font size spinner into toolbar after font picker
+    try {
+      const toolbarEl = q.container.parentElement?.querySelector('.ql-toolbar');
+      if (toolbarEl) {
+        const fontPicker = toolbarEl.querySelector('.ql-font');
+        // Locate the formats group containing the font picker
+        const formatsGroups = Array.from(toolbarEl.querySelectorAll(':scope > .ql-formats')) as HTMLElement[];
+        const formatsGroup = formatsGroups.find(g => g.querySelector('.ql-font'));
+        // Create label before the formats group if not already
+        if (formatsGroup && formatsGroup.parentElement && !formatsGroup.parentElement.querySelector('.ql-font-label')) {
+          const fontLabel = document.createElement('span');
+          fontLabel.className = 'ql-font-label';
+          fontLabel.style.cssText = 'font-size:11px;font-weight:600;margin-right:4px;display:inline-flex;align-items:center;';
+          fontLabel.textContent = 'Font';
+          formatsGroup.before(fontLabel);
+        }
+        // Create spinner wrapper AFTER the formats group (sibling)
+        const spinnerWrapper = document.createElement('span');
+        spinnerWrapper.className = 'ql-custom-size';
+        spinnerWrapper.style.display = 'inline-flex';
+        spinnerWrapper.style.alignItems = 'center';
+        spinnerWrapper.style.gap = '4px';
+        spinnerWrapper.innerHTML = `<input type=\"number\" min=\"1\" max=\"120\" step=\"0.25\" value=\"${this.currentFontSize}\" style=\"width:60px;padding:2px 4px;font-size:11px;\" /> <span style=\"font-size:11px;\">pt</span>`;
+        const inputEl = spinnerWrapper.querySelector('input') as HTMLInputElement;
+        inputEl.addEventListener('input', () => {
+          const v = parseFloat(inputEl.value);
+          if (!Number.isFinite(v)) return;
+          this.currentFontSize = Math.min(120, Math.max(1, v));
+          this.applyFontSize();
+          inputEl.value = this.currentFontSize.toString();
+        });
+        if (formatsGroup && formatsGroup.nextSibling) {
+          formatsGroup.parentElement!.insertBefore(spinnerWrapper, formatsGroup.nextSibling);
+        } else if (formatsGroup) {
+          // fallback to original insertion method
+          fontPicker ? fontPicker.after(spinnerWrapper) : toolbarEl.appendChild(spinnerWrapper);
+        }
+      }
+    } catch {}
+
+    this.quill.on('selection-change', () => {
+      const range = this.quill.getSelection();
+      if (!range) return;
+      const format = this.quill.getFormat(range);
+      const size = format['size'];
+      if (typeof size === 'string') {
+        const match = /^(\d+(?:\.\d+)?)pt$/.exec(size);
+        if (match) this.currentFontSize = parseFloat(match[1]);
+      }
+    });
   }
   private quillHtmlToXhtml(html: string): string {
     //replace all <br> instances with their self-closing counterpart: <br/>:
@@ -139,11 +191,19 @@ export class CellEditorDialogComponent implements OnInit {
       Quill.register(FontStyle, true);
       
       // Use style-based attributor for font-size (generates inline styles)
-      const SizeStyle: any = Quill.import('attributors/style/size');
-      if (SizeStyle && SizeStyle.whitelist) {
-        SizeStyle.whitelist = ['6pt','7pt','8pt','9pt','10pt','11pt','12pt','13pt','14pt','15pt','16pt','17pt','18pt','20pt','24pt','28pt','32pt'];
-        Quill.register(SizeStyle, true);
+      // Flexible size attributor allowing arbitrary pt values
+      const ParchmentAny: any = Quill.import('parchment');
+      class FlexibleSizeAttributor extends ParchmentAny.StyleAttributor {
+        constructor() { super('size', 'font-size', { scope: ParchmentAny.Scope.INLINE }); }
+        add(node: HTMLElement, value: string): boolean {
+          if (!value) return false;
+          let v = value.toString();
+          if (/^\d+(\.\d+)?$/.test(v)) v = v + 'pt';
+          node.style.fontSize = v;
+          return true;
+        }
       }
+      Quill.register(new FlexibleSizeAttributor(), true);
       
       // Color and background already use inline styles by default in Quill
     } catch (e) {
@@ -180,6 +240,13 @@ export class CellEditorDialogComponent implements OnInit {
     const dy = ev.clientY - this.dragOffsetY;
     // Apply delta relative to original centered transform
     el.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+  }
+
+  applyFontSize(): void {
+    if (!this.quill) return;
+    const sizeVal = Math.min(120, Math.max(1, this.currentFontSize));
+    this.currentFontSize = sizeVal;
+    this.quill.format('size', sizeVal + 'pt');
   }
 
   save(): void {
