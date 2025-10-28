@@ -1,7 +1,7 @@
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { DesignerStateService } from '../../core/services/designer-state.service';
+import { DesignerStateService, TableCellSelection } from '../../core/services/designer-state.service';
 import { CanvasElement } from '../../shared/models/schema';
 import { reconcileSizeArray, withTableSizes } from '../../shared/utils/table-utils';
 
@@ -112,6 +112,38 @@ export class PropertyPanelComponent {
   // Cell properties helpers
   private cellKey(row: number, col: number): string { return `${row}_${col}`; }
 
+  private resolveNestedCellContext(el: CanvasElement, selection: TableCellSelection): { table: any; cellKey: string } | null {
+    if (!selection.subTablePath || selection.subTablePath.length === 0) {
+      return null;
+    }
+
+    const parentKey = this.cellKey(selection.row, selection.col);
+    const subTables = el.properties?.['tableCellSubTables'] as Record<string, any> | undefined;
+    if (!subTables || !subTables[parentKey]) {
+      return null;
+    }
+
+    let currentTable = subTables[parentKey];
+
+    for (let i = 0; i < selection.subTablePath.length; i++) {
+      const step = selection.subTablePath[i];
+      const key = this.cellKey(step.row, step.col);
+      const isLast = i === selection.subTablePath.length - 1;
+
+      if (isLast) {
+        return { table: currentTable, cellKey: key };
+      }
+
+      const nested = currentTable.cellSubTables as Record<string, any> | undefined;
+      if (!nested || !nested[key]) {
+        return null;
+      }
+      currentTable = nested[key];
+    }
+
+    return null;
+  }
+
   getSelectedCellPadding(): { top: number; right: number; bottom: number; left: number } | null {
     const selection = this.selectedTableCell();
     const el = this.selectedElement();
@@ -129,6 +161,16 @@ export class PropertyPanelComponent {
     const selection = this.selectedTableCell();
     const el = this.selectedElement();
     if (!selection || !el || el.id !== selection.elementId) return null;
+    if (selection.subTablePath && selection.subTablePath.length > 0) {
+      const context = this.resolveNestedCellContext(el, selection);
+      if (!context) {
+        return 'left';
+      }
+      const nestedMap = context.table.cellHAlign as Record<string, string> | undefined;
+      const nestedValue = nestedMap?.[context.cellKey];
+      return nestedValue === 'center' || nestedValue === 'right' ? nestedValue : 'left';
+    }
+
     const map = el.properties?.['tableCellHAlign'] as Record<string, string> | undefined;
     const value = map?.[this.cellKey(selection.row, selection.col)];
     return value === 'center' || value === 'right' ? value : 'left';
@@ -138,6 +180,16 @@ export class PropertyPanelComponent {
     const selection = this.selectedTableCell();
     const el = this.selectedElement();
     if (!selection || !el || el.id !== selection.elementId) return null;
+    if (selection.subTablePath && selection.subTablePath.length > 0) {
+      const context = this.resolveNestedCellContext(el, selection);
+      if (!context) {
+        return 'top';
+      }
+      const nestedMap = context.table.cellVAlign as Record<string, string> | undefined;
+      const nestedValue = nestedMap?.[context.cellKey];
+      return nestedValue === 'middle' || nestedValue === 'bottom' ? nestedValue : 'top';
+    }
+
     const map = el.properties?.['tableCellVAlign'] as Record<string, string> | undefined;
     const value = map?.[this.cellKey(selection.row, selection.col)];
     return value === 'middle' || value === 'bottom' ? value : 'top';
@@ -162,6 +214,45 @@ export class PropertyPanelComponent {
     const el = this.selectedElement();
     if (!selection || !el || el.id !== selection.elementId) return;
     const key = this.cellKey(selection.row, selection.col);
+    if (selection.subTablePath && selection.subTablePath.length > 0) {
+      const parentKey = this.cellKey(selection.row, selection.col);
+      const subTables = (el.properties?.['tableCellSubTables'] as Record<string, any>) || {};
+      if (!subTables[parentKey]) {
+        return;
+      }
+
+      const clonedSubTables = JSON.parse(JSON.stringify(subTables)) as Record<string, any>;
+      let currentSubTable = clonedSubTables[parentKey];
+
+      for (let i = 0; i < selection.subTablePath.length; i++) {
+        const step = selection.subTablePath[i];
+        const stepKey = this.cellKey(step.row, step.col);
+        const isLast = i === selection.subTablePath.length - 1;
+
+        if (isLast) {
+          const nestedProp = kind === 'h' ? 'cellHAlign' : 'cellVAlign';
+          if (!currentSubTable[nestedProp]) {
+            currentSubTable[nestedProp] = {};
+          }
+          currentSubTable[nestedProp][stepKey] = value;
+        } else {
+          const nestedTables = currentSubTable.cellSubTables as Record<string, any> | undefined;
+          if (!nestedTables || !nestedTables[stepKey]) {
+            return;
+          }
+          currentSubTable = nestedTables[stepKey];
+        }
+      }
+
+      const nextProps = {
+        ...(el.properties || {}),
+        tableCellSubTables: clonedSubTables
+      };
+
+      this.updateElement({ properties: nextProps });
+      return;
+    }
+
     const propName = kind === 'h' ? 'tableCellHAlign' : 'tableCellVAlign';
     const existing = (el.properties?.[propName] as Record<string, string>) || {};
     const updated = { ...(el.properties||{}), [propName]: { ...existing, [key]: value } };

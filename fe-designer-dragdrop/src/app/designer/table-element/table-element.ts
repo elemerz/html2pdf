@@ -1,4 +1,4 @@
-import { Component, HostListener, Input, signal, inject, ElementRef, AfterViewInit, AfterViewChecked, OnDestroy } from '@angular/core';
+import { Component, HostListener, Input, signal, inject, ElementRef, AfterViewInit, AfterViewChecked, OnDestroy, OnChanges, SimpleChanges } from '@angular/core';
 import { CellEditorDialogComponent } from './cell-editor-dialog';
 import { CommonModule } from '@angular/common';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
@@ -24,7 +24,7 @@ interface ContextMenuCell {
   templateUrl: './table-element.html',
   styleUrl: './table-element.less',
 })
-export class TableElementComponent implements AfterViewInit, AfterViewChecked, OnDestroy {
+export class TableElementComponent implements AfterViewInit, AfterViewChecked, OnDestroy, OnChanges {
   @Input({ required: true }) element!: CanvasElement;
   @Input() mmToPx = 3.7795275591;
   @Input() gridSize = 10;
@@ -41,6 +41,12 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
   protected contextMenuPosition = signal({ x: 0, y: 0 });
   protected contextMenuCell = signal<ContextMenuCell | null>(null);
   protected showActionsToolbar = signal(false);
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['element'] && !changes['element'].firstChange) {
+      this.subTableHtmlCache.clear();
+    }
+  }
 
   ngAfterViewInit(): void {
     // Add DOCUMENT-level listener first for debugging
@@ -1714,4 +1720,3 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
     return map?.[key] || 'none';
   }
 }
-
