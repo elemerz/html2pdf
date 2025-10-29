@@ -426,6 +426,17 @@ export class DesignerStateService {
       }
     }
 
+    // Reorder main layout tables within each role group by ascending Y coordinate
+    // Only affects relative ordering among tables; non-table elements retain their sequence.
+    for (const group of groups) {
+      group.elements = [...group.elements].sort((a, b) => {
+        if (a.type === 'table' && b.type === 'table') {
+          return a.y - b.y; // ascending top position
+        }
+        return 0; // preserve original order for mixed/non-table comparisons (stable sort)
+      });
+    }
+
     // Generate markup for each group
     let lastFlowBottom = 0;
     let firstFlow = true;
