@@ -601,6 +601,111 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
     this.closeActionsToolbar();
   }
 
+  protected isDeleteSubTableEnabled(): boolean {
+    const selection = this.designerState.selectedTableCell();
+    return !!(selection && selection.elementId === this.element.id && selection.subTablePath && selection.subTablePath.length > 0);
+  }
+
+  protected onDeleteSubTableFromToolbar(): void {
+    const selection = this.designerState.selectedTableCell();
+    if (!selection || selection.elementId !== this.element.id || !selection.subTablePath || selection.subTablePath.length === 0) {
+      this.closeActionsToolbar();
+      return;
+    }
+
+    if (!confirm('Delete the selected sub-table?')) {
+      this.closeActionsToolbar();
+      return;
+    }
+
+    const parentRow = selection.row;
+    const parentCol = selection.col;
+    const parentKey = `${parentRow}_${parentCol}`;
+    const path = selection.subTablePath;
+
+    const subTablesMapOriginal = (this.element.properties?.['tableCellSubTables'] as Record<string, any>) || {};
+    if (!subTablesMapOriginal[parentKey]) {
+      this.closeActionsToolbar();
+      return;
+    }
+
+    // Deep clone originals
+    const subTablesMap = JSON.parse(JSON.stringify(subTablesMapOriginal));
+    const contentsMapOriginal = (this.element.properties?.['tableCellContents'] as Record<string, string>) || {};
+    const contentsMap = { ...contentsMapOriginal };
+
+    // Helper to collect leaf cell contents recursively
+    const collectContents = (sub: any, acc: string[]) => {
+      if (!sub) return;
+      const rows = sub.rows || 0;
+      const cols = sub.cols || 0;
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const key = `${r}_${c}`;
+          if (sub.cellSubTables && sub.cellSubTables[key]) {
+            collectContents(sub.cellSubTables[key], acc);
+          } else {
+            const raw = sub.cellContents?.[key];
+            if (raw && raw.trim() !== '' && raw !== '&nbsp;') {
+              acc.push(raw);
+            }
+          }
+        }
+      }
+    };
+
+    if (path.length === 1) {
+      // First level sub-table: merge its contents into the parent cell then remove
+      const subTableToRemove = subTablesMap[parentKey];
+      const collected: string[] = [];
+      collectContents(subTableToRemove, collected);
+      delete subTablesMap[parentKey];
+      contentsMap[parentKey] = collected.length ? collected.join('<br/>') : '&nbsp;';
+    } else {
+      // Nested sub-table: delete the sub-table containing the selected cell (path[path.length-2])
+      const deletionHolder = path[path.length - 2];
+      const deletionKey = `${deletionHolder.row}_${deletionHolder.col}`;
+
+      // Navigate to the container that holds deletionKey
+      let container = subTablesMap[parentKey];
+      for (let i = 0; i < path.length - 2; i++) {
+        const cellKey = `${path[i].row}_${path[i].col}`;
+        if (!container.cellSubTables || !container.cellSubTables[cellKey]) {
+          console.warn('Invalid sub-table path during delete (container traversal)', cellKey);
+          this.closeActionsToolbar();
+          return;
+        }
+        container = container.cellSubTables[cellKey];
+      }
+
+      const subTableToRemove = container.cellSubTables?.[deletionKey];
+      if (subTableToRemove) {
+        const collected: string[] = [];
+        collectContents(subTableToRemove, collected);
+        delete container.cellSubTables[deletionKey];
+        if (!container.cellContents) container.cellContents = {};
+        container.cellContents[deletionKey] = collected.length ? collected.join('<br/>') : '&nbsp;';
+      } else {
+        console.warn('Deletion target sub-table not found for key', deletionKey);
+        this.closeActionsToolbar();
+        return;
+      }
+    }
+
+    const updatedProperties = {
+      ...(this.element.properties || {}),
+      tableCellSubTables: subTablesMap,
+      tableCellContents: contentsMap
+    } as Record<string, any>;
+
+    this.subTableHtmlCache.clear();
+    this.designerState.updateElement(this.element.id, { properties: updatedProperties });
+
+    // Re-select parent cell (clears sub-table path)
+    this.designerState.selectTableCell(this.element.id, parentRow, parentCol);
+    this.closeActionsToolbar();
+  }
+
   private createNestedSubTable(parentRow: number, parentCol: number, parentSubTable: any, subCellKey: string, rows: number, cols: number, level: number): void {
     // Get properties from parent sub-cell to inherit
     const parentContent = parentSubTable.cellContents?.[subCellKey] || '';
