@@ -1,0 +1,404 @@
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <title>20-Orig Factuur.</title>
+  <style type="text/css" media="all">
+    /*** Page-level definitions ***/
+    @page {
+      size: A4 portrait;
+    }
+    /* ODD pages = :right, EVEN pages = :left */
+    @page:right {
+        /* odd-page header/footer */
+        @top-center    { content: element(hdr-odd); }
+        @bottom-center { content: element(ftr-odd); }
+        margin: 129mm 10mm 85mm 16mm; /* top right bottom left */
+    }
+    @page:left {
+        /* even-page header/footer */
+        @top-center    { content: element(hdr-even); }
+        @bottom-center { content: element(ftr-even); }
+        margin: 190mm 10mm 106.9mm 16mm; /* top right bottom left */
+    }
+    /* Define the running elements */
+    .hdr-odd  { position: running(hdr-odd);}
+    .hdr-even { position: running(hdr-even);}
+    .ftr-odd  { position: running(ftr-odd);}
+    .ftr-even { position: running(ftr-even);}
+
+    /* Force section/chunk to start on an odd (right) or even (left) page. OpenHTMLToPDF supports both legacy and modern names. */
+    .start-on-odd {
+        page-break-before: right; /* legacy name */
+        break-before: right;      /* modern name */
+    }
+    .start-on-even {
+        page-break-before: left; /* legacy name */
+        break-before: left;      /* modern name */
+    }
+
+    /*.pagebreak { page-break-after: always; } */
+    /*** Custom fonts ***/
+    @font-face {
+      font-family: 'Roboto';
+      font-weight: normal;
+      font-style: normal;
+      font-display: swap;
+      -fs-pdf-font-embed: embed;
+      -fs-pdf-font-encoding: Identity-H;
+    }
+    @font-face {
+      font-family: 'KIX Barcode';
+      font-weight: normal;
+      font-style: normal;
+      font-display: swap;
+      -fs-pdf-font-embed: embed;
+      -fs-pdf-font-encoding: Identity-H;
+    }
+
+    /*** Common styling ***/
+    html, html * {
+      box-sizing: border-box;
+      margin: 0;
+    }
+    html,body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      padding:0;
+      border:0 none;
+      font-family: 'Roboto';
+      font-size: 9pt;
+    }
+    table {
+      border-collapse: collapse;
+      margin: 0;
+    }
+    table td {
+      padding: 0;
+      vertical-align: top;
+      text-align: left;
+    }
+    thead {
+        display: table-header-group;
+    }
+    tfoot {
+        display: table-footer-group;
+    }
+
+    .roboto {
+      font-family: 'Roboto';
+      font-weight: normal;
+      font-style: normal;
+    }
+    .kix {
+      font-family: 'KIX Barcode';
+      font-weight: normal;
+      font-style: normal;
+    }
+
+    /*** Infomedics Logo ***/
+    .factur-logo {
+      position: absolute;
+      top: 15mm;
+      left: 0;
+      width: 64mm;
+    }
+    .factur-logo img {
+      width: 64mm;
+    }
+
+    /*** Treatments ***/
+    #tb-treatments {width: 100%; font-size: 8pt; line-height: 130%;}
+    #tb-treatments th, #tb-treatments td  {padding: 1mm 0; border-bottom: 1px solid #000000;}
+  </style>
+</head>
+<body>
+<!-- Put the *two* header/footer variants up front as running elements -->
+<header class="hdr-odd">
+    <!-- Debug Title -->
+    <table data-role="debug-title" style="height: 10mm; margin-top: 7mm; margin-left: 72mm; width: 80mm; font-size: 10pt; color: red">
+        <tr><td>Factuurtype: 20</td></tr>
+        <tr><td>Customer in run: 3</td></tr>
+    </table>
+    <table data-role="care-provider-consumer" class="roboto" style="margin-top: 22mm; width:100%; vertical-align: top">
+        <tr style="height: 51mm;">
+            <!-- Patient Address -->
+            <td style="height: 51mm; width: 94mm; padding-top: 15mm; padding-left: 18mm;">
+                <table style="width: 100%;">
+                    <tr><td>L Lepelaar<br/>Vecozo TestStreet 124<br/>9999 XA VECOZOTESTCITY</td></tr>
+                </table>
+                <table class="kix" style="width: 100%; margin-top: 2mm; font-size: 10pt">
+                    <tr><td>9999XA124</td></tr>
+                </table>
+            </td>
+            <!-- Care Provider -->
+            <td style="width:auto;">
+                <table data-role="care-provider-data" style="width: 100%;">
+                    <tr><td style="width: auto; font-weight: bolder">24.3.2 MZ Testklant JJ</td><td style="width: 16mm;"> </td></tr>
+                    <tr><td>Teststraat 1</td><td> </td></tr>
+                    <tr><td>7777 JJ Testdorp</td><td> </td></tr>
+                    <tr><td>AGB-Code Praktijk/Instelling:</td><td style="text-align: right;">12099999</td></tr>
+                    <tr><td>AGB-Code zorgaanbieder:</td><td style="text-align: right;">12011111</td></tr>
+                </table>
+            </td>
+        </tr>
+        <tr style="height: 38mm;">
+            <!-- Invoice data -->
+            <td style="height: 38mm;">
+                <table class="roboto" style="width: 100%;">
+                    <tr><td style="width: 38mm; font-size: 12pt; font-weight: bold;">REKENING</td><td style="width: auto"></td></tr>
+                    <tr><td>Betalingskenmerk:</td><td>0230 0036 0410 71</td></tr>
+                    <tr><td>Datum:</td><td>19-04-2024</td></tr>
+                </table>
+            </td>
+            <!-- Patient data -->
+            <td>
+                <table class="roboto" style="width: 100%;">
+                    <tr><td style="width: 32mm; font-weight: bold">Patiëntgegevens</td><td style="width: auto"></td></tr>
+                    <tr><td>Naam:</td><td style="text-align: right;">L Lepelaar</td></tr>
+                    <tr><td>Geb.datum:</td><td style="text-align: right;">15-09-1923</td></tr>
+                    <tr><td>BSN:</td><td style="border-bottom:1px solid black;"> </td></tr>
+                </table>
+                <table style="width: 100%; font-size: 8pt">
+                    <tr><td>(invullen voor declaratie bij uw zorgverzekeraar)</td></tr>
+                </table>
+            </td>
+        </tr>
+
+    </table>
+    <!-- Infomedics Logo absolutely positioned-->
+    <table class="factur-logo">
+        <tr><td><img alt="infomedics-logo-geregeld-opt" src="data:image/png;base64,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"/></td></tr>
+    </table>
+</header>
+
+<footer class="ftr-odd">
+    <!-- PayReminder -->
+    <table style="width: 100%;">
+        <tr><td>Wij vragen u vriendelijk het bedrag binnen 30 dagen aan ons over te maken. Hieronder treft u de betaalgegevens aan.<br/>Vermeld bij uw betaling altijd het betalingskenmerk.</td></tr>
+    </table>
+    <!-- Payments -->
+    <table style="width: 100%; line-height: 125%; margin-top: 2mm;">
+        <tr><td style="border: 1px solid #000; padding: 1mm 0 1mm 1mm;">
+            <table style="width: 100%;">
+                <tr class="r1">
+                    <td style="width: 39mm;">
+                        <b>Betaalgegevens:</b><br/>
+                        Bedrag:<br/>
+                        Betalingskenmerk:<br/>
+                        Vervaldatum:<br/><br/>
+                        Ten name van:<br/>
+                        IBAN:
+                    </td>
+                    <td style="width: 54mm;">
+                        <br/>
+                        <b>€ 60,30</b><br/>
+                        0230 0036 0410 71<br/>
+                        19 mei 2024<br/><br/>
+                        Infomedics B.V.<br/>
+                        NL34 ABNA 0243 2400 58
+                    </td>
+                    <td style="width: auto;">
+                        <b>Direct betalen?</b><br/>
+                        Betaal veilig online met iDEAL. Dan verwerken<br/>
+                        we uw betaling het snelst.
+                        <table style="width: 100%;">
+                            <tr><td style="width: 6mm; font-size: 40pt;">˙</td><td style="width: auto;">Scan de code met de camera van uw telefoon of tablet</td></tr>
+                            <tr><td style="font-size: 40pt;">˙</td><td>Of ga naar www.infomedics.nl en vul het<br/>betalingskenmerk in.</td></tr>
+                        </table>
+                    </td>
+                    <td style="width: 22mm; text-align: right; vertical-align: middle;">
+                        <object type="application/qrcode"
+                                data="https://rekening.infomedics.nl/Betalen?invoice=02300036041071"
+                                style="width: 22mm; height: 22mm;"
+                                data-ec-level="M"
+                                data-margin="2"/>
+                    </td>
+                </tr>
+            </table>
+        </td></tr>
+    </table>
+
+    <!-- Infomedics Company data-->
+    <table style="width: 100%; margin-top: 12mm; vertical-align: bottom; font-size: 8.5pt;">
+        <tr><td style="width: 28mm; font-weight: bold;">Infomedics B.V.</td><td style="width: 47mm;"></td><td style="width: 47mm;"></td><td style="width: auto;"></td></tr>
+        <tr><td>Postbus 60108</td><td>036 – 20 31 900</td><td>AGB-code: 98098705</td><td>KvK nr: 04048143</td></tr>
+        <tr><td>1320 AC  Almere</td><td>ma t/m vr van 9.00 – 17.00 uur</td><td>IBAN: NL34 ABNA 0243 2400 58</td><td>BTW nr: NL8035.98.130.B.01</td></tr>
+    </table>
+
+    <!-- Debt Transfer -->
+    <table style="width: 100%; margin-top: 3mm;">
+        <tr class="r1">
+            <td style="width: 122mm; font-size: 6.5pt; font-weight: bold">Uw zorgaanbieder heeft Infomedics B.V. de opdracht gegeven om de vordering op u te innen. Tegelijkertijd heeft uw zorgaanbieder het eigendom van die vordering overgedragen aan Infomedics Finance B.V. (gecedeerd).</td>
+            <td style="width: 30mm; vertical-align: bottom; font-size: 8pt; font-weight: bold;"><a style="text-decoration: none; color: #1aa1da; font-weight: bold;" href="www.infomedics.nl">www.infomedics.nl</a></td>
+            <td style="width: auto; text-align: right;"><img style="width: 21.5mm;" alt="iso-logos_optimized" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAHkAAAAoBAMAAAAoBkgoAAAABGdBTUEAALGPC/xhBQAAAAFzUkdCAK7OHOkAAAGHaVRYdFhNTDpjb20uYWRvYmUueG1wAAAAAAA8P3hwYWNrZXQgYmVnaW49J++7vycgaWQ9J1c1TTBNcENlaGlIenJlU3pOVGN6a2M5ZCc/Pg0KPHg6eG1wbWV0YSB4bWxuczp4PSJhZG9iZTpuczptZXRhLyI+PHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj48cmRmOkRlc2NyaXB0aW9uIHJkZjphYm91dD0idXVpZDpmYWY1YmRkNS1iYTNkLTExZGEtYWQzMS1kMzNkNzUxODJmMWIiIHhtbG5zOnRpZmY9Imh0dHA6Ly9ucy5hZG9iZS5jb20vdGlmZi8xLjAvIj48dGlmZjpPcmllbnRhdGlvbj4xPC90aWZmOk9yaWVudGF0aW9uPjwvcmRmOkRlc2NyaXB0aW9uPjwvcmRmOlJERj48L3g6eG1wbWV0YT4NCjw/eHBhY2tldCBlbmQ9J3cnPz4slJgLAAAACXBIWXMAABYlAAAWJQFJUiTwAAAAKlBMVEX////m6e25wM04TXB9i6JUZoTV2uH29/miq7vv8PNtfJaOmq7GzNaHk6n+mamxAAADW0lEQVRIx83Wz0/TUBwA8O+2rlvh0jFgbuEA7dCFaML2gMzJYawbQbnwYwOil+IYGLxsLIghHsCJCqdiIB70IEyMxssMCTHIYRfjwX/KV/reKz56w4Mv6eWbftLv971vvy3sBrgVAoAKHwzgoMshmOXXIb6xlw9qOOjlgzkZ0sCtNnwpfNCDL4EPuq+uFzZgj2UzRnRrGvx2joalxVEQ7aB+rodHIYjoGiD67DcILIhkSz/uMNx2sNvUUv7QQWdzDrovJ/PaF65gPaWhTGza1ksi1kkVJZRjW4d2y2400IuSyhbVrmgb1mkVdYOvxnSmHeu4B/UDFJnuyeBnJ3AcIEI1SlgaobSXaW3A0gjNuJlWkaURSko0c6WH6sFdps27LY30aarNU7I0aqhk12yNuqepRojpCZXqKmI6XqV1A9NN9uyRbgfdk2b6dpDowijLHJi+l2daPmYnljdY5kSb1RAdFx3qToJD3YNQIxqfyrmeUox9xNedVHQB8XWnlF8iPbHNkKWH4JrdLSMBS6fgzTTTNwOWHjREjeo8rduoX+jULMl8Q73QqVlS98Q+6/OmRPTsqq1fiUQP+W097ytbOiWyPi/MEJ2SbL3zke6aXGe6VCD6PCMr8+w3uucbRabHpqg2MyI6Nke1mRHfqQk/07udVJsZEV0JUG1mdPEdw2O0C+kae8eCpjbHaL1R/Psdk3CwNuulvWZOh4OAqWdKVOfqWA+bY7eejLA9L2CdNIO1VBfplvklh9ky3+kwW550Aj9boHHdQd9456BXhMv6xYyDjnx10C258iVdMRzmuUt2mOdS6F9/Da6o3+vQBNBhDdZ8MtGG5AqvuXjt84FeMQzfBd0//ql0CutHwpGQ8/TTTm3vGOv1yNpQ/W7efYdoz4OWDS22OLr8cHL2dZFqOeNvBItBb8kboFpbiITUPhlmh4yod5V8xzyfX57U+krgb87dylaJ3otj3aoVhWVbj+c7emL3ZbERnYh6BHJinq32k2Js8ay0uD35IyhbenPqtNQUf1ZLweKzOJ0t+UhYUWX/UuzDzvpWmdStS358wHrlbdlYq5QtvdVwH8DTL67v4slelujtRyvXFwWj1YiFs0the8+l/+e8Mwq3nuN4lA+q5l8PH4zKcKU/rj/MwjHpu5niygAAAABJRU5ErkJggg=="/></td>
+        </tr>
+    </table>
+</footer>
+
+<header class="hdr-even">
+    <table style="width: 100%; margin-top: 14mm; margin-right: 10mm; margin-left: 10mm; line-height: 115%">
+        <tr><td>
+            <b>Waarom krijgt u uw rekening van Infomedics?</b><br/>
+            <br/>
+            In opdracht van uw zorgaanbieder versturen en incasseren wij rekeningen voor de zorg die u heeft gehad.<br/>
+            Hierdoor heeft de zorgaanbieder meer aandacht voor het leveren van de beste zorg!<br/>
+            <br/>
+            We voldoen hierbij uiteraard aan alle (privacy) wet- en regelgeving, zowel de regels die van toepassing zijn op uw
+            zorgaanbieder als de regels die gelden voor onze organisatie.<br/>
+            <br/>
+            <b>Wat zijn de belangrijkste betalingsvoorwaarden van mijn rekening van Infomedics?</b><br/>
+            <br/>
+        </td></tr>
+        <tr><td>
+            <table style="width: 100%;">
+                <tr><td style="width: 12mm; font-size: 10pt; text-align: center">•</td>
+                    <td style="width: auto;">Infomedics mag, als dit mogelijk is, uw rekening declareren bij uw zorgverzekeraar. U ziet een eventuele
+                        vergoeding altijd terug op de rekening.</td></tr>
+                <tr><td style="font-size: 10pt; text-align: center">•</td>
+                    <td>Wij verwachten dat u de rekening betaalt vóór de vervaldatum zoals vermeld op de rekening.</td></tr>
+                <tr><td style="font-size: 10pt; text-align: center">•</td>
+                    <td>Als u de rekening niet voor de vervaldatum heeft betaald, dan bent u in verzuim zonder dat daarvoor een
+                        nadere ingebrekestelling is vereist. Omdat u het uiteraard vergeten kunt zijn, sturen we u een
+                        herinnering waarin wij u vragen de rekening alsnog binnen 15 dagen nadat deze brief bij u bezorgd is, te
+                        voldoen. Mocht de betaling binnen deze gestelde datum uitblijven, dan brengen wij rente en
+                        incassokosten in rekening.</td></tr>
+                <tr><td style="font-size: 10pt; text-align: center">•</td>
+                    <td>Wij mogen uw betaling eerst in mindering brengen op de incassokosten, vervolgens op de in rekening
+                        gebrachte rente en tenslotte op het oorspronkelijke bedrag van uw rekening.</td></tr>
+                <tr><td style="font-size: 10pt; text-align: center">•</td>
+                    <td>Houd er rekening mee dat, wanneer u een klacht indient of zich inschrijft bij een andere zorgaanbieder,
+                        uw rekening uiteindelijk nog steeds betaald moet worden. Uw betalingsverplichting kan hierdoor niet
+                        worden opgeschort.</td></tr>
+            </table>
+        </td></tr>
+        <tr><td>
+            <br/>
+            <b>Veelgestelde vragen aan Infomedics</b><br/>
+            <br/>
+        </td></tr>
+        <tr><td>
+            <table style="width: 100%;">
+                <tr><td style="width: 12mm; font-size: 10pt; text-align: center">1.</td>
+                    <td style="width: auto;">Heb ik mijn rekening al betaald?<br/>
+                        Als u niet zeker weet of u uw rekening heeft betaald, kunt u op <u style="color: mediumblue">www.infomedics.nl</u> zonder in te loggen de<br/>
+                        status van uw rekening controleren. U ziet direct of er is betaald, wanneer dit niet het geval is kunt u uw<br/>
+                        rekening direct betalen.<br/><br/></td></tr>
+                <tr><td style="font-size: 10pt; text-align: center">2.</td>
+                    <td style="width: auto;">Kan ik een betalingsregeling afsluiten met Infomedics?<br/>
+                        Alleen wanneer u uw rekening niet in één keer kunt betalen, bieden wij een betalingsregeling aan. Hieraan<br/>
+                        zijn bepaalde voorwaarden verbonden. Meer informatie over een betalingsregeling vindt u op<br/>
+                        <u style="color: mediumblue">www.infomedics.nl</u>, hier kunt u ook direct een betalingsregeling aanvragen.<br/><br/></td></tr>
+                <tr><td style="font-size: 10pt; text-align: center">3.</td>
+                    <td style="width: auto;">Ik heb betaald, maar ontvang toch een herinnering of aanmaning.<br/>
+                        Dat is vervelend. Helaas kan het soms een aantal dagen duren voordat een betaalopdracht bij ons<br/>
+                        binnen is. Er bestaat dus de mogelijkheid dat de betaling en de herinnering of aanmaning elkaar hebben<br/>
+                        gekruist. Wij adviseren u daarom nadrukkelijk om de status van uw betaling altijd te controleren op<br/>
+                        <u style="color: mediumblue">www.infomedics.nl</u>. Indien u de rekening al betaald heeft, kunt u de herinnering of aanmaning als niet<br/>
+                        verzonden beschouwen.<br/><br/></td></tr>
+                <tr><td style="font-size: 10pt; text-align: center">4.</td>
+                    <td style="width: auto;">Ik heb een vraag over de gehanteerde tarieven en/of codes.<br/>
+                        p de website <u style="color: mediumblue">www.nza.nl</u> (website van de Nederlandse Zorgautoriteit, NZa) kunt u alle informatie<br/>
+                        terugvinden over de gehanteerde tarieven en/of codes op uw rekening.<br/><br/></td></tr>
+            </table>
+        </td></tr>
+        <tr><td>
+            <p>
+                Op <u style="color: mediumblue">www.infomedics.nl/faq</u> kunt u al onze veelgestelde vragen bekijken. Op <u style="color: mediumblue">www.infomedics.nl/contact</u> vindt u<br/>
+                al onze contactopties.
+            </p>
+        </td></tr>
+    </table>
+</header>
+
+<!-- First Page body -->
+    <!-- Treatments -->
+    <table id="tb-treatments">
+        <thead>
+        <tr>
+            <th style="width: 40mm; font-weight: bold">Behandelingsdatum</th>
+            <th style="width: auto; font-weight: bold">Omschrijwing</th>
+            <th style="width: 10mm; font-weight: bold"> </th>
+            <th style="width: 15mm; text-align: right; font-weight: bold">Bedrag</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+            <td>01-04-2024<br/>Behandelaar: 12057153</td>
+            <td>M02 5x Consult voor evaluatie van preventie. per 5 minuten</td>
+            <td>€</td>
+            <td style="text-align: right;">60,30</td>
+        </tr>
+        <tr>
+            <td>02-05-2024<br/>Behandelaar: 12057154</td>
+            <td>M03 3x Periodieke controle van mondgezondheid. per sessie</td>
+            <td>€</td>
+            <td style="text-align: right;">8,15</td>
+        </tr>
+        <tr>
+            <td>03-06-2025<br/>Behandelaar: 12057155</td>
+            <td>M04 2x Reiniging en verwijdering van tandsteen. per kwadrant</td>
+            <td>€</td>
+            <td style="text-align: right;">160,50</td>
+        </tr>
+        <tr>
+            <td>01-04-2024<br/>Behandelaar: 12057153</td>
+            <td>M02 5x Consult voor evaluatie van preventie. per 5 minuten</td>
+            <td>€</td>
+            <td style="text-align: right;">60,30</td>
+        </tr>
+        <tr>
+            <td>02-05-2024<br/>Behandelaar: 12057154</td>
+            <td>M03 3x Periodieke controle van mondgezondheid. per sessie</td>
+            <td>€</td>
+            <td style="text-align: right;">8,15</td>
+        </tr>
+        <tr>
+            <td>03-06-2025<br/>Behandelaar: 12057155</td>
+            <td>M04 2x Reiniging en verwijdering van tandsteen. per kwadrant</td>
+            <td>€</td>
+            <td style="text-align: right;">160,50</td>
+        </tr>
+        <tr>
+            <td>01-04-2024<br/>Behandelaar: 12057153</td>
+            <td>M02 5x Consult voor evaluatie van preventie. per 5 minuten</td>
+            <td>€</td>
+            <td style="text-align: right;">60,30</td>
+        </tr>
+        <tr>
+            <td>02-05-2024<br/>Behandelaar: 12057154</td>
+            <td>M03 3x Periodieke controle van mondgezondheid. per sessie</td>
+            <td>€</td>
+            <td style="text-align: right;">8,15</td>
+        </tr>
+        <tr>
+            <td>03-06-2025<br/>Behandelaar: 12057155</td>
+            <td>M04 2x Reiniging en verwijdering van tandsteen. per kwadrant</td>
+            <td>€</td>
+            <td style="text-align: right;">160,50</td>
+        </tr>
+        <tr>
+            <td>01-04-2024<br/>Behandelaar: 12057153</td>
+            <td>M02 5x Consult voor evaluatie van preventie. per 5 minuten</td>
+            <td>€</td>
+            <td style="text-align: right;">60,30</td>
+        </tr>
+        <tr>
+            <td>02-05-2024<br/>Behandelaar: 12057154</td>
+            <td>M03 3x Periodieke controle van mondgezondheid. per sessie</td>
+            <td>€</td>
+            <td style="text-align: right;">8,15</td>
+        </tr>
+        <tr>
+            <td>03-06-2025<br/>Behandelaar: 12057155</td>
+            <td>M04 2x Reiniging en verwijdering van tandsteen. per kwadrant</td>
+            <td>€</td>
+            <td style="text-align: right;">160,50</td>
+        </tr>
+        </tbody>
+    </table>
+    <table style="width: 100%; font-size: 8pt; font-weight: bold; line-height: 130%;">
+        <tr><td style="width: 113mm;"></td><td style="width: auto;">Totaal</td><td style="width: 10mm;">€</td><td style="width: 15mm; text-align: right;">460,20</td></tr>
+    </table>
+<!--End of page 01-->
+</body>
+</html>

@@ -20,8 +20,12 @@ export class CellEditorDialogComponent implements OnInit {
   currentFontSize: number = 12; // pt default
   @ViewChild('dialogRoot') dialogRoot!: ElementRef<HTMLDivElement>;
   private dragging = false;
-  private dragOffsetX = 0;
+  private dragOffsetX = 0; // distance from dialog origin when using absolute mode (legacy)
   private dragOffsetY = 0;
+  private dragStartMouseX = 0;
+  private dragStartMouseY = 0;
+  private dragAccumX = 0; // accumulated transform translation
+  private dragAccumY = 0;
   contentValue = '';
 
   quillModules = {
@@ -218,17 +222,33 @@ export class CellEditorDialogComponent implements OnInit {
     if (ev.button !== 0) return; // only left button
     if (!this.dialogRoot) return;
     const el = this.dialogRoot.nativeElement;
-    // Record offsets relative to current position (top fixed, left centered)
-    const rect = el.getBoundingClientRect();
+    // Keep initial centering transform; we add our own translate after it to avoid jump.
+    // Extract existing transform (e.g., 'translateX(-50%)') and append custom translate.
+    const existing = getComputedStyle(el).transform; // may be 'none'
+    // Reset any inline left/top previously set by older dragging attempts
+    if (el.style.left) el.style.left = '50%';
+    if (el.style.top) el.style.top = '32px';
     this.dragging = true;
-    this.dragOffsetX = ev.clientX - rect.left;
-    this.dragOffsetY = ev.clientY - rect.top;
-    el.style.willChange = 'top,left';
+    this.dragStartMouseX = ev.clientX;
+    this.dragStartMouseY = ev.clientY;
+    // Read previously accumulated values from data attributes
+    const prevX = parseFloat(el.getAttribute('data-drag-x') || '0');
+    const prevY = parseFloat(el.getAttribute('data-drag-y') || '0');
+    this.dragAccumX = Number.isFinite(prevX) ? prevX : 0;
+    this.dragAccumY = Number.isFinite(prevY) ? prevY : 0;
+    el.style.willChange = 'transform';
     ev.preventDefault();
   }
 
   @HostListener('document:mouseup', ['$event'])
   endDrag(_: MouseEvent): void {
+    if (this.dragging) {
+      // finalize accumulated movement
+      const el = this.dialogRoot?.nativeElement;
+      if (el) {
+        el.style.willChange = 'auto';
+      }
+    }
     this.dragging = false;
   }
 
@@ -236,11 +256,15 @@ export class CellEditorDialogComponent implements OnInit {
   onDrag(ev: MouseEvent): void {
     if (!this.dragging) return;
     const el = this.dialogRoot.nativeElement;
-    const newLeft = ev.clientX - this.dragOffsetX;
-    const newTop = ev.clientY - this.dragOffsetY;
-    el.style.transform = 'none';
-    el.style.left = newLeft + 'px';
-    el.style.top = Math.max(8, newTop) + 'px'; // keep slight top gap
+    const dx = ev.clientX - this.dragStartMouseX;
+    const dy = ev.clientY - this.dragStartMouseY;
+    const tx = this.dragAccumX + dx;
+    const ty = this.dragAccumY + dy;
+    // Store accum so next drag starts from here
+    el.setAttribute('data-drag-x', tx.toString());
+    el.setAttribute('data-drag-y', ty.toString());
+    // Compose transform: keep original translateX(-50%) plus our translate
+    el.style.transform = `translateX(-50%) translate(${tx}px, ${Math.max(0, ty)}px)`;
   }
 
   applyFontSize(): void {

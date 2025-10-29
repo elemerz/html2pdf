@@ -1,12 +1,14 @@
+
 html, body {
   width: 210mm;
   height: 297mm;
 }
+
 /*** Page-level definitions ***/
 @page {
   size: A4 portrait;
   /* MARGINS: __TOP__ __RIGHT__ __BOTTOM__ __LEFT__ */
-  margin: __TOP__ __RIGHT__ __BOTTOM__ __LEFT__;
+  margin: 0 0 0 0;
 }
 .page { position: relative; min-height: 276.7mm; }
 .page + .page { page-break-before: page; break-before: page; }
