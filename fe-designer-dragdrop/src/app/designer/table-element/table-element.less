@@ -247,6 +247,45 @@
   }
 }
 
+.cell-selection-breadcrumb {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 6px;
+  border-radius: 999px;
+  background-color: fade(@background, 95%);
+  border: 1px solid fade(@foreground, 25%);
+  box-shadow: @shadow-sm;
+  pointer-events: auto;
+  z-index: @z-popover;
+
+  .breadcrumb-item {
+    border: none;
+    background: transparent;
+    color: @foreground;
+    font-size: 11px;
+    line-height: 1.2;
+    padding: 2px 6px;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: background-color @transition-fast, color @transition-fast;
+
+    &:hover,
+    &:focus-visible {
+      background-color: fade(@primary, 18%);
+      color: @primary;
+      outline: none;
+    }
+  }
+
+  .breadcrumb-separator {
+    font-size: 11px;
+    color: fade(@foreground, 50%);
+    user-select: none;
+  }
+}
+
 .cell-actions-trigger {
   position: absolute;
   width: 20px;

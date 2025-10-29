@@ -78,6 +78,28 @@
 
   @let cellOffsets = getSelectedCellOffsets();
   @if (cellOffsets) {
+    @let breadcrumb = getSelectedSubTableAncestors();
+    @if (breadcrumb.length) {
+      <div
+        class="cell-selection-breadcrumb"
+        [style.left.mm]="cellOffsets.left + cellOffsets.width / 2"
+        [style.top.mm]="cellOffsets.top > 4 ? cellOffsets.top - 4 : 0"
+        style="transform: translate(-50%, -100%);"
+      >
+        @for (crumb of breadcrumb; track crumb.level; let crumbIndex = $index) {
+          <button
+            type="button"
+            class="breadcrumb-item"
+            (click)="onBreadcrumbClick(crumb.path, $event)"
+            [title]="'Select ancestor level ' + crumb.label"
+          >{{ crumb.label }}</button>
+          @if (crumbIndex < breadcrumb.length - 1) {
+            <span class="breadcrumb-separator">&gt;</span>
+          }
+        }
+      </div>
+    }
+
     <!-- Actions trigger button (gear icon) -->
     <button
       class="cell-actions-trigger"

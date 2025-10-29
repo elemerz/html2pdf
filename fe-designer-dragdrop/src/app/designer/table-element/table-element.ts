@@ -304,6 +304,60 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
   }
 
   /**
+   * Builds breadcrumb items for the currently selected nested cell (excludes the active cell).
+   */
+  protected getSelectedSubTableAncestors(): Array<{ label: string; level: number; path: Array<{ row: number; col: number }> }> {
+    const selection = this.designerState.selectedTableCell();
+    if (!selection || selection.elementId !== this.element.id) {
+      return [];
+    }
+    const path = selection.subTablePath;
+    if (!path || path.length === 0) {
+      return [];
+    }
+
+    const crumbs: Array<{ label: string; level: number; path: Array<{ row: number; col: number }> }> = [
+      { label: 'L0', level: 0, path: [] },
+    ];
+
+    for (let index = 0; index < path.length - 1; index++) {
+      crumbs.push({
+        label: `L${index + 1}`,
+        level: index + 1,
+        path: path.slice(0, index + 1),
+      });
+    }
+
+    return crumbs;
+  }
+
+  /**
+   * Handles breadcrumb clicks to select ancestor nested cells.
+   */
+  protected onBreadcrumbClick(crumbPath: Array<{ row: number; col: number }>, event: MouseEvent): void {
+    event.stopPropagation();
+    event.preventDefault();
+
+    const selection = this.designerState.selectedTableCell();
+    if (!selection || selection.elementId !== this.element.id) {
+      return;
+    }
+    if (!selection.subTablePath || selection.subTablePath.length === 0) {
+      return;
+    }
+
+    const nextPath = crumbPath;
+    this.designerState.selectElement(this.element.id);
+    this.designerState.selectTableCell(
+      this.element.id,
+      selection.row,
+      selection.col,
+      nextPath.length > 0 ? nextPath : undefined
+    );
+    this.closeActionsToolbar();
+  }
+
+  /**
    * Retrieves the raw HTML content for the specified cell, navigating nested tables if required.
    */
   protected getCellContentRaw(row: number, col: number): string {
