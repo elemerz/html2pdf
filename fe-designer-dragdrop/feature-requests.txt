@@ -1,3 +1,6 @@
+Codex:   https://chatgpt.com/codex/settings/usage
+Copilot: 
+
 - Current Situation:
  - I can drag a table component from the Toolbar to the canvas.
  - I also can visually select a cell in the table by clicking it with the mouse.

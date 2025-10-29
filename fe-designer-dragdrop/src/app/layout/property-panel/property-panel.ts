@@ -210,13 +210,26 @@ export class PropertyPanelComponent {
     const selection = this.selectedTableCell();
     const el = this.selectedElement();
     if (!selection || !el || el.id !== selection.elementId) return null;
-    const map = el.properties?.['tableCellPadding'] as Record<string, number[]> | undefined;
-    const raw = map?.[this.cellKey(selection.row, selection.col)];
-    if (Array.isArray(raw) && raw.length === 4) {
-      const [top, right, bottom, left] = raw.map(v => (Number.isFinite(v) ? v : 0));
-      return { top, right, bottom, left };
+
+    const normalize = (raw: unknown) => {
+      if (Array.isArray(raw) && raw.length === 4) {
+        const [top, right, bottom, left] = raw.map(v => (Number.isFinite(v) ? v : 0));
+        return { top, right, bottom, left };
+      }
+      return { top: 0, right: 0, bottom: 0, left: 0 };
+    };
+
+    if (selection.subTablePath && selection.subTablePath.length > 0) {
+      const context = this.resolveNestedCellContext(el, selection);
+      if (!context) {
+        return { top: 0, right: 0, bottom: 0, left: 0 };
+      }
+      const nested = context.table.cellPadding as Record<string, number[]> | undefined;
+      return normalize(nested?.[context.cellKey]);
     }
-    return { top: 0, right: 0, bottom: 0, left: 0 };
+
+    const map = el.properties?.['tableCellPadding'] as Record<string, number[]> | undefined;
+    return normalize(map?.[this.cellKey(selection.row, selection.col)]);
   }
 
   /**
@@ -270,12 +283,52 @@ export class PropertyPanelComponent {
     const selection = this.selectedTableCell();
     const el = this.selectedElement();
     if (!selection || !el || el.id !== selection.elementId) return;
+    const indexMap: Record<'top' | 'right' | 'bottom' | 'left', number> = { top: 0, right: 1, bottom: 2, left: 3 };
+    const index = indexMap[side];
+    const safeValue = Math.max(0, Number.isFinite(value) ? value : 0);
+
+    if (selection.subTablePath && selection.subTablePath.length > 0) {
+      const parentKey = this.cellKey(selection.row, selection.col);
+      const subTables = (el.properties?.['tableCellSubTables'] as Record<string, any>) || {};
+      if (!subTables[parentKey]) {
+        return;
+      }
+
+      const clonedSubTables = JSON.parse(JSON.stringify(subTables)) as Record<string, any>;
+      let currentTable = clonedSubTables[parentKey];
+
+      for (let i = 0; i < selection.subTablePath.length; i++) {
+        const step = selection.subTablePath[i];
+        const stepKey = this.cellKey(step.row, step.col);
+        const isLast = i === selection.subTablePath.length - 1;
+
+        if (isLast) {
+          const paddingMap = (currentTable.cellPadding as Record<string, number[]>) || {};
+          const raw = paddingMap[stepKey];
+          const base = Array.isArray(raw) && raw.length === 4 ? raw : [0, 0, 0, 0];
+          const nextPadding = [...base];
+          nextPadding[index] = safeValue;
+          currentTable.cellPadding = { ...paddingMap, [stepKey]: nextPadding };
+        } else {
+          const nestedTables = currentTable.cellSubTables as Record<string, any> | undefined;
+          if (!nestedTables || !nestedTables[stepKey]) {
+            return;
+          }
+          currentTable = nestedTables[stepKey];
+        }
+      }
+
+      const nextProps = { ...(el.properties || {}), tableCellSubTables: clonedSubTables };
+      this.updateElement({ properties: nextProps });
+      return;
+    }
+
     const key = this.cellKey(selection.row, selection.col);
     const existing = (el.properties?.['tableCellPadding'] as Record<string, number[]>) || {};
-    const current = existing[key] || [0,0,0,0];
-    const indexMap: Record<string, number> = { top:0, right:1, bottom:2, left:3 };
-    const next = [...current];
-    next[indexMap[side]] = Math.max(0, Number.isFinite(value) ? value : 0);
+    const raw = existing[key];
+    const base = Array.isArray(raw) && raw.length === 4 ? raw : [0, 0, 0, 0];
+    const next = [...base];
+    next[index] = safeValue;
     const updated = { ...(el.properties||{}), tableCellPadding: { ...existing, [key]: next } };
     this.updateElement({ properties: updated });
   }
