@@ -2,6 +2,9 @@ import { Component, inject, signal, output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DesignerStateService, CanvasZoomMode } from '../../core/services/designer-state.service';
 
+/**
+ * Top menu bar that exposes application commands and delegates to the root component.
+ */
 @Component({
   selector: 'app-menu-bar',
   imports: [CommonModule],
@@ -30,58 +33,94 @@ export class MenuBarComponent {
   onZoomChange = output<CanvasZoomMode>();
   onCalibrate = output<void>();
 
+  /**
+   * Expands or collapses the requested menu depending on its current state.
+   */
   toggleMenu(menu: string) {
     this.openMenu.update(current => current === menu ? null : menu);
   }
 
+  /**
+   * Collapses any open menu flyout.
+   */
   closeMenu() {
     this.openMenu.set(null);
   }
 
+  /**
+   * Emits the new-layout action and closes the menu.
+   */
   handleNew() {
     this.onNew.emit();
     this.closeMenu();
   }
+  /**
+   * Emits the XHTML export action and closes the menu.
+   */
   handleExportAsXhtml() {
     this.onExportAsXhtml.emit();
     this.closeMenu();
   }
 
+  /**
+   * Emits the save-design action and closes the menu.
+   */
   handleSaveDesign() {
     this.onSaveDesign.emit();
     this.closeMenu();
   }
 
+  /**
+   * Emits the load-design action and closes the menu.
+   */
   handleLoadDesign() {
     this.onLoadDesign.emit();
     this.closeMenu();
   }
 
+  /**
+   * Emits the close-layout action and closes the menu.
+   */
   handleClose() {
     this.onClose.emit();
     this.closeMenu();
   }
 
+  /**
+   * Emits the undo action and closes the menu.
+   */
   handleUndo() {
     this.onUndo.emit();
     this.closeMenu();
   }
 
+  /**
+   * Emits the redo action and closes the menu.
+   */
   handleRedo() {
     this.onRedo.emit();
     this.closeMenu();
   }
 
+  /**
+   * Opens the options dialog and closes the menu.
+   */
   handleOptions() {
     this.onOptions.emit();
     this.closeMenu();
   }
 
+  /**
+   * Requests the screen calibration dialog and closes the menu.
+   */
   openCalibration() {
     this.onCalibrate.emit();
     this.closeMenu();
   }
 
+  /**
+   * Applies the selected zoom mode and notifies listeners.
+   */
   handleZoom(mode: CanvasZoomMode) {
     this.designerState.setCanvasZoomMode(mode);
     this.onZoomChange.emit(mode);

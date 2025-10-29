@@ -5,6 +5,9 @@ import { DragDropService } from '../../core/services/drag-drop.service';
 import { CanvasElementComponent } from '../canvas-element/canvas-element';
 import { createDefaultCanvasElement, MM_TO_PX, A4_WIDTH_MM, A4_HEIGHT_MM } from '../../shared/models/schema';
 
+/**
+ * Primary design surface that renders the report sheet and handles drag operations.
+ */
 @Component({
   selector: 'app-canvas',
   imports: [CommonModule, CanvasElementComponent],
@@ -63,6 +66,9 @@ export class CanvasComponent implements AfterViewInit, OnDestroy {
     }
   });
 
+  /**
+   * Sets up resize observers and initial canvas scaling once the view is ready.
+   */
   ngAfterViewInit() {
     this.viewInitialized = true;
     this.scheduleCanvasScaleUpdate();
@@ -74,17 +80,26 @@ export class CanvasComponent implements AfterViewInit, OnDestroy {
     }
   }
 
+  /**
+   * Tears down observers and reactive effects when the canvas is destroyed.
+   */
   ngOnDestroy() {
     this.resizeObserver?.disconnect();
     this.stopZoomEffect.destroy();
   }
 
   @HostListener('window:resize')
+  /**
+   * Reschedules a scale calculation when the host window resizes.
+   */
   onWindowResize() {
     this.scheduleCanvasScaleUpdate();
   }
 
   @HostListener('mousemove', ['$event'])
+  /**
+   * Tracks pointer movement to update cursor coordinates and drag ghosts.
+   */
   onMouseMove(event: MouseEvent) {
     const canvas = this.sheetRef?.nativeElement;
     if (!canvas) return;
@@ -138,6 +153,9 @@ export class CanvasComponent implements AfterViewInit, OnDestroy {
     }
   }
 
+  /**
+   * Handles drop events to instantiate new elements or reposition existing ones.
+   */
   onDrop(event: DragEvent) {
     event.preventDefault();
     const canvas = this.sheetRef?.nativeElement;
@@ -181,6 +199,9 @@ export class CanvasComponent implements AfterViewInit, OnDestroy {
     this.dragDropService.endDrag();
   }
 
+  /**
+   * Enables dropping by preventing the default browser handling.
+   */
   onDragOver(event: DragEvent) {
     event.preventDefault();
     if (event.dataTransfer) {
@@ -188,10 +209,16 @@ export class CanvasComponent implements AfterViewInit, OnDestroy {
     }
   }
 
+  /**
+   * Clears selection when the user clicks on an empty area.
+   */
   onCanvasClick() {
     this.designerState.selectElement(null);
   }
 
+  /**
+   * Debounces canvas scale recalculations to the next animation frame.
+   */
   private scheduleCanvasScaleUpdate() {
     if (this.scaleUpdateScheduled) return;
     this.scaleUpdateScheduled = true;
@@ -205,6 +232,9 @@ export class CanvasComponent implements AfterViewInit, OnDestroy {
     });
   }
 
+  /**
+   * Computes the appropriate canvas scale based on zoom mode and workspace bounds.
+   */
   private updateCanvasScale() {
     const workspaceEl = this.workspaceRef?.nativeElement;
     if (!workspaceEl || !this.sheetRef?.nativeElement) return;
@@ -243,6 +273,9 @@ export class CanvasComponent implements AfterViewInit, OnDestroy {
     this.designerState.setCanvasScale(scale);
   }
 
+  /**
+   * Restricts element coordinates to the printable region respecting gutters.
+   */
   private clampToContentArea(x: number, y: number, width: number, height: number) {
     const gutters = this.pageGutters();
     const contentWidth = Math.max(0, this.A4_WIDTH_MM - gutters.left - gutters.right);
@@ -268,6 +301,9 @@ export class CanvasComponent implements AfterViewInit, OnDestroy {
     };
   }
 
+  /**
+   * Snaps a coordinate within the allowed range using the logical grid size.
+   */
   private snapWithinBounds(value: number, min: number, max: number): number {
     const step = this.logicalGridSize();
     if (max <= min) {

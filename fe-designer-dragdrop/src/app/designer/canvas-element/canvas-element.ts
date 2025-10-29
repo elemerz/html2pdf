@@ -15,6 +15,9 @@ type ResizeHandle =
   | 'bottom-right'
   | 'bottom-left';
 
+/**
+ * Wrapper component for individual canvas elements supporting drag, resize, and context actions.
+ */
 @Component({
   selector: 'app-canvas-element',
   imports: [CommonModule, TableElementComponent, CellEditorDialogComponent],
@@ -32,10 +35,25 @@ export class CanvasElementComponent {
   @Input() mmToPx: number = 3.7795275591;
   @Input() pageGutters: PageGutters = { top: 0, right: 0, bottom: 0, left: 0 };
 
+  /**
+   * Positions the element horizontally in millimeters.
+   */
   @HostBinding('style.left') get left() { return `${this.element.x}mm`; }
+  /**
+   * Positions the element vertically in millimeters.
+   */
   @HostBinding('style.top') get top() { return `${this.element.y}mm`; }
+  /**
+   * Applies width styling in millimeters.
+   */
   @HostBinding('style.width') get width() { return `${this.element.width}mm`; }
+  /**
+   * Applies height styling in millimeters.
+   */
   @HostBinding('style.height') get height() { return `${this.element.height}mm`; }
+  /**
+   * Emits the semantic role as a data attribute for adjacency validation.
+   */
   @HostBinding('attr.data-role') get dataRole() { return this.element.properties?.['elementRole'] || null; }
 
   private elementRef = inject(ElementRef);
@@ -49,6 +67,9 @@ export class CanvasElementComponent {
   private activeResizeHandle: ResizeHandle | null = null;
   private resizeStart = { startX: 0, startY: 0, x: 0, y: 0, width: 0, height: 0 };
 
+  /**
+   * Selects the element unless the target is a nested cell that handles selection itself.
+   */
   onClick(event: MouseEvent) {
     const target = event.target as HTMLElement;
 
@@ -61,6 +82,9 @@ export class CanvasElementComponent {
     this.designerState.selectElement(this.element.id);
   }
 
+  /**
+   * Begins a drag operation when the user presses the primary mouse button.
+   */
   onMouseDown(event: MouseEvent) {
     if (event.button !== 0) return;
     event.stopPropagation();
@@ -76,6 +100,9 @@ export class CanvasElementComponent {
     };
   }
 
+  /**
+   * Initiates element resizing with the specified handle.
+   */
   onResizeMouseDown(handle: ResizeHandle, event: MouseEvent) {
     if (event.button !== 0) return;
     event.stopPropagation();
@@ -95,6 +122,9 @@ export class CanvasElementComponent {
   }
 
   @HostListener('document:mousemove', ['$event'])
+  /**
+   * Handles both resize and drag interactions as the pointer moves.
+   */
   onMouseMove(event: MouseEvent) {
     if (this.activeResizeHandle) {
       const deltaX = (event.clientX - this.resizeStart.startX) / this.mmToPx;
@@ -132,11 +162,17 @@ export class CanvasElementComponent {
   }
 
   @HostListener('document:mouseup')
+  /**
+   * Ends any active drag or resize gesture.
+   */
   onMouseUp() {
     this.isDragging = false;
     this.activeResizeHandle = null;
   }
 
+  /**
+   * Opens the context menu at the cursor location.
+   */
   onContextMenu(event: MouseEvent) {
     event.preventDefault();
     event.stopPropagation();
@@ -144,24 +180,39 @@ export class CanvasElementComponent {
     this.showContextMenu.set(true);
   }
 
+  /**
+   * Hides the element's context menu.
+   */
   closeContextMenu() {
     this.showContextMenu.set(false);
   }
 
+  /**
+   * Removes the element from the designer state.
+   */
   onDelete() {
     this.designerState.removeElement(this.element.id);
     this.closeContextMenu();
   }
 
+  /**
+   * Focuses the element in the property panel.
+   */
   onProperties() {
     this.designerState.selectElement(this.element.id);
     this.closeContextMenu();
   }
 
+  /**
+   * Snaps a measurement to the configured grid size.
+   */
   private snapToGrid(value: number): number {
     return Math.round(value / this.gridSize) * this.gridSize;
   }
 
+  /**
+   * Derives element resize deltas for the active handle and enforces constraints.
+   */
   private calculateResizeUpdates(handle: ResizeHandle, deltaX: number, deltaY: number): Partial<CanvasElement> | null {
     const resizeLeft = handle === 'left' || handle === 'top-left' || handle === 'bottom-left';
     const resizeRight = handle === 'right' || handle === 'top-right' || handle === 'bottom-right';
@@ -254,6 +305,9 @@ export class CanvasElementComponent {
     return updates;
   }
 
+  /**
+   * Restricts element coordinates so they remain within the page margins.
+   */
   private clampPosition(x: number, y: number, width: number, height: number) {
     const availableWidth = Math.max(0, this.getContentRight() - this.pageGutters.left);
     const availableHeight = Math.max(0, this.getContentBottom() - this.pageGutters.top);
@@ -272,14 +326,23 @@ export class CanvasElementComponent {
     };
   }
 
+  /**
+   * Computes the rightmost content coordinate respecting page gutters.
+   */
   private getContentRight(): number {
     return A4_WIDTH_MM - this.pageGutters.right;
   }
 
+  /**
+   * Computes the bottom-most content coordinate respecting page gutters.
+   */
   private getContentBottom(): number {
     return A4_HEIGHT_MM - this.pageGutters.bottom;
   }
 
+  /**
+   * Snaps a value between two bounds using the element grid size.
+   */
   private snapWithinBounds(value: number, min: number, max: number): number {
     if (max <= min) {
       return min;
@@ -297,6 +360,9 @@ export class CanvasElementComponent {
   }
 
   // Snap element edges to nearby other element edges if within threshold; prevent overlap.
+  /**
+   * Applies snapping to nearby elements to aid alignment and prevent overlap.
+   */
   private applyElementSnapping(x: number, y: number, width: number, height: number): { x: number; y: number } {
     const threshold = Math.max(1, this.gridSize); // snap threshold in mm
     const elements = this.designerState.elements();
@@ -380,19 +446,27 @@ export class CanvasElementComponent {
 
   protected showCellEditor = signal(false); // Reused for both table cells and div elements
 
+  /**
+   * Opens the rich-text editor for the currently selected table cell or element.
+   */
   protected onEditCellContent(): void {
     this.designerState.selectElement(this.element.id);
     this.showCellEditor.set(true);
   }
 
+  /**
+   * Persists edited HTML back onto the element and closes the editor.
+   */
   protected onCellEditorSaved(html: string): void {
     // html is already XHTML-ish; store raw so template binds via [innerHTML] without escaping
     this.designerState.updateElement(this.element.id, { content: html });
     this.showCellEditor.set(false);
   }
 
+  /**
+   * Closes the cell editor without saving changes.
+   */
   protected onCellEditorClosed(): void {
     this.showCellEditor.set(false);
   }
 }
-

@@ -5,6 +5,9 @@ import { DesignerStateService, PageGutters } from '../../../core/services/design
 
 type OptionsSection = 'page' | 'grid';
 
+/**
+ * Modal dialog that allows tuning canvas grid and page gutter settings.
+ */
 @Component({
   selector: 'app-options-dialog',
   imports: [CommonModule, FormsModule],
@@ -30,6 +33,9 @@ export class OptionsDialogComponent implements OnInit {
   protected pageGutterBottom = signal(10);
   protected pageGutterLeft = signal(10);
 
+  /**
+   * Seeds local signals with the current designer configuration.
+   */
   ngOnInit() {
     this.visualGridSize.set(this.designerState.visualGridSize());
     this.logicalGridSize.set(this.designerState.logicalGridSize());
@@ -37,10 +43,16 @@ export class OptionsDialogComponent implements OnInit {
     this.setPageGutterSignals(this.designerState.pageGutters());
   }
 
+  /**
+   * Closes the dialog without persisting changes.
+   */
   onCancel() {
     this.close.emit();
   }
 
+  /**
+   * Writes the edited settings back into designer state.
+   */
   onSave() {
     this.designerState.setVisualGridSize(this.visualGridSize());
     this.designerState.setLogicalGridSize(this.logicalGridSize());
@@ -54,14 +66,23 @@ export class OptionsDialogComponent implements OnInit {
     this.close.emit();
   }
 
+  /**
+   * Dismisses the dialog when the backdrop is clicked.
+   */
   onOverlayClick() {
     this.close.emit();
   }
 
+  /**
+   * Prevents dialog body clicks from bubbling to the overlay.
+   */
   onDialogClick(event: MouseEvent) {
     event.stopPropagation();
   }
 
+  /**
+   * Expands or collapses a configuration accordion section.
+   */
   toggleSection(section: OptionsSection) {
     this.expandedSections.update(current => ({
       ...current,
@@ -69,10 +90,16 @@ export class OptionsDialogComponent implements OnInit {
     }));
   }
 
+  /**
+   * Indicates whether a section is currently expanded.
+   */
   isSectionExpanded(section: OptionsSection): boolean {
     return this.expandedSections()[section];
   }
 
+  /**
+   * Synchronizes gutter signals with the provided value object.
+   */
   private setPageGutterSignals(gutters: PageGutters) {
     this.pageGutterTop.set(gutters.top);
     this.pageGutterRight.set(gutters.right);
@@ -80,6 +107,9 @@ export class OptionsDialogComponent implements OnInit {
     this.pageGutterLeft.set(gutters.left);
   }
 
+  /**
+   * Coerces various input types into a numeric value with safe fallbacks.
+   */
   protected coerceNumber(value: string | number | null | undefined): number {
     if (typeof value === 'number') {
       return Number.isNaN(value) ? 0 : value;

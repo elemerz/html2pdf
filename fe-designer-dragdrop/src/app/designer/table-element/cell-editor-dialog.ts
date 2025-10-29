@@ -4,6 +4,9 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { QuillModule } from 'ngx-quill';
 
+/**
+ * Draggable dialog that provides rich text editing for table cells via Quill.
+ */
 @Component({
   selector: 'app-cell-editor-dialog',
   standalone: true,
@@ -54,6 +57,9 @@ export class CellEditorDialogComponent implements OnInit {
     ]
   };
 
+  /**
+   * Captures the Quill instance and decorates the toolbar with custom controls.
+   */
   onEditorCreated(q: Quill) {
     this.quill = q;
     // Track selection to update spinner
@@ -108,11 +114,17 @@ export class CellEditorDialogComponent implements OnInit {
       }
     });
   }
+  /**
+   * Normalizes Quill output to XHTML-friendly markup.
+   */
   private quillHtmlToXhtml(html: string): string {
     //replace all <br> instances with their self-closing counterpart: <br/>:
     return html.replaceAll('<br>', '<br/>');
   }
 
+  /**
+   * Configures custom Quill attributors and seeds dialog state.
+   */
   ngOnInit(): void {
     // Configure Quill to use inline styles instead of CSS classes
     // This ensures proper CSS cascade with generic cell properties
@@ -218,6 +230,9 @@ export class CellEditorDialogComponent implements OnInit {
     this.contentValue = this.initialContent && this.initialContent !== '&nbsp;' ? this.initialContent : '';
   }
 
+  /**
+   * Starts tracking mouse movement to drag the dialog.
+   */
   beginDrag(ev: MouseEvent): void {
     if (ev.button !== 0) return; // only left button
     if (!this.dialogRoot) return;
@@ -241,6 +256,9 @@ export class CellEditorDialogComponent implements OnInit {
   }
 
   @HostListener('document:mouseup', ['$event'])
+  /**
+   * Stops dragging and persists the accumulated translation.
+   */
   endDrag(_: MouseEvent): void {
     if (this.dragging) {
       // finalize accumulated movement
@@ -253,6 +271,9 @@ export class CellEditorDialogComponent implements OnInit {
   }
 
   @HostListener('document:mousemove', ['$event'])
+  /**
+   * Applies live drag translations while the pointer moves.
+   */
   onDrag(ev: MouseEvent): void {
     if (!this.dragging) return;
     const el = this.dialogRoot.nativeElement;
@@ -267,6 +288,9 @@ export class CellEditorDialogComponent implements OnInit {
     el.style.transform = `translateX(-50%) translate(${tx}px, ${Math.max(0, ty)}px)`;
   }
 
+  /**
+   * Applies the currently selected font size to the Quill selection.
+   */
   applyFontSize(): void {
     if (!this.quill) return;
     const sizeVal = Math.min(120, Math.max(1, this.currentFontSize));
@@ -274,6 +298,9 @@ export class CellEditorDialogComponent implements OnInit {
     this.quill.format('size', sizeVal + 'pt');
   }
 
+  /**
+   * Emits sanitized editor contents and closes the dialog.
+   */
   save(): void {
     //const raw = this.contentValue && this.contentValue.trim().length ? this.contentValue : '&nbsp;';
     const raw = this.contentValue && this.contentValue.trim().length ? this.quill.root.innerHTML : '&nbsp;';
@@ -287,6 +314,9 @@ export class CellEditorDialogComponent implements OnInit {
     this.close();
   }
 
+  /**
+   * Emits the close event without persisting changes.
+   */
   close(): void {
     this.closed.emit();
   }

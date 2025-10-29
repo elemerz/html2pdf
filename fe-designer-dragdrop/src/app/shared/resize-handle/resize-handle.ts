@@ -1,5 +1,8 @@
 import { Component } from '@angular/core';
 
+/**
+ * Structural component representing a draggable resize handle.
+ */
 @Component({
   selector: 'app-resize-handle',
   imports: [],

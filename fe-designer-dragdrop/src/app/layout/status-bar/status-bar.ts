@@ -2,6 +2,9 @@ import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DesignerStateService } from '../../core/services/designer-state.service';
 
+/**
+ * Footer status bar that reflects cursor coordinates and contextual messages.
+ */
 @Component({
   selector: 'app-status-bar',
   imports: [CommonModule],

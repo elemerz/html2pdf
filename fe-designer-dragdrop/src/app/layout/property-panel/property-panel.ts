@@ -8,6 +8,9 @@ import { reconcileSizeArray, withTableSizes } from '../../shared/utils/table-uti
 type BorderSide = 'all' | 'top' | 'right' | 'bottom' | 'left';
 type BorderPart = 'width' | 'style' | 'color';
 
+/**
+ * Side panel that surfaces editable properties for the selected element or cell.
+ */
 @Component({
   selector: 'app-property-panel',
   imports: [CommonModule, FormsModule],
@@ -17,7 +20,13 @@ type BorderPart = 'width' | 'style' | 'color';
 })
 export class PropertyPanelComponent {
   protected collapsedSections: Record<string, boolean> = { general: false, table: false, cell: false };
+  /**
+   * Returns whether the requested accordion section is collapsed.
+   */
   collapsed(id: string): boolean { return !!this.collapsedSections[id]; }
+  /**
+   * Toggles the expansion state for a panel section.
+   */
   toggleSection(id: string): void { this.collapsedSections[id] = !this.collapsedSections[id]; }
   private designerState = inject(DesignerStateService);
   
@@ -26,6 +35,9 @@ export class PropertyPanelComponent {
   protected activeBorderPopover: BorderSide | null = null;
   protected borderStyleOptions: string[] = ['none', 'solid', 'dashed', 'dotted', 'double'];
   
+  /**
+   * Applies a partial update to the currently selected element.
+   */
   updateElement(updates: Partial<CanvasElement>) {
     const el = this.selectedElement();
     if (el) {
@@ -33,6 +45,9 @@ export class PropertyPanelComponent {
     }
   }
 
+  /**
+   * Merges the provided properties into the selected element's property bag.
+   */
   updateElementProperties(patch: Record<string, any>) {
     const el = this.selectedElement();
     if (!el) return;
@@ -40,6 +55,9 @@ export class PropertyPanelComponent {
     this.updateElement({ properties: nextProps });
   }
 
+  /**
+   * Updates the position fields for the selected element, clamping invalid values.
+   */
   updatePosition(x: number, y: number) {
     const el = this.selectedElement();
     if (!el) return;
@@ -49,6 +67,9 @@ export class PropertyPanelComponent {
     this.updateElement({ x: safeX, y: safeY });
   }
 
+  /**
+   * Updates the dimensions of the selected element with basic validation.
+   */
   updateSize(width: number, height: number) {
     const el = this.selectedElement();
     if (!el) return;
@@ -58,16 +79,25 @@ export class PropertyPanelComponent {
     this.updateElement({ width: safeWidth, height: safeHeight });
   }
 
+  /**
+   * Stores arbitrary string content on the selected element.
+   */
   updateContent(content: string) {
     const el = this.selectedElement();
     if (!el || el.content === content) return;
     this.updateElement({ content });
   }
 
+  /**
+   * Resolves the custom element identifier property.
+   */
   getElementId(element: CanvasElement): string {
     return element.properties?.['elementId'] || '';
   }
 
+  /**
+   * Persists the user-entered element identifier with trimming and length limits.
+   */
   updateElementId(value: string) {
     const el = this.selectedElement();
     if (!el) return;
@@ -75,16 +105,25 @@ export class PropertyPanelComponent {
     this.updateElementProperties({ elementId: trimmed });
   }
 
+  /**
+   * Retrieves the semantic role assigned to the element.
+   */
   getElementRole(element: CanvasElement): string {
     return element.properties?.['elementRole'] || '';
   }
 
+  /**
+   * Assigns a semantic role to the selected element.
+   */
   updateElementRole(value: string) {
     const el = this.selectedElement();
     if (!el) return;
     this.updateElementProperties({ elementRole: value });
   }
 
+  /**
+   * Adjusts row or column counts on table elements and reconciles size ratios.
+   */
   updateTableProperty(property: 'rows' | 'cols', value: number) {
     const el = this.selectedElement();
     if (!el || el.type !== 'table') return;
@@ -104,22 +143,34 @@ export class PropertyPanelComponent {
     const colSizes = reconcileSizeArray(el.properties?.['colSizes'], nextCols);
 
     const properties = withTableSizes(el, rowSizes, colSizes);
-    this.updateElement({ properties });
+   this.updateElement({ properties });
   }
 
+  /**
+   * Reads a numeric table dimension from element properties, applying defaults.
+   */
   tableProperty(element: CanvasElement, property: 'rows' | 'cols'): number {
     const value = element.properties?.[property];
     const parsed = typeof value === 'number' ? value : parseInt(value, 10);
     return Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
   }
 
+  /**
+   * Indicates whether the provided element is a table.
+   */
   isTable(element: CanvasElement | null): boolean {
     return !!element && element.type === 'table';
   }
 
   // Cell properties helpers
+  /**
+   * Builds the storage key used for cell-specific maps.
+   */
   private cellKey(row: number, col: number): string { return `${row}_${col}`; }
 
+  /**
+   * Traverses nested sub-table metadata to resolve the active cell context.
+   */
   private resolveNestedCellContext(el: CanvasElement, selection: TableCellSelection): { table: any; cellKey: string } | null {
     if (!selection.subTablePath || selection.subTablePath.length === 0) {
       return null;
@@ -152,6 +203,9 @@ export class PropertyPanelComponent {
     return null;
   }
 
+  /**
+   * Retrieves padding for the currently selected cell, defaulting to zeros.
+   */
   getSelectedCellPadding(): { top: number; right: number; bottom: number; left: number } | null {
     const selection = this.selectedTableCell();
     const el = this.selectedElement();
@@ -165,6 +219,9 @@ export class PropertyPanelComponent {
     return { top: 0, right: 0, bottom: 0, left: 0 };
   }
 
+  /**
+   * Resolves the horizontal alignment applied to the selected cell, including nested cells.
+   */
   getSelectedCellHAlign(): 'left' | 'center' | 'right' | null {
     const selection = this.selectedTableCell();
     const el = this.selectedElement();
@@ -184,6 +241,9 @@ export class PropertyPanelComponent {
     return value === 'center' || value === 'right' ? value : 'left';
   }
 
+  /**
+   * Resolves the vertical alignment applied to the selected cell, including nested cells.
+   */
   getSelectedCellVAlign(): 'top' | 'middle' | 'bottom' | null {
     const selection = this.selectedTableCell();
     const el = this.selectedElement();
@@ -203,6 +263,9 @@ export class PropertyPanelComponent {
     return value === 'middle' || value === 'bottom' ? value : 'top';
   }
 
+  /**
+   * Updates padding for a specific side of the selected cell.
+   */
   updateSelectedCellPadding(side: 'top' | 'right' | 'bottom' | 'left', value: number) {
     const selection = this.selectedTableCell();
     const el = this.selectedElement();
@@ -217,6 +280,9 @@ export class PropertyPanelComponent {
     this.updateElement({ properties: updated });
   }
 
+  /**
+   * Persists horizontal or vertical alignment for the selected cell, honoring nested tables.
+   */
   updateSelectedCellAlignment(kind: 'h' | 'v', value: string) {
     const selection = this.selectedTableCell();
     const el = this.selectedElement();
@@ -267,12 +333,18 @@ export class PropertyPanelComponent {
     this.updateElement({ properties: updated });
   }
 
+  /**
+   * Indicates whether a table cell is currently selected.
+   */
   hasSelectedCell(): boolean {
     const selection = this.selectedTableCell();
     const el = this.selectedElement();
     return !!selection && !!el && selection.elementId === el.id && el.type === 'table';
   }
 
+  /**
+   * Removes the currently selected canvas element.
+   */
   deleteElement() {
     const el = this.selectedElement();
     if (el) {
@@ -283,19 +355,31 @@ export class PropertyPanelComponent {
   // Removed table-level border helpers (migrated to cell-level)
 
   // Cell border helpers
+  /**
+   * Returns whether the border popover for the specified edge is visible.
+   */
   protected isBorderPopoverOpen(side: BorderSide): boolean {
     return this.activeBorderPopover === side;
   }
 
+  /**
+   * Toggles the visibility of an individual border popover.
+   */
   protected toggleBorderPopover(side: BorderSide, event: MouseEvent): void {
     event.stopPropagation();
     this.activeBorderPopover = this.activeBorderPopover === side ? null : side;
   }
 
+  /**
+   * Prevents popover clicks from bubbling and closing the editor.
+   */
   protected onBorderPopoverClick(event: MouseEvent): void {
     event.stopPropagation();
   }
 
+  /**
+   * Computes the effective border specification for the active cell and side.
+   */
   protected getBorderSpec(side: BorderSide): TableCellBorderSpec {
     const selection = this.selectedTableCell();
     const el = this.selectedElement();
@@ -321,15 +405,24 @@ export class PropertyPanelComponent {
     return this.composeBorderSpec(config, legacy, side);
   }
 
+  /**
+   * Handles inline editing events for border width, style, or color.
+   */
   protected onBorderInput(side: BorderSide, part: BorderPart, value: any): void {
     this.updateBorderSpec(side, part, value);
   }
 
   @HostListener('document:click')
+  /**
+   * Closes any active border popover when the user clicks elsewhere.
+   */
   closeBorderPopoverOnOutsideClick(): void {
     this.activeBorderPopover = null;
   }
 
+  /**
+   * Applies mutations to the border configuration maps for the selected cell.
+   */
   private updateBorderSpec(side: BorderSide, part: BorderPart, value: any): void {
     const selection = this.selectedTableCell();
     const el = this.selectedElement();
@@ -355,6 +448,9 @@ export class PropertyPanelComponent {
     }
   }
 
+  /**
+   * Writes border settings for root-level table cells.
+   */
   private applyRootBorderSpec(selection: TableCellSelection, el: CanvasElement, side: BorderSide, spec: TableCellBorderSpec): void {
     const key = this.cellKey(selection.row, selection.col);
     const existingMap = (el.properties?.['tableCellBorders'] as Record<string, TableCellBorderConfig>) || {};
@@ -431,6 +527,9 @@ export class PropertyPanelComponent {
     this.updateElement({ properties: nextProps });
   }
 
+  /**
+   * Writes border settings for nested sub-table cells.
+   */
   private applyNestedBorderSpec(selection: TableCellSelection, el: CanvasElement, side: BorderSide, spec: TableCellBorderSpec): void {
     const parentKey = this.cellKey(selection.row, selection.col);
     const subTables = (el.properties?.['tableCellSubTables'] as Record<string, any>) || {};
@@ -530,6 +629,9 @@ export class PropertyPanelComponent {
     this.updateElement({ properties: nextProps });
   }
 
+  /**
+   * Adapts legacy flat border maps for root-level cells into the new config structure.
+   */
   private legacyBorderSpecForRoot(el: CanvasElement, key: string): TableCellBorderSpec | null {
     const widthMap = el.properties?.['tableCellBorderWidth'] as Record<string, number> | undefined;
     const styleMap = el.properties?.['tableCellBorderStyle'] as Record<string, string> | undefined;
@@ -544,6 +646,9 @@ export class PropertyPanelComponent {
     };
   }
 
+  /**
+   * Adapts legacy flat border maps for nested cells into the new config structure.
+   */
   private legacyBorderSpecForNested(table: any, key: string): TableCellBorderSpec | null {
     const widthMap = table.cellBorderWidth as Record<string, number> | undefined;
     const styleMap = table.cellBorderStyle as Record<string, string> | undefined;
@@ -558,6 +663,9 @@ export class PropertyPanelComponent {
     };
   }
 
+  /**
+   * Combines explicit overrides and inherited defaults for a particular border side.
+   */
   private composeBorderSpec(config: TableCellBorderConfig | undefined, legacy: TableCellBorderSpec | null, side: BorderSide): TableCellBorderSpec {
     const base = this.normalizeBorderSpec(config?.all ?? legacy ?? this.defaultBorderSpec());
     if (side === 'all') {
@@ -570,6 +678,9 @@ export class PropertyPanelComponent {
     return this.normalizeBorderSpec(override);
   }
 
+  /**
+   * Fills in missing border fields with safe defaults.
+   */
   private normalizeBorderSpec(spec?: TableCellBorderSpec | null): TableCellBorderSpec {
     if (!spec) {
       return this.defaultBorderSpec();
@@ -581,10 +692,16 @@ export class PropertyPanelComponent {
     };
   }
 
+  /**
+   * Provides the default border shape used when nothing is configured.
+   */
   private defaultBorderSpec(): TableCellBorderSpec {
     return { width: 0, style: 'solid', color: '#000000' };
   }
 
+  /**
+   * Compares two border specs for value equality.
+   */
   private borderSpecsEqual(a?: TableCellBorderSpec, b?: TableCellBorderSpec): boolean {
     if (!a || !b) {
       return false;
@@ -593,6 +710,9 @@ export class PropertyPanelComponent {
   }
 
   // Cell font helpers
+  /**
+   * Returns the font style for the selected cell or a sensible default.
+   */
   getSelectedCellFontStyle(): string | null {
     const selection = this.selectedTableCell();
     const el = this.selectedElement();
@@ -601,6 +721,9 @@ export class PropertyPanelComponent {
     const v = map?.[this.cellKey(selection.row, selection.col)];
     return typeof v === 'string' ? v : 'normal';
   }
+  /**
+   * Returns the font weight for the selected cell or a sensible default.
+   */
   getSelectedCellFontWeight(): string | null {
     const selection = this.selectedTableCell();
     const el = this.selectedElement();
@@ -609,6 +732,9 @@ export class PropertyPanelComponent {
     const v = map?.[this.cellKey(selection.row, selection.col)];
     return typeof v === 'string' ? v : 'normal';
   }
+  /**
+   * Returns the font size applied to the selected cell content.
+   */
   getSelectedCellFontSize(): number | null {
     const selection = this.selectedTableCell();
     const el = this.selectedElement();
@@ -617,6 +743,9 @@ export class PropertyPanelComponent {
     const v = map?.[this.cellKey(selection.row, selection.col)];
     return Number.isFinite(v) ? v! : 9;
   }
+  /**
+   * Returns the line height configured for the selected cell.
+   */
   getSelectedCellLineHeight(): number | null {
     const selection = this.selectedTableCell();
     const el = this.selectedElement();
@@ -625,6 +754,9 @@ export class PropertyPanelComponent {
     const v = map?.[this.cellKey(selection.row, selection.col)];
     return Number.isFinite(v) ? v! : 1;
   }
+  /**
+   * Returns the font family for the selected cell, defaulting to Roboto.
+   */
   getSelectedCellFontFamily(): string | null {
     const selection = this.selectedTableCell();
     const el = this.selectedElement();
@@ -633,6 +765,9 @@ export class PropertyPanelComponent {
     const v = map?.[this.cellKey(selection.row, selection.col)];
     return typeof v === 'string' && v.length > 0 ? v : 'Roboto, sans-serif';
   }
+  /**
+   * Returns the text decoration set for the selected cell.
+   */
   getSelectedCellTextDecoration(): string | null {
     const selection = this.selectedTableCell();
     const el = this.selectedElement();
@@ -641,6 +776,9 @@ export class PropertyPanelComponent {
     const v = map?.[this.cellKey(selection.row, selection.col)];
     return typeof v === 'string' ? v : 'none';
   }
+  /**
+   * Updates a specific font-related attribute for the selected cell.
+   */
   updateSelectedCellFont(part: 'style' | 'weight' | 'size' | 'lineHeight' | 'family' | 'decoration', value: any) {
     const selection = this.selectedTableCell();
     const el = this.selectedElement();
@@ -681,6 +819,9 @@ export class PropertyPanelComponent {
     this.updateElement({ properties: nextProps });
   }
 
+  /**
+   * Sanitizes numeric input, falling back when the value is not finite.
+   */
   private normalizeNumber(value: number, fallback: number = 0): number {
     if (Number.isFinite(value)) {
       return value;

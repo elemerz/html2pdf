@@ -11,6 +11,9 @@ import { OptionsDialogComponent } from './shared/dialogs/options-dialog/options-
 import { ScreenCalibrationDialogComponent } from './shared/dialogs/screen-calibration/screen-calibration-dialog';
 import { ReportLayout } from './shared/models/schema';
 
+/**
+ * Root application shell responsible for wiring together layout chrome and handling global menu actions.
+ */
 @Component({
   selector: 'app-root',
   imports: [
@@ -49,6 +52,9 @@ export class App {
   protected canRedo = this.designerState.canRedo;
 
   // Menu bar handlers
+  /**
+   * Resets the current layout after user confirmation and clears designer state.
+   */
   onNewLayout(): void {
     if (confirm('Clear the current layout?')) {
       this.designerState.clearLayout();
@@ -56,10 +62,16 @@ export class App {
     }
   }
 
+  /**
+   * Opens the save dialog to capture export parameters.
+   */
   onSaveLayout(): void {
     this.showSaveDialog.set(true);
   }
 
+  /**
+   * Prompts the user for an XHTML file and loads it into the designer state.
+   */
   onOpenLayout(): void {
     const input = document.createElement('input');
     input.type = 'file';
@@ -93,6 +105,9 @@ export class App {
     input.click();
   }
 
+  /**
+   * Clears the current layout when the user confirms closing it.
+   */
   onCloseLayout(): void {
     if (confirm('Close the current layout?')) {
       this.designerState.clearLayout();
@@ -100,6 +115,9 @@ export class App {
     }
   }
 
+  /**
+   * Exports the current design as JSON for later re-import.
+   */
   onSaveDesign(): void {
     const defaultName = this.designerState.currentLayout().name || 'layout';
     const entered = prompt('Enter report design file name', defaultName);
@@ -109,6 +127,9 @@ export class App {
     this.designerState.setStatusMessage('Report design saved');
   }
 
+  /**
+   * Loads a previously exported design JSON file into the designer.
+   */
   onLoadDesign(): void {
     const input = document.createElement('input');
     input.type = 'file';
@@ -132,23 +153,38 @@ export class App {
     input.click();
   }
 
+  /**
+   * Steps the undo stack back by one entry.
+   */
   onUndo(): void {
     this.designerState.undo();
   }
 
+  /**
+   * Reapplies the most recent undone action.
+   */
   onRedo(): void {
     this.designerState.redo();
   }
 
+  /**
+   * Shows the options dialog so the user can adjust global settings.
+   */
   onOptions(): void {
     this.showOptionsDialog.set(true);
   }
 
+  /**
+   * Opens the screen calibration dialog to adjust true-to-size rendering.
+   */
   onCalibrateScreen(): void {
     this.showCalibrationDialog.set(true);
   }
 
   // Dialog handlers
+  /**
+   * Generates the XHTML export for the provided name and triggers file download.
+   */
   handleSave(name: string): void {
     const trimmedName = name.trim() || 'layout';
     try {
@@ -169,18 +205,30 @@ export class App {
     }
   }
 
+  /**
+   * Hides the save dialog without performing any action.
+   */
   closeSaveDialog(): void {
     this.showSaveDialog.set(false);
   }
 
+  /**
+   * Dismisses the options dialog overlay.
+   */
   closeOptionsDialog(): void {
     this.showOptionsDialog.set(false);
   }
 
+  /**
+   * Dismisses the screen calibration dialog overlay.
+   */
   closeCalibrationDialog(): void {
     this.showCalibrationDialog.set(false);
   }
 
+  /**
+   * Emits a synthetic download for the provided payload using a temporary anchor element.
+   */
   private triggerDownload(filename: string, content: string, mimeType: string): void {
     const blob = new Blob([content], { type: mimeType });
     const url = URL.createObjectURL(blob);

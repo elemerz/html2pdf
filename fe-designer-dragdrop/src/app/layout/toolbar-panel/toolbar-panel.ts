@@ -3,6 +3,9 @@ import { CommonModule } from '@angular/common';
 import { toolbarElements, ToolbarElement, ToolbarCategory } from '../../shared/models/schema';
 import { DragDropService } from '../../core/services/drag-drop.service';
 
+/**
+ * Collapsible toolbar that exposes draggable building blocks for the report canvas.
+ */
 @Component({
   selector: 'app-toolbar-panel',
   imports: [CommonModule],
@@ -25,14 +28,23 @@ export class ToolbarPanelComponent {
     { id: 'manage-images', label: 'Manage Images', passive: true }
   ];
 
+  /**
+   * Returns toolbar entries belonging to the requested category.
+   */
   getElementsForCategory(category: string): ToolbarElement[] {
     return this.toolbarElements.filter(el => el.category === category);
   }
 
+  /**
+   * Expands or collapses a category accordion section.
+   */
   toggleCategory(category: string) {
     this.expandedCategory.update(current => current === category ? null : category);
   }
 
+  /**
+   * Initiates a toolbar drag operation and seeds the drag-drop service with ghost metadata.
+   */
   onDragStart(event: DragEvent, element: ToolbarElement) {
     if (event.dataTransfer) {
       event.dataTransfer.effectAllowed = 'copy';
@@ -54,6 +66,9 @@ export class ToolbarPanelComponent {
     );
   }
 
+  /**
+   * Signals the drag-drop service to reset once the drag concludes.
+   */
   onDragEnd() {
     this.dragDropService.endDrag();
   }

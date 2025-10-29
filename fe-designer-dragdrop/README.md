@@ -1,59 +1,62 @@
-# AngularApp
+# Report Template Designer
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 20.3.4.
+This Angular 20 application provides a drag-and-drop editor for composing printable HTML report templates. Designers can place layout tables, nest sub-tables up to five levels deep, edit rich text via a Quill-powered dialog, and export the result as XHTML or JSON for further processing.
 
-## Development server
+## Requirements
 
-To start a local development server, run:
+- Node.js 20+
+- npm 10+
+- Java 21 (required for the Spring Boot backend)
 
-```bash
-ng serve
-```
+## Getting Started
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
-
-## Code scaffolding
-
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+Install dependencies:
 
 ```bash
-ng generate component component-name
+npm ci
 ```
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+Start the frontend dev server:
 
 ```bash
-ng generate --help
+npm run start
 ```
 
-## Building
-
-To build the project run:
+Start the Spring Boot backend (from the project root):
 
 ```bash
-ng build
+./gradlew bootRun
 ```
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
+The frontend proxies API requests to the backend using `proxy.conf.json` during development.
 
-## Running unit tests
+## Scripts
 
-To execute unit tests with the [Karma](https://karma-runner.github.io) test runner, use the following command:
+- `npm run start` – runs Vite in dev mode with HMR.
+- `npm run build` – produces an optimized production build in `dist/`.
+- `npm run test -- --watch=false` – executes Angular unit tests once.
+
+## Testing Backend
+
+Run backend unit tests with:
 
 ```bash
-ng test
+./gradlew test
 ```
 
-## Running end-to-end tests
+## Project Structure Highlights
 
-For end-to-end (e2e) testing, run:
+- `src/app/designer` – canvas, table rendering, and editing UI.
+- `src/app/layout` – application chrome (menus, toolbars, dialogs).
+- `src/app/core/services` – shared state management, API clients, and resource loaders.
+- `src/app/shared` – reusable dialogs, models, and utilities.
 
-```bash
-ng e2e
-```
+## Export & Import
 
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
+- **Export XHTML** – generates printable markup honoring table roles (`header`, `report-body`, `footer`).
+- **Save Design** – creates a JSON snapshot you can re-import later.
+- **Import XHTML/JSON** – the menu supports importing previously exported layouts or designs.
 
-## Additional Resources
+## Screen Calibration
 
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+Use the *Calibrate Screen* option in the menu to adjust canvas scaling so on-screen measurements match physical millimeters. The calibration scale is stored in `localStorage` and reused on subsequent sessions.

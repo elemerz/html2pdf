@@ -25,6 +25,9 @@ type BorderSide = 'all' | 'top' | 'right' | 'bottom' | 'left';
 
 export type CanvasZoomMode = 'fit' | 'width' | 'height' | 'actual';
 
+/**
+ * Central store for designer state, including layout data, history, and export helpers.
+ */
 @Injectable({
   providedIn: 'root'
 })
@@ -81,6 +84,9 @@ export class DesignerStateService {
     left: 10
   });
 
+  /**
+   * Initializes default state, loads persisted calibration, and hooks auto-save effect.
+   */
   constructor() {
     // Initialize history with empty state
     this.addToHistory([]);
@@ -106,6 +112,9 @@ export class DesignerStateService {
   }
 
   // Layout management
+  /**
+   * Replaces the current layout state and resets history and selections.
+   */
   setLayout(layout: ReportLayout) {
     this.currentLayoutSignal.set(layout);
     this.elementsSignal.set(layout.elements);
@@ -115,11 +124,17 @@ export class DesignerStateService {
     this.clearTableCellSelection();
   }
 
+  /**
+   * Updates the layout's display name without touching element history.
+   */
   updateLayoutName(name: string) {
     this.currentLayoutSignal.update(layout => ({ ...layout, name }));
   }
 
   // Element management
+  /**
+   * Adds a new element to the canvas and records the change in history.
+   */
   addElement(element: CanvasElement) {
     const gutters = this.pageGutters();
     const clampedElement = this.clampElementToMargins(element, gutters);
@@ -129,6 +144,9 @@ export class DesignerStateService {
     this.clearTableCellSelection();
   }
 
+  /**
+   * Applies partial updates to an element and ensures it remains within margins.
+   */
   updateElement(id: string, updates: Partial<CanvasElement>) {
     const gutters = this.pageGutters();
     this.elementsSignal.update(elements =>
@@ -142,6 +160,9 @@ export class DesignerStateService {
     this.ensureTableCellSelectionInBounds(id);
   }
 
+  /**
+   * Removes an element by id and clears related selections.
+   */
   removeElement(id: string) {
     this.elementsSignal.update(elements => elements.filter(el => el.id !== id));
     this.addToHistory(this.elementsSignal());
@@ -154,6 +175,9 @@ export class DesignerStateService {
     }
   }
 
+  /**
+   * Updates the selected element, clearing cell selection when appropriate.
+   */
   selectElement(id: string | null) {
     this.selectedElementIdSignal.set(id);
     const cellSelection = this.selectedTableCellSignal();
@@ -162,6 +186,9 @@ export class DesignerStateService {
     }
   }
 
+  /**
+   * Stores a table cell selection with bounds checking for row and column values.
+   */
   selectTableCell(elementId: string, row: number, col: number, subTablePath?: Array<{row: number; col: number}>) {
     const element = this.elementsSignal().find(el => el.id === elementId);
     if (!element) {
@@ -187,10 +214,16 @@ export class DesignerStateService {
     });
   }
 
+  /**
+   * Clears the current table cell selection.
+   */
   clearTableCellSelection() {
     this.selectedTableCellSignal.set(null);
   }
 
+  /**
+   * Removes all canvas elements and resets history and selection state.
+   */
   clearElements() {
     this.elementsSignal.set([]);
     this.selectedElementIdSignal.set(null);
@@ -199,6 +232,9 @@ export class DesignerStateService {
     this.clearTableCellSelection();
   }
 
+  /**
+   * Loads a layout from persisted data and resets history.
+   */
   loadLayout(layout: ReportLayout) {
     this.currentLayoutSignal.set(layout);
     this.elementsSignal.set(JSON.parse(JSON.stringify(layout.elements)));
@@ -209,6 +245,9 @@ export class DesignerStateService {
     this.clearTableCellSelection();
   }
 
+  /**
+   * Restores the default empty layout and clears selections.
+   */
   clearLayout() {
     const defaultLayout = createDefaultLayout();
     this.currentLayoutSignal.set(defaultLayout);
@@ -220,6 +259,9 @@ export class DesignerStateService {
   }
 
   // History management
+  /**
+   * Pushes a deep-cloned snapshot of elements onto the undo stack.
+   */
   private addToHistory(elements: CanvasElement[]) {
     const currentIndex = this.historyIndexSignal();
     const history = this.historySignal().slice(0, currentIndex + 1);
@@ -233,11 +275,17 @@ export class DesignerStateService {
     this.historyIndexSignal.set(history.length);
   }
 
+  /**
+   * Resets the undo/redo history.
+   */
   private clearHistory() {
     this.historySignal.set([]);
     this.historyIndexSignal.set(-1);
   }
 
+  /**
+   * Ensures the selected table cell remains valid after element mutations.
+   */
   private ensureTableCellSelectionInBounds(elementId: string) {
     const selection = this.selectedTableCellSignal();
     if (!selection || selection.elementId !== elementId) {
@@ -266,6 +314,9 @@ export class DesignerStateService {
     }
   }
 
+  /**
+   * Restores the previous history snapshot if available.
+   */
   undo() {
     if (!this.canUndo()) return;
 
@@ -278,6 +329,9 @@ export class DesignerStateService {
     this.clearTableCellSelection();
   }
 
+  /**
+   * Reapplies the next history snapshot if available.
+   */
   redo() {
     if (!this.canRedo()) return;
 
@@ -291,40 +345,67 @@ export class DesignerStateService {
   }
 
   // Status updates
+  /**
+   * Updates the status bar message.
+   */
   setStatusMessage(message: string) {
     this.statusMessage.set(message);
   }
 
+  /**
+   * Stores the latest cursor position in millimeters.
+   */
   setCursorPosition(x: number, y: number) {
     this.cursorPosition.set({ x, y });
   }
 
   // Panel controls
+  /**
+   * Toggles the collapsed state of the west panel.
+   */
   toggleWestPanel() {
     this.westCollapsed.update(v => !v);
   }
 
+  /**
+   * Toggles the collapsed state of the east panel.
+   */
   toggleEastPanel() {
     this.eastCollapsed.update(v => !v);
   }
 
+  /**
+   * Sets the width of the west panel.
+   */
   setWestWidth(width: number) {
     this.westWidth.set(width);
   }
 
+  /**
+   * Sets the width of the east panel.
+   */
   setEastWidth(width: number) {
     this.eastWidth.set(width);
   }
 
   // Grid configuration
+  /**
+   * Updates the visible grid spacing in millimeters.
+   */
   setVisualGridSize(size: number) {
     this.visualGridSize.set(Math.max(1, size));
   }
 
+  /**
+   * Updates the logical snap grid spacing in millimeters.
+   */
   setLogicalGridSize(size: number) {
     this.logicalGridSize.set(Math.max(1, size));
   }
 
+  /**
+   * Sets the canvas zoom scale, enforcing a minimum value.
+   */
   setCanvasScale(scale: number) {
     const normalized = Math.max(0.1, scale);
     if (this.canvasScale() !== normalized) {
@@ -332,20 +413,32 @@ export class DesignerStateService {
     }
   }
 
+  /**
+   * Updates the visual grid color.
+   */
   setVisualGridColor(color: string) {
     if (!color) return;
     this.visualGridColor.set(color);
   }
 
+  /**
+   * Switches the canvas zoom mode used for automatic scaling.
+   */
   setCanvasZoomMode(mode: CanvasZoomMode) {
     this.canvasZoomMode.set(mode);
   }
 
+  /**
+   * Stores the monitor calibration scale factor.
+   */
   setCalibrationScale(scale: number) {
     if (!Number.isFinite(scale) || scale <= 0) scale = 1;
     this.calibrationScale.set(scale);
   }
 
+  /**
+   * Adjusts page gutter settings and clamps elements to the new bounds.
+   */
   setPageGutters(gutters: PageGutters) {
     const normalized = this.normalizePageGutters(gutters);
     this.pageGutters.set(normalized);
@@ -356,9 +449,7 @@ export class DesignerStateService {
   }
 
   /**
-   * Validate that elements with the same role are adjacent
-   * Uses CSS queries on the actual DOM to detect intercalations
-   * Throws error if validation fails
+   * Validates that elements with matching roles are grouped contiguously.
    */
   private validateRoleAdjacency(elements: CanvasElement[]): void {
     const roledElements = elements.filter(el => el.properties?.['elementRole']);
@@ -402,6 +493,9 @@ export class DesignerStateService {
     }
   }
 
+  /**
+   * Serializes the current layout into an XHTML document string.
+   */
   generateXhtmlDocument(title: string): string {
     const safeTitle = this.escapeHtml(title || 'Layout');
     const elements = [...this.elementsSignal()];
@@ -510,6 +604,9 @@ export class DesignerStateService {
     return xhtml;
   }
 
+  /**
+   * Ensures XHTML compliance by converting bare <img> tags to paired tags.
+   */
   private ensureImageTagsClosed(html: string): string {
     // Replace <img ...> that do not self-close or already have </img>
     // Pattern: <img ...> (not followed immediately by </img>)
@@ -517,12 +614,18 @@ export class DesignerStateService {
   }
 
   private a4StylesCache: string | null = null; // Set by preload provider
+  /**
+   * Caches the common A4 stylesheet shared across exports.
+   */
   setA4CommonStyles(css: string): void {
     if (css && css.trim().length) {
       this.a4StylesCache = css;
     }
   }
 
+  /**
+   * Retrieves the cached A4 stylesheet, falling back to defaults.
+   */
   private getA4CommonStyles(): string {
     if (this.a4StylesCache) {
       return this.a4StylesCache;
@@ -532,6 +635,9 @@ export class DesignerStateService {
     return this.a4StylesCache;
   }
 
+  /**
+   * Converts a non-table canvas element into XHTML markup.
+   */
   private serializeElementToXhtml(element: CanvasElement): string {
     const style = `left:${element.x}mm;top:${element.y}mm;width:${element.width}mm;height:${element.height}mm;`;
 
@@ -551,6 +657,9 @@ export class DesignerStateService {
     }
   }
 
+  /**
+   * Renders a table element into XHTML, optionally including role data attributes.
+   */
   private serializeTableElement(element: CanvasElement, style: string, includeDataRole: boolean = true): string {
     const rowSizes = getTableRowSizes(element);
     const colSizes = getTableColSizes(element);
@@ -649,6 +758,9 @@ export class DesignerStateService {
       `    <tbody>\n${rowsMarkup}\n    </tbody>\n  </table>`;
   }
 
+  /**
+   * Serializes a nested sub-table structure into XHTML.
+   */
   private serializeSubTable(subTable: any, parentWidthMm: number, parentHeightMm: number): string {
     const rows = subTable.rows || 1;
     const cols = subTable.cols || 1;
@@ -718,6 +830,9 @@ export class DesignerStateService {
     return `<table style="width:100%;height:100%;border-collapse:collapse;">\n      <tbody>\n${rowsMarkup}\n      </tbody>\n    </table>`;
   }
 
+  /**
+   * Escapes and normalizes cell content for XHTML output.
+   */
   private formatContent(content: string | undefined | null): string {
     const escaped = this.escapeHtml(content ?? '');
     const withBreaks = escaped.replace(/\r?\n/g, '<br />');
@@ -725,6 +840,9 @@ export class DesignerStateService {
     return normalized.length ? normalized : '&#160;'; // Use numeric nbsp entity for XHTML compliance
   }
 
+  /**
+   * Retrieves table dimensions from properties, applying fallbacks.
+   */
   private getTableDimension(element: CanvasElement, property: 'rows' | 'cols'): number {
     if (property === 'rows') {
       const sizes = element.properties?.['rowSizes'];
@@ -743,6 +861,9 @@ export class DesignerStateService {
     return Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
   }
 
+  /**
+   * Escapes special characters for safe embedding in XHTML.
+   */
   private escapeHtml(value: string): string {
     return value
       .replace(/&/g, '&amp;')
@@ -752,6 +873,9 @@ export class DesignerStateService {
       .replace(/'/g, '&#39;');
   }
 
+  /**
+   * Formats millimeter measurements with limited precision for CSS output.
+   */
   private formatMillimeters(value: number): string {
     if (!Number.isFinite(value)) {
       return '0';
@@ -759,6 +883,9 @@ export class DesignerStateService {
     return (Math.round(value * 1000) / 1000).toString();
   }
 
+  /**
+   * Clamps gutter values to ensure the content area remains positive.
+   */
   private normalizePageGutters(gutters: PageGutters): PageGutters {
     const minContent = Math.max(1, Math.round(this.logicalGridSize()));
 
@@ -792,6 +919,9 @@ export class DesignerStateService {
     };
   }
 
+  /**
+   * Clamps every element to the allowable page area, returning whether any changes occurred.
+   */
   private clampElementsToMargins(gutters: PageGutters): boolean {
     const contentWidth = Math.max(1, A4_WIDTH_MM - gutters.left - gutters.right);
     const contentHeight = Math.max(1, A4_HEIGHT_MM - gutters.top - gutters.bottom);
@@ -814,6 +944,9 @@ export class DesignerStateService {
     return changed;
   }
 
+  /**
+   * Restricts a single element's bounds to the printable region.
+   */
   private clampElementToMargins(
     element: CanvasElement,
     gutters: PageGutters,
@@ -868,6 +1001,9 @@ export class DesignerStateService {
     return element;
   }
 
+  /**
+   * Snaps a numeric value to the grid while staying within provided bounds.
+   */
   private snapValueWithinBounds(value: number, min: number, max: number): number {
     if (max <= min) {
       return min;
@@ -887,6 +1023,9 @@ export class DesignerStateService {
 
   /**
    * Parse XHTML document and convert it back to a ReportLayout
+   */
+  /**
+   * Parses an exported XHTML document back into designer layout data.
    */
   parseXhtmlToLayout(xhtmlContent: string, filename: string): ReportLayout {
     const parser = new DOMParser();
@@ -966,6 +1105,9 @@ export class DesignerStateService {
     };
   }
   
+  /**
+   * Converts a DOM element into the corresponding canvas element representation.
+   */
   private parseXhtmlElement(elem: HTMLElement, idCounter: number): CanvasElement | null {
     const tagName = elem.tagName.toLowerCase();
     
@@ -999,6 +1141,9 @@ export class DesignerStateService {
     };
   }
   
+  /**
+   * Reconstructs a canvas table element from an XHTML table node.
+   */
   private parseXhtmlTable(table: HTMLElement, idCounter: number, overrideRole?: string): CanvasElement | null {
     const style = table.getAttribute('style') || '';
     const position = this.parseStylePosition(style, true);
@@ -1234,6 +1379,9 @@ export class DesignerStateService {
     };
   }
 
+  /**
+   * Recursively parses nested tables found within table cells.
+   */
   private parseNestedSubTable(table: HTMLElement, parentWidthMm: number, parentHeightMm: number, level: number): any | null {
     const tbody = table.querySelector('tbody');
     if (!tbody) {
@@ -1422,6 +1570,9 @@ export class DesignerStateService {
     };
   }
   
+  /**
+   * Extracts positioning information from inline style declarations.
+   */
   private parseStylePosition(style: string, isTable: boolean = false): { x: number; y: number; width: number; height: number } | null {
     // For tables, look for margin-top and margin-left (flow positioning)
     // For other elements, look for left/top (absolute positioning)
@@ -1462,10 +1613,16 @@ export class DesignerStateService {
     return { x, y, width, height };
   }
 
+  /**
+   * Provides a default border spec for cases where none is present.
+   */
   private defaultBorderSpec(): TableCellBorderSpec {
     return { width: 0, style: 'solid', color: '#000000' };
   }
 
+  /**
+   * Normalizes missing border spec values to safe defaults.
+   */
   private normalizeBorderSpec(spec?: TableCellBorderSpec | null): TableCellBorderSpec {
     if (!spec) {
       return this.defaultBorderSpec();
@@ -1477,6 +1634,9 @@ export class DesignerStateService {
     };
   }
 
+  /**
+   * Builds a border spec using legacy width/style/color maps.
+   */
   private legacyBorderSpecFromMaps(
     widthMap: Record<string, number> | undefined,
     styleMap: Record<string, string> | undefined,
@@ -1493,6 +1653,9 @@ export class DesignerStateService {
     };
   }
 
+  /**
+   * Merges per-side overrides with an inherited border baseline.
+   */
   private composeBorderSpec(
     config: TableCellBorderConfig | undefined,
     legacy: TableCellBorderSpec | null,
@@ -1509,6 +1672,9 @@ export class DesignerStateService {
     return this.normalizeBorderSpec(override);
   }
 
+  /**
+   * Converts a border spec to a CSS shorthand string.
+   */
   private borderSpecToCss(spec: TableCellBorderSpec): string {
     if (spec.width <= 0 || spec.style === 'none') {
       return 'none';
@@ -1516,12 +1682,18 @@ export class DesignerStateService {
     return `${spec.width}px ${spec.style} ${spec.color}`;
   }
   
+  /**
+   * Parses numeric values from inline style strings, handling units.
+   */
   private parseStyleValue(value: string): number {
     const match = value.match(/([0-9.]+)/);
     return match ? parseFloat(match[1]) : 0;
   }
 
   // Export current design to JSON
+  /**
+   * Serializes the current designer state to JSON for persistence.
+   */
   exportDesign(): string {
     // Ensure layout.elements reflects current elements
     const layout = { ...this.currentLayoutSignal(), elements: this.elementsSignal() };
@@ -1538,6 +1710,9 @@ export class DesignerStateService {
   }
 
   // Import design JSON
+  /**
+   * Loads a designer state from a JSON export.
+   */
   importDesign(jsonContent: string): void {
     const parsed = JSON.parse(jsonContent);
     if (!parsed || typeof parsed !== 'object') {

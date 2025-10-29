@@ -10,6 +10,9 @@ export interface DragState {
   pointerOffset: { x: number; y: number } | null;
 }
 
+/**
+ * Centralized drag-drop state shared between toolbar and canvas interactions.
+ */
 @Injectable({
   providedIn: 'root'
 })
@@ -25,7 +28,9 @@ export class DragDropService {
 
   readonly dragState = this.dragStateSignal.asReadonly();
 
-  // Start dragging from toolbar
+  /**
+   * Begins a drag originating from the toolbar palette with the given pointer offsets.
+   */
   startToolbarDrag(item: ToolbarElement, x: number, y: number, offsetX: number = 0, offsetY: number = 0) {
     this.dragStateSignal.set({
       isDragging: true,
@@ -37,7 +42,9 @@ export class DragDropService {
     });
   }
 
-  // Start dragging an existing canvas element
+  /**
+   * Begins a drag for an existing canvas element so it can be repositioned.
+   */
   startCanvasDrag(elementId: string, x: number, y: number, offsetX: number = 0, offsetY: number = 0) {
     this.dragStateSignal.set({
       isDragging: true,
@@ -49,7 +56,9 @@ export class DragDropService {
     });
   }
 
-  // Update ghost position during drag
+  /**
+   * Updates the ghost preview coordinates while dragging.
+   */
   updateGhostPosition(x: number, y: number) {
     this.dragStateSignal.update(state => ({
       ...state,
@@ -57,7 +66,9 @@ export class DragDropService {
     }));
   }
 
-  // End drag operation
+  /**
+   * Clears drag state once the user drops or cancels the operation.
+   */
   endDrag() {
     this.dragStateSignal.set({
       isDragging: false,
@@ -69,17 +80,23 @@ export class DragDropService {
     });
   }
 
-  // Grid snapping helper
+  /**
+   * Snaps the provided measurement to the nearest grid increment.
+   */
   snapToGrid(value: number, gridSize: number): number {
     return Math.round(value / gridSize) * gridSize;
   }
 
-  // Convert pixel to mm
+  /**
+   * Converts a pixel measurement to millimeters using the provided scale factor.
+   */
   pxToMm(px: number, mmToPx: number): number {
     return px / mmToPx;
   }
 
-  // Convert mm to pixel
+  /**
+   * Converts a millimeter measurement to pixels using the provided scale factor.
+   */
   mmToPx(mm: number, mmToPx: number): number {
     return mm * mmToPx;
   }

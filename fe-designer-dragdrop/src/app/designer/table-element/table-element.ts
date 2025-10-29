@@ -20,6 +20,9 @@ interface ContextMenuCell {
   col: number;
 }
 
+/**
+ * Rich table component that supports nested sub-tables, resizing, and cell formatting.
+ */
 @Component({
   selector: 'app-table-element',
   standalone: true,
@@ -45,12 +48,18 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
   protected contextMenuCell = signal<ContextMenuCell | null>(null);
   protected showActionsToolbar = signal(false);
 
+  /**
+   * Clears cached HTML when the bound element input changes.
+   */
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['element'] && !changes['element'].firstChange) {
       this.subTableHtmlCache.clear();
     }
   }
 
+  /**
+   * Sets up global capture listeners once the table view is ready.
+   */
   ngAfterViewInit(): void {
     // Add DOCUMENT-level listener first for debugging
     const docListener = (event: MouseEvent) => {
@@ -68,17 +77,26 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
     this.hostRef.nativeElement.addEventListener('click', this.clickListener, true);
   }
 
+  /**
+   * Removes capture listeners to avoid leaks.
+   */
   ngOnDestroy(): void {
     if (this.clickListener) {
       this.hostRef.nativeElement.removeEventListener('click', this.clickListener, true);
     }
   }
 
+  /**
+   * Ensures resize handles on nested sub-tables remain wired to the component logic.
+   */
   ngAfterViewChecked(): void {
     // Attach event listeners to subtable resize handles
     this.attachSubTableResizeHandlers();
   }
 
+  /**
+   * Registers mousedown handlers for all nested sub-table resize handles.
+   */
   private attachSubTableResizeHandlers(): void {
     const allHandles = this.hostRef.nativeElement.querySelectorAll('.sub-table-resize-handle');
     allHandles.forEach((handle: HTMLElement) => {
@@ -92,6 +110,9 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
     });
   }
 
+  /**
+   * Routes clicks from the DOM (including nested subtables) to Angular selection logic.
+   */
   private handleNativeClick(event: MouseEvent): void {
     const target = event.target as HTMLElement;
     // Check if click was on or inside a sub-table cell
@@ -172,13 +193,22 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
     }
   }
 
+  /**
+   * Returns the row size ratios for the current table.
+   */
   protected getRowSizes(): number[] {
     return getTableRowSizes(this.element);
   }
 
+  /**
+   * Returns the column size ratios for the current table.
+   */
   protected getColSizes(): number[] {
     return getTableColSizes(this.element);
   }
+  /**
+   * Indicates whether the supplied cell coordinates match the selected cell.
+   */
   protected isCellSelected(row: number, col: number): boolean {
     const selection = this.designerState.selectedTableCell();
     if (!selection) return false;
@@ -186,6 +216,9 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
     return selection.row === row && selection.col === col;
   }
 
+  /**
+   * Calculates the pixel offsets for the selected cell, including nested sub-cells.
+   */
   protected getSelectedCellOffsets(): { left: number; top: number; width: number } | null {
     const selection = this.designerState.selectedTableCell();
     if (!selection || selection.elementId !== this.element.id) return null;
@@ -270,6 +303,9 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
     return result;
   }
 
+  /**
+   * Retrieves the raw HTML content for the specified cell, navigating nested tables if required.
+   */
   protected getCellContentRaw(row: number, col: number): string {
     const selection = this.designerState.selectedTableCell();
 
@@ -295,6 +331,9 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
     return '&nbsp;';
   }
 
+  /**
+   * Recursively resolves nested sub-table content for a selected cell path.
+   */
   private getNestedCellContent(parentRow: number, parentCol: number, subTablePath: Array<{row: number; col: number}>): string {
     const parentKey = `${parentRow}_${parentCol}`;
     const subTablesMap = this.element.properties?.['tableCellSubTables'] as Record<string, any> | undefined;
@@ -331,6 +370,9 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
     return '&nbsp;';
   }
 
+  /**
+   * Returns sanitized HTML for rendering the cell content.
+   */
   protected getCellContent(row: number, col: number): SafeHtml {
     const htmlString = this.getCellContentRaw(row, col);
 
@@ -342,6 +384,9 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
   protected showCellEditor = signal(false);
   protected editorCellSelection = signal<{ row: number; col: number; subTablePath?: Array<{ row: number; col: number }> } | null>(null);
 
+  /**
+   * Launches the cell editor for the currently selected cell or sub-cell.
+   */
   protected onEditCellContent(): void {
     const selection = this.designerState.selectedTableCell();
     if (!selection || selection.elementId !== this.element.id) return;
@@ -350,14 +395,23 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
     this.closeActionsToolbar();
   }
 
+  /**
+   * Shows or hides the cell actions popover.
+   */
   protected toggleActionsToolbar(): void {
     this.showActionsToolbar.update(v => !v);
   }
 
+  /**
+   * Hides the actions popover.
+   */
   protected closeActionsToolbar(): void {
     this.showActionsToolbar.set(false);
   }
 
+  /**
+   * Splits the selected row into evenly sized parts based on user input.
+   */
   protected onSplitRowsFromToolbar(): void {
     const selection = this.designerState.selectedTableCell();
     if (!selection || selection.elementId !== this.element.id) return;
@@ -389,6 +443,9 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
     this.closeActionsToolbar();
   }
 
+  /**
+   * Splits the selected column into evenly sized parts based on user input.
+   */
   protected onSplitColsFromToolbar(): void {
     const selection = this.designerState.selectedTableCell();
     if (!selection || selection.elementId !== this.element.id) return;
@@ -420,6 +477,9 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
     this.closeActionsToolbar();
   }
 
+  /**
+   * Deletes the selected row, with confirmation if it contains content.
+   */
   protected onDeleteRowFromToolbar(): void {
     const selection = this.designerState.selectedTableCell();
     if (!selection || selection.elementId !== this.element.id) return;
@@ -461,6 +521,9 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
     this.closeActionsToolbar();
   }
 
+  /**
+   * Deletes the selected column, with confirmation if it contains content.
+   */
   protected onDeleteColFromToolbar(): void {
     const selection = this.designerState.selectedTableCell();
     if (!selection || selection.elementId !== this.element.id) return;
@@ -502,6 +565,9 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
     this.closeActionsToolbar();
   }
 
+  /**
+   * Converts the selected cell into a sub-table, preserving inherited styling.
+   */
   protected onSplitCellIntoSubTable(): void {
     const selection = this.designerState.selectedTableCell();
     if (!selection || selection.elementId !== this.element.id) return;
@@ -601,11 +667,17 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
     this.closeActionsToolbar();
   }
 
+  /**
+   * Determines whether the delete sub-table action should be available.
+   */
   protected isDeleteSubTableEnabled(): boolean {
     const selection = this.designerState.selectedTableCell();
     return !!(selection && selection.elementId === this.element.id && selection.subTablePath && selection.subTablePath.length > 0);
   }
 
+  /**
+   * Removes a nested sub-table and compacts its content back into the parent cell.
+   */
   protected onDeleteSubTableFromToolbar(): void {
     const selection = this.designerState.selectedTableCell();
     if (!selection || selection.elementId !== this.element.id || !selection.subTablePath || selection.subTablePath.length === 0) {
@@ -706,6 +778,9 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
     this.closeActionsToolbar();
   }
 
+  /**
+   * Builds a new nested sub-table inside an existing sub-table cell and migrates styles.
+   */
   private createNestedSubTable(parentRow: number, parentCol: number, parentSubTable: any, subCellKey: string, rows: number, cols: number, level: number): void {
     // Get properties from parent sub-cell to inherit
     const parentContent = parentSubTable.cellContents?.[subCellKey] || '';
@@ -787,6 +862,9 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
     this.designerState.updateElement(this.element.id, this.element);
   }
 
+  /**
+   * Reports the current nesting depth for the specified cell.
+   */
   private getCurrentNestingLevel(row: number, col: number): number {
     // For now, check if cell already has a sub-table
     const key = `${row}_${col}`;
@@ -797,6 +875,9 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
     return 0; // Parent table level
   }
 
+  /**
+   * Creates a new sub-table for the selected root cell and stores it on the element.
+   */
   private createSubTable(row: number, col: number, rows: number, cols: number, level: number): void {
     const key = `${row}_${col}`;
 
@@ -883,10 +964,16 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
     this.designerState.updateElement(this.element.id, this.element);
   }
 
+  /**
+   * Returns the map of per-cell border configurations if present.
+   */
   private getBorderConfigMap(): Record<string, TableCellBorderConfig> | undefined {
     return this.element.properties?.['tableCellBorders'] as Record<string, TableCellBorderConfig> | undefined;
   }
 
+  /**
+   * Resolves border configuration for a specific root-level cell.
+   */
   private getCellBorderConfig(row: number, col: number): TableCellBorderConfig {
     const key = `${row}_${col}`;
     const configMap = this.getBorderConfigMap();
@@ -911,6 +998,9 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
     return {};
   }
 
+  /**
+   * Normalizes incomplete border specs to ensure all fields exist.
+   */
   private normalizeBorderSpec(spec?: TableCellBorderSpec): TableCellBorderSpec {
     if (!spec) {
       return { width: 0, style: 'solid', color: '#000000' };
@@ -923,6 +1013,9 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
     };
   }
 
+  /**
+   * Computes the effective border spec for a cell side, including overrides.
+   */
   private getCellBorderSpec(row: number, col: number, side: BorderSide): TableCellBorderSpec {
     const config = this.getCellBorderConfig(row, col);
     const base = this.normalizeBorderSpec(config.all);
@@ -940,6 +1033,9 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
     return normalizedOverride;
   }
 
+  /**
+   * Produces CSS snippets for the requested cell border edge.
+   */
   protected getCellBorderCss(row: number, col: number, side: BorderEdge): string {
     const spec = this.getCellBorderSpec(row, col, side);
     if (spec.width <= 0 || spec.style === 'none') {
@@ -948,10 +1044,16 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
     return `${spec.width}px ${spec.style} ${spec.color}`;
   }
 
+  /**
+   * Returns the aggregate border properties for a cell.
+   */
   private getCellBorderProps(row: number, col: number): TableCellBorderSpec {
     return this.getCellBorderSpec(row, col, 'all');
   }
 
+  /**
+   * Retrieves the border configuration for a nested sub-table cell.
+   */
   private getSubTableCellBorderConfig(subTable: any, cellKey: string): TableCellBorderConfig {
     const configMap = subTable.cellBorders as Record<string, TableCellBorderConfig> | undefined;
     if (configMap && configMap[cellKey]) {
@@ -975,6 +1077,9 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
     return {};
   }
 
+  /**
+   * Computes the effective border spec for a nested sub-table cell edge.
+   */
   private getSubTableCellBorderSpec(subTable: any, cellKey: string, side: BorderSide): TableCellBorderSpec {
     const config = this.getSubTableCellBorderConfig(subTable, cellKey);
     const base = this.normalizeBorderSpec(config.all);
@@ -991,6 +1096,9 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
     return this.normalizeBorderSpec(override);
   }
 
+  /**
+   * Builds border CSS for nested sub-table cells.
+   */
   private getSubTableCellBorderCss(subTable: any, cellKey: string, side: BorderEdge): string {
     const spec = this.getSubTableCellBorderSpec(subTable, cellKey, side);
     if (spec.width <= 0 || spec.style === 'none') {
@@ -999,6 +1107,9 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
     return `${spec.width}px ${spec.style} ${spec.color}`;
   }
 
+  /**
+   * Reads combined font-related properties for a cell, including defaults.
+   */
   private getCellFontProps(row: number, col: number): {
     family?: string;
     size?: number;
@@ -1025,12 +1136,18 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
     };
   }
 
+  /**
+   * Indicates whether the specified cell contains a nested sub-table.
+   */
   protected hasSubTable(row: number, col: number): boolean {
     const key = `${row}_${col}`;
     const subTablesMap = this.element.properties?.['tableCellSubTables'] as Record<string, any> | undefined;
     return !!(subTablesMap && subTablesMap[key]);
   }
 
+  /**
+   * Returns cached or freshly generated HTML for a nested sub-table.
+   */
   protected getSubTableHtml(row: number, col: number): SafeHtml {
     const key = `${row}_${col}`;
 
@@ -1056,6 +1173,9 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
     return safeHtml;
   }
 
+  /**
+   * Generates XHTML markup for a nested sub-table and caches the result.
+   */
   private generateSubTableHtml(subTable: any, parentPadding: number): string {
     const level = subTable.level || 1;
     const rows = subTable.rows || 1;
@@ -1148,6 +1268,9 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
     return html;
   }
 
+  /**
+   * Returns a highlight color based on the nesting level for selection overlays.
+   */
   private getSelectionColorForLevel(level: number): string {
     const colors = [
       'hsla(217, 91%, 48%, 0.4)', // Level 0 (parent) - Blue
@@ -1161,6 +1284,9 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
   }
 
 
+  /**
+   * Checks whether any cell within the given row contains non-empty content.
+   */
   private rowHasContent(rowIndex: number): boolean {
     const colSizes = this.getColSizes();
     const contents = this.element.properties?.['tableCellContents'] as Record<string, string> | undefined;
@@ -1176,6 +1302,9 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
     return false;
   }
 
+  /**
+   * Checks whether any cell within the given column contains non-empty content.
+   */
   private colHasContent(colIndex: number): boolean {
     const rowSizes = this.getRowSizes();
     const contents = this.element.properties?.['tableCellContents'] as Record<string, string> | undefined;
@@ -1191,6 +1320,9 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
     return false;
   }
 
+  /**
+   * Removes orphaned properties and nested tables after deleting a row.
+   */
   private cleanupDeletedRow(deletedRow: number, totalRows: number): void {
     const colSizes = this.getColSizes();
     const propertyMaps = [
@@ -1244,6 +1376,9 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
     });
   }
 
+  /**
+   * Removes orphaned properties and nested tables after deleting a column.
+   */
   private cleanupDeletedCol(deletedCol: number, totalCols: number): void {
     const rowSizes = this.getRowSizes();
     const propertyMaps = [
@@ -1297,6 +1432,9 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
     });
   }
 
+  /**
+   * Applies the edited HTML to the appropriate cell path and closes the editor.
+   */
   protected onCellEditorSaved(html: string): void {
     const selection = this.editorCellSelection();
     if (!selection) return;
@@ -1320,6 +1458,9 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
     this.showCellEditor.set(false);
   }
 
+  /**
+   * Writes content updates into deeply nested sub-table cells.
+   */
   private saveNestedCellContent(parentRow: number, parentCol: number, subTablePath: Array<{row: number; col: number}>, html: string): void {
     const parentKey = `${parentRow}_${parentCol}`;
     const subTablesMap = (this.element.properties?.['tableCellSubTables'] as Record<string, any>) || {};
@@ -1372,11 +1513,17 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
     this.designerState.updateElement(this.element.id, { properties: updatedProperties });
   }
 
+  /**
+   * Cancels editing and hides the cell editor dialog.
+   */
   protected onCellEditorClosed(): void {
     this.showCellEditor.set(false);
     this.editorCellSelection.set(null);
   }
 
+  /**
+   * Handles single-click selection of root table cells.
+   */
   protected onCellClick(event: MouseEvent, row: number, col: number): void {
     const target = event.target as HTMLElement;
 
@@ -1390,6 +1537,9 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
     this.closeContextMenu();
   }
 
+  /**
+   * Opens the editor when a cell is double-clicked.
+   */
   protected onCellDoubleClick(event: MouseEvent, row: number, col: number): void {
     const target = event.target as HTMLElement;
     const subTableCell = target.closest('.sub-table-cell');
@@ -1401,6 +1551,9 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
     this.onEditCellContent();
   }
 
+  /**
+   * Displays the contextual actions menu for a cell.
+   */
   protected onCellContextMenu(event: MouseEvent, row: number, col: number): void {
     event.preventDefault();
     event.stopPropagation();
@@ -1415,6 +1568,9 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
     this.showContextMenu.set(true);
   }
 
+  /**
+   * Splits the selected cell horizontally using user-provided segments.
+   */
   protected onSplitHorizontally(): void {
     const cell = this.contextMenuCell();
     if (!cell) {
@@ -1449,6 +1605,9 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
     this.closeContextMenu();
   }
 
+  /**
+   * Splits the selected cell vertically using user-provided segments.
+   */
   protected onSplitVertically(): void {
     const cell = this.contextMenuCell();
     if (!cell) {
@@ -1483,11 +1642,17 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
     this.closeContextMenu();
   }
 
+  /**
+   * Closes the context menu overlay.
+   */
   protected closeContextMenu(): void {
     this.showContextMenu.set(false);
     this.contextMenuCell.set(null);
   }
 
+  /**
+   * Computes the cumulative height offset for a given row resize handle.
+   */
   protected getRowHandleOffset(rowSizes: number[], index: number): number {
     let sum = 0;
     for (let i = 0; i <= index; i++) {
@@ -1496,6 +1661,9 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
     return sum * 100;
   }
 
+  /**
+   * Computes the cumulative width offset for a given column resize handle.
+   */
   protected getColHandleOffset(colSizes: number[], index: number): number {
     let sum = 0;
     for (let i = 0; i <= index; i++) {
@@ -1504,6 +1672,9 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
     return sum * 100;
   }
 
+  /**
+   * Begins resizing operation for a root table row.
+   */
   protected startRowResize(index: number, event: MouseEvent): void {
     event.stopPropagation();
     event.preventDefault();
@@ -1522,6 +1693,9 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
     this.designerState.selectElement(this.element.id);
   }
 
+  /**
+   * Begins resizing operation for a root table column.
+   */
   protected startColResize(index: number, event: MouseEvent): void {
     event.stopPropagation();
     event.preventDefault();
@@ -1540,6 +1714,9 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
     this.designerState.selectElement(this.element.id);
   }
 
+  /**
+   * Initiates resize logic for nested sub-table handles captured from the DOM.
+   */
   private startSubTableResize(handle: HTMLElement, event: MouseEvent): void {
     event.stopPropagation();
     event.preventDefault();
@@ -1618,6 +1795,9 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
     this.designerState.selectElement(this.element.id);
   }
 
+  /**
+   * Navigates the sub-table hierarchy to locate the requested nested table.
+   */
   private getSubTableAtPath(parentRow: number, parentCol: number, path: Array<{row: number; col: number}>): any | null {
     const parentKey = `${parentRow}_${parentCol}`;
     const subTablesMap = this.element.properties?.['tableCellSubTables'] as Record<string, any> | undefined;
@@ -1637,10 +1817,16 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
     return currentSubTable;
   }
 
+  /**
+   * Identity trackBy used for template repeaters.
+   */
   protected trackByIndex(index: number): number {
     return index;
   }
 
+  /**
+   * Indicates whether the provided handle index is currently being resized.
+   */
   protected isResizing(type: 'row' | 'col', index: number): boolean {
     const active = this.activeResize;
     if (!active) return false;
@@ -1648,6 +1834,9 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
   }
 
   @HostListener('document:mousemove', ['$event'])
+  /**
+   * Routes document-level mousemove events to the active resize handler.
+   */
   onDocumentMouseMove(event: MouseEvent): void {
     if (!this.activeResize) {
       return;
@@ -1665,11 +1854,17 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
   }
 
   @HostListener('document:mouseup')
+  /**
+   * Clears the active resize state when the mouse button is released.
+   */
   onDocumentMouseUp(): void {
     this.activeResize = null;
   }
 
   @HostListener('document:click', ['$event'])
+  /**
+   * Closes the context menu when the user clicks outside the table.
+   */
   onDocumentClick(event: MouseEvent): void {
     if (!this.showContextMenu()) {
       return;
@@ -1680,6 +1875,9 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
     }
   }
 
+  /**
+   * Updates row size ratios while the user drags a row handle.
+   */
   private handleRowResize(event: MouseEvent): void {
     if (!this.activeResize || this.activeResize.type !== 'row') return;
 
@@ -1705,6 +1903,9 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
     this.applyTableSizes(updatedRows, this.getColSizes());
   }
 
+  /**
+   * Updates column size ratios while the user drags a column handle.
+   */
   private handleColResize(event: MouseEvent): void {
     if (!this.activeResize || this.activeResize.type !== 'col') return;
 
@@ -1730,6 +1931,9 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
     this.applyTableSizes(this.getRowSizes(), updatedCols);
   }
 
+  /**
+   * Calculates the minimum ratio permitted during row or column resizing.
+   */
   private getMinRatio(tableSize: number, pairTotal: number): number {
     const minSizeMm = Math.max(2, this.gridSize, this.designerState.logicalGridSize());
     const baseRatio = minSizeMm / Math.max(tableSize, minSizeMm);
@@ -1738,11 +1942,17 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
     return Math.min(safeBase, maxAllowed);
   }
 
+  /**
+   * Persists new row/column ratios back to the element.
+   */
   private applyTableSizes(rowSizes: number[], colSizes: number[]): void {
     const properties = withTableSizes(this.element, rowSizes, colSizes);
     this.designerState.updateElement(this.element.id, { properties });
   }
 
+  /**
+   * Applies proportional resizing for nested sub-table rows.
+   */
   private handleSubTableRowResize(event: MouseEvent): void {
     if (!this.activeResize || this.activeResize.type !== 'subtable-row') return;
 
@@ -1777,6 +1987,9 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
     this.subTableHtmlCache.clear();
   }
 
+  /**
+   * Applies proportional resizing for nested sub-table columns.
+   */
   private handleSubTableColResize(event: MouseEvent): void {
     if (!this.activeResize || this.activeResize.type !== 'subtable-col') return;
 
@@ -1811,6 +2024,9 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
     this.subTableHtmlCache.clear();
   }
 
+  /**
+   * Writes updated size arrays into a nested sub-table structure.
+   */
   private applySubTableSizes(parentRow: number, parentCol: number, path: Array<{row: number; col: number}>, rowSizes: number[] | null, colSizes: number[] | null): void {
     const parentKey = `${parentRow}_${parentCol}`;
     const subTablesMap = (this.element.properties?.['tableCellSubTables'] as Record<string, any> | undefined) || {};
@@ -1845,6 +2061,9 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
     this.subTableHtmlCache.clear();
   }
 
+  /**
+   * Prompts the user for the number of segments to create along an axis.
+   */
   private promptForSplit(axis: 'row' | 'col'): number | null {
     const axisLabel = axis === 'row' ? 'rows' : 'columns';
     const response = window.prompt(`Split into how many ${axisLabel}?`, '2');
@@ -1861,10 +2080,16 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
   }
 
   // Cell style helpers (padding & alignment)
+  /**
+   * Builds the standard storage key for a cell coordinate.
+   */
   private cellKey(row: number, col: number): string {
     return `${row}_${col}`;
   }
 
+  /**
+   * Returns padding values for the given cell coordinate, defaulting to zeros.
+   */
   protected getCellPadding(row: number, col: number): { top: number; right: number; bottom: number; left: number } {
     const key = this.cellKey(row, col);
     const paddingMap = this.element.properties?.['tableCellPadding'] as Record<string, number[]> | undefined;
@@ -1876,11 +2101,17 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
     return { top: 0, right: 0, bottom: 0, left: 0 };
   }
 
+  /**
+   * Formats cell padding as a CSS string.
+   */
   protected getCellPaddingString(row: number, col: number): string {
     const padding = this.getCellPadding(row, col);
     return `${padding.top}mm ${padding.right}mm ${padding.bottom}mm ${padding.left}mm`;
   }
 
+  /**
+   * Returns the horizontal alignment for the specified cell.
+   */
   protected getCellHAlign(row: number, col: number): 'left' | 'center' | 'right' {
     const key = this.cellKey(row, col);
     const map = this.element.properties?.['tableCellHAlign'] as Record<string, string> | undefined;
@@ -1888,6 +2119,9 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
     return value === 'center' || value === 'right' ? value : 'left';
   }
 
+  /**
+   * Returns the vertical alignment for the specified cell.
+   */
   protected getCellVAlign(row: number, col: number): 'top' | 'middle' | 'bottom' {
     const key = this.cellKey(row, col);
     const map = this.element.properties?.['tableCellVAlign'] as Record<string, string> | undefined;
@@ -1895,6 +2129,9 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
     return value === 'middle' || value === 'bottom' ? value : 'top';
   }
 
+  /**
+   * Maps vertical alignment to flexbox alignment values for template binding.
+   */
   protected getCellVAlignFlex(row: number, col: number): 'flex-start' | 'center' | 'flex-end' {
     const v = this.getCellVAlign(row, col);
     if (v === 'middle') return 'center';
@@ -1902,18 +2139,27 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
     return 'flex-start';
   }
 
+  /**
+   * Returns the font style used by the specified cell.
+   */
   protected getCellFontStyle(row: number, col: number): string {
     const key = `${row}_${col}`;
     const map = this.element.properties?.['tableCellFontStyle'] as Record<string, string> | undefined;
     return map?.[key] || 'normal';
   }
 
+  /**
+   * Returns the font weight used by the specified cell.
+   */
   protected getCellFontWeight(row: number, col: number): string {
     const key = `${row}_${col}`;
     const map = this.element.properties?.['tableCellFontWeight'] as Record<string, string> | undefined;
     return map?.[key] || 'normal';
   }
 
+  /**
+   * Returns the font size in CSS units for the specified cell.
+   */
   protected getCellFontSize(row: number, col: number): string {
     const key = `${row}_${col}`;
     const map = this.element.properties?.['tableCellFontSize'] as Record<string, number> | undefined;
@@ -1921,6 +2167,9 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
     return Number.isFinite(size) ? `${size}pt` : '9pt';
   }
 
+  /**
+   * Returns the line height in CSS units for the specified cell.
+   */
   protected getCellLineHeight(row: number, col: number): string {
     const key = `${row}_${col}`;
     const map = this.element.properties?.['tableCellLineHeight'] as Record<string, number> | undefined;
@@ -1928,12 +2177,18 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
     return Number.isFinite(lineHeight) ? String(lineHeight) : '1';
   }
 
+  /**
+   * Returns the font family for the specified cell.
+   */
   protected getCellFontFamily(row: number, col: number): string {
     const key = `${row}_${col}`;
     const map = this.element.properties?.['tableCellFontFamily'] as Record<string, string> | undefined;
     return map?.[key] || 'Roboto, sans-serif';
   }
 
+  /**
+   * Returns the text decoration for the specified cell.
+   */
   protected getCellTextDecoration(row: number, col: number): string {
     const key = `${row}_${col}`;
     const map = this.element.properties?.['tableCellTextDecoration'] as Record<string, string> | undefined;

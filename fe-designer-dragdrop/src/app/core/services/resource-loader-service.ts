@@ -7,22 +7,31 @@ import { shareReplay } from 'rxjs/operators';
 
 type ContentType = 'text' | 'json' | 'blob' | 'arraybuffer';
 
+/**
+ * Utility for fetching static assets with caching and base-href awareness.
+ */
 @Injectable({ providedIn: 'root' })
 export class ResourceLoaderService {
   private cache = new Map<string, Observable<unknown>>();
 
+  /**
+   * Creates a resource loader with awareness of the app base URI.
+   */
   constructor(
     private http: HttpClient,
     @Optional() @Inject(APP_BASE_HREF) private baseHref?: string,
     @Inject(DOCUMENT) private doc?: Document
   ) {}
 
-  // Overloads for strong typing by contentType
+  /** Loads a resource as text using caching for repeat requests. */
   loadResource(relPath: string): Observable<string>;
   loadResource(relPath: string, contentType: 'text'): Observable<string>;
   loadResource(relPath: string, contentType: 'json'): Observable<unknown>;
   loadResource(relPath: string, contentType: 'blob'): Observable<Blob>;
   loadResource(relPath: string, contentType: 'arraybuffer'): Observable<ArrayBuffer>;
+  /**
+   * Fetches a resource relative to the public assets folder, caching the observable per type.
+   */
   loadResource(relPath: string, contentType: ContentType = 'text'): Observable<any> {
     const url = this.resolvePublicUrl(relPath);
     const key = `${contentType}::${url}`;
@@ -82,6 +91,9 @@ export class ResourceLoaderService {
     return new URL(relPath, this.getBaseUri()).toString();
   }
 
+  /**
+   * Determines the base URI used for resolving relative asset paths.
+   */
   private getBaseUri(): string {
     // Prefer document.baseURI in browser; fall back to APP_BASE_HREF; then '/'
     const fromDoc = this.doc?.baseURI;
