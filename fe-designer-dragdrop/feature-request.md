@@ -49,16 +49,19 @@ To fix:
   - More compact, expand / collapsible regions
   - Engraved Sections with border.
   
-- Make cell selection easier: Clicking in an area where cell is covered by content ==> 
+- Make cell selection easier: Clicking in an area where cell is covered by content ==> Ok
   Cell does not become selected, cog does not appear. ==> Ok
 - OnCellDblClick: open contentEditor => Ok
 - Align ContentEditor more elegantly on Open. => Ok
 - Merge "ROWS" and "COLUMNS" 	from ".property-section": "TABLE" into the "GENERAL" section.
   Place "ROWS", "COLUMNS" after the "TYPE" .property-field.
+- Paddings on Level > 0 => apply on Level-0 cell instead of sub-cell! => to Fix.
 
 ## Still to implement (Not in POC)
 
 - Own Database support
+- Unit and Integration & End-To-End test.
+- Implement Preview PDF.
 - Support Dynamic report variables
 - Support QRCode and Barcode in designer
 - Custom Font management
@@ -68,3 +71,4 @@ To fix:
 - Use anchor-positioning for resize handles, cog and .action-toolbar
 - Implement Undo / Redo
 - Extend scalability above virtual threads (Kafka, etc)
+- Apply Defaults even if not modified by user.

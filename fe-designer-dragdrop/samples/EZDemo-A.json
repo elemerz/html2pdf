@@ -1,0 +1,720 @@
+{
+  "version": 1,
+  "layout": {
+    "name": "Untitled Layout",
+    "elements": [
+      {
+        "type": "table",
+        "x": 10,
+        "y": 10,
+        "width": 190,
+        "height": 9,
+        "properties": {
+          "rows": 1,
+          "cols": 1,
+          "rowSizes": [
+            1
+          ],
+          "colSizes": [
+            1
+          ],
+          "tableCellContents": {
+            "0_0": "<p><span style=\"color: rgb(230, 0, 0); font-family: Roboto, sans-serif; font-size: 9pt;\">Factuurtype: 20</span></p><p><span style=\"color: rgb(230, 0, 0); font-family: Roboto, sans-serif; font-size: 9pt;\">Customer in run: 3</span></p>"
+          },
+          "tableCellPadding": {
+            "0_0": [
+              0,
+              0,
+              0,
+              82
+            ]
+          },
+          "elementId": "DebugLine",
+          "elementRole": "report-body"
+        },
+        "content": "",
+        "id": "el-1761660183765-hnvqf9lud"
+      },
+      {
+        "type": "table",
+        "x": 10,
+        "y": 19,
+        "width": 190,
+        "height": 19,
+        "properties": {
+          "rows": 1,
+          "cols": 1,
+          "rowSizes": [
+            1
+          ],
+          "colSizes": [
+            1
+          ],
+          "tableCellContents": {
+            "0_0": "<p><img src=\"data:image/png;base64,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\"></p>"
+          },
+          "elementId": "CompanyLogo",
+          "elementRole": "report-body"
+        },
+        "content": "",
+        "id": "el-1761660249111-8ewjsp4oj"
+      },
+      {
+        "type": "table",
+        "x": 10,
+        "y": 38,
+        "width": 190,
+        "height": 30,
+        "properties": {
+          "rows": 1,
+          "cols": 3,
+          "rowSizes": [
+            1
+          ],
+          "colSizes": [
+            0.5906824013127335,
+            0.3238849232457262,
+            0.08543267544154026
+          ],
+          "tableCellContents": {
+            "0_1": "<p><strong style=\"font-size: 9pt; font-family: Roboto, sans-serif;\">24.3.2 MZ Testklant JJ</strong></p><p><span style=\"font-size: 9pt; font-family: Roboto, sans-serif;\">Teststraat 1</span></p><p><span style=\"font-size: 9pt; font-family: Roboto, sans-serif;\">7777 JJ Testdorp</span></p><p><span style=\"font-size: 9pt; font-family: Roboto, sans-serif;\">AGB-Code Praktijk/Instelling:</span></p><p><span style=\"font-size: 9pt; font-family: Roboto, sans-serif;\">AGB-Code zorgaanbieder:</span></p>",
+            "0_2": "<p><br/></p><p><br/></p><p><br/></p><p><span style=\"font-size: 9pt;\">12099999</span></p><p><span style=\"font-size: 9pt;\">12011111</span></p>",
+            "0_0": "<p><span style=\"font-size: 9pt;\">L Lepelaar</span></p><p><span style=\"font-size: 9pt;\">VecozoTestStreet 124</span></p><p><span style=\"font-size: 9pt;\">9999 XA VECOZOTESTCITY</span></p>"
+          },
+          "tableCellHAlign": {
+            "0_2": "right"
+          },
+          "tableCellPadding": {
+            "0_0": [
+              17,
+              0,
+              0,
+              18
+            ]
+          },
+          "elementRole": "report-body",
+          "elementId": "AddresseAndDoctor"
+        },
+        "content": "",
+        "id": "el-1761660294581-463ooi779"
+      },
+      {
+        "type": "table",
+        "x": 10,
+        "y": 68,
+        "width": 190,
+        "height": 21,
+        "properties": {
+          "rows": 1,
+          "cols": 1,
+          "rowSizes": [
+            1
+          ],
+          "colSizes": [
+            1
+          ],
+          "tableCellContents": {
+            "0_0": "<p><span style=\"font-size: 7.75pt; font-family: &quot;KIX Barcode&quot;;\">449999XA124</span></p>"
+          },
+          "tableCellPadding": {
+            "0_0": [
+              0,
+              0,
+              0,
+              18
+            ]
+          },
+          "elementId": "KixPostCode",
+          "elementRole": "report-body"
+        },
+        "content": "",
+        "id": "el-1761660887154-t2idan41l"
+      },
+      {
+        "type": "table",
+        "x": 10,
+        "y": 89,
+        "width": 190,
+        "height": 13,
+        "properties": {
+          "rows": 1,
+          "cols": 4,
+          "rowSizes": [
+            1
+          ],
+          "colSizes": [
+            0.19811381579008983,
+            0.3941282894719727,
+            0.16928815789569532,
+            0.23846973684224218
+          ],
+          "tableCellContents": {
+            "0_0": "<p><strong style=\"font-size: 13pt;\">REKENING</strong></p><p><span style=\"font-size: 9pt; font-family: Roboto, sans-serif;\">Betalingskenmerk:</span></p><p><span style=\"font-size: 9pt; font-family: Roboto, sans-serif;\">Datum:</span></p>",
+            "0_1": "",
+            "0_2": "<p><strong style=\"font-size: 9pt;\">Patiëntgegevens</strong></p><p><span style=\"font-family: Roboto, sans-serif; font-size: 9pt;\">Naam:</span></p><p><span style=\"font-family: Roboto, sans-serif; font-size: 9pt;\">Geb.datum:</span></p><p><span style=\"font-family: Roboto, sans-serif; font-size: 9pt;\">BSN:</span></p>",
+            "0_3": "<p><br/></p><p><span style=\"font-family: Roboto, sans-serif; font-size: 9pt;\">L Lepelaar</span></p><p><span style=\"font-family: Roboto, sans-serif; font-size: 9pt;\">15-09-1923</span></p>"
+          },
+          "tableCellSubTables": {
+            "0_1": {
+              "rows": 2,
+              "cols": 1,
+              "rowSizes": [
+                0.3862547986566428,
+                0.6137452013433572
+              ],
+              "colSizes": [
+                1
+              ],
+              "level": 1,
+              "cellContents": {
+                "0_0": "&nbsp;",
+                "1_0": "<p><span style=\"font-size: 9pt;\">0230 0036 0410 71</span></p><p><span style=\"font-size: 9pt;\">19-04-2024</span></p>"
+              },
+              "cellPadding": {
+                "0_0": [
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                "1_0": [
+                  0,
+                  0,
+                  0,
+                  0
+                ]
+              },
+              "cellHAlign": {
+                "0_0": "left",
+                "1_0": "left"
+              },
+              "cellVAlign": {
+                "0_0": "top",
+                "1_0": "top"
+              },
+              "cellBorderWidth": {
+                "0_0": 0,
+                "1_0": 0
+              },
+              "cellBorderStyle": {
+                "0_0": "solid",
+                "1_0": "solid"
+              },
+              "cellBorderColor": {
+                "0_0": "#000000",
+                "1_0": "#000000"
+              },
+              "cellBorders": {
+                "0_0": {
+                  "all": {
+                    "width": 0,
+                    "style": "solid",
+                    "color": "#000000"
+                  }
+                },
+                "1_0": {
+                  "all": {
+                    "width": 0,
+                    "style": "solid",
+                    "color": "#000000"
+                  }
+                }
+              },
+              "cellFontFamily": {},
+              "cellFontSize": {},
+              "cellFontWeight": {},
+              "cellFontStyle": {},
+              "cellLineHeight": {},
+              "cellTextDecoration": {}
+            }
+          },
+          "tableCellHAlign": {
+            "0_3": "right"
+          },
+          "tableCellBorders": {
+            "0_3": {
+              "all": {
+                "width": 0,
+                "style": "solid",
+                "color": "#000000"
+              },
+              "bottom": {
+                "width": 1,
+                "style": "solid",
+                "color": "#000000"
+              }
+            }
+          },
+          "elementId": "InvoiceAndPatient",
+          "elementRole": "report-body"
+        },
+        "content": "",
+        "id": "el-1761661009443-g9cgjj0dd"
+      },
+      {
+        "type": "table",
+        "x": 10,
+        "y": 102,
+        "width": 190,
+        "height": 36,
+        "properties": {
+          "rows": 1,
+          "cols": 2,
+          "rowSizes": [
+            1
+          ],
+          "colSizes": [
+            0.5936833881567822,
+            0.40631661184321777
+          ],
+          "tableCellContents": {
+            "0_1": "<p><span style=\"font-size: 8pt;\">(invullen voor declaratie bij uw zorgverzekeraar)</span></p>"
+          },
+          "elementId": "InvoiceAndPatientSuf",
+          "elementRole": "report-body"
+        },
+        "content": "",
+        "id": "el-1761661688265-vlm9rgcl6"
+      },
+      {
+        "type": "table",
+        "x": 10,
+        "y": 138,
+        "width": 190,
+        "height": 19,
+        "properties": {
+          "rows": 3,
+          "cols": 4,
+          "rowSizes": [
+            0.23368258230831335,
+            0.47940820244872834,
+            0.28690921524295837
+          ],
+          "colSizes": [
+            0.19811381579008983,
+            0.6708546052581603,
+            0.030925000002601455,
+            0.10010657894914843
+          ],
+          "tableCellContents": {
+            "0_0": "<p><strong style=\"font-family: Roboto, sans-serif; font-size: 8pt;\">Behandelingsdatum</strong></p>",
+            "0_1": "<p><strong style=\"font-size: 8pt; font-family: Roboto, sans-serif;\">Omschrijving</strong></p>",
+            "0_3": "<p><strong style=\"font-family: Roboto, sans-serif; font-size: 8pt;\">Bedrag</strong></p>",
+            "1_0": "<p><span style=\"font-family: Roboto, sans-serif; font-size: 8pt;\">01-04-2024</span></p><p><span style=\"font-size: 8pt;\">Behandelaar: 1205715</span></p>",
+            "1_2": "<p><span style=\"font-size: 8pt;\">€</span></p>",
+            "1_1": "<p><span style=\"font-family: Roboto, sans-serif; font-size: 8pt;\">M02 5x Consult voor evaluatie van preventie. per 5 minuten</span></p>",
+            "1_3": "<p><span style=\"font-size: 8pt;\">60,30</span></p>",
+            "2_1": "<p><strong style=\"font-family: Roboto, sans-serif; font-size: 8pt;\">Totaal</strong></p>",
+            "2_2": "<p><span style=\"font-size: 8pt; font-family: Roboto, sans-serif;\">€</span></p>",
+            "2_3": "<p><strong style=\"font-size: 8pt; font-family: Roboto, sans-serif;\">60,30</strong></p>"
+          },
+          "tableCellHAlign": {
+            "0_3": "right",
+            "1_3": "right",
+            "2_3": "right"
+          },
+          "tableCellPadding": {
+            "1_0": [
+              1,
+              0,
+              1,
+              0
+            ],
+            "0_0": [
+              0,
+              0,
+              1,
+              0
+            ],
+            "0_1": [
+              0,
+              0,
+              1,
+              0
+            ],
+            "0_2": [
+              0,
+              0,
+              1,
+              0
+            ],
+            "0_3": [
+              0,
+              0,
+              1,
+              0
+            ],
+            "1_1": [
+              1,
+              0,
+              1,
+              0
+            ],
+            "1_2": [
+              1,
+              0,
+              1,
+              0
+            ],
+            "1_3": [
+              1,
+              0,
+              1,
+              0
+            ],
+            "2_1": [
+              0,
+              0,
+              0,
+              74
+            ]
+          },
+          "tableCellBorders": {
+            "0_0": {
+              "all": {
+                "width": 0,
+                "style": "solid",
+                "color": "#000000"
+              },
+              "bottom": {
+                "width": 1,
+                "style": "solid",
+                "color": "#000000"
+              }
+            },
+            "0_1": {
+              "all": {
+                "width": 0,
+                "style": "solid",
+                "color": "#000000"
+              },
+              "bottom": {
+                "width": 1,
+                "style": "solid",
+                "color": "#000000"
+              }
+            },
+            "0_2": {
+              "all": {
+                "width": 0,
+                "style": "solid",
+                "color": "#000000"
+              },
+              "bottom": {
+                "width": 1,
+                "style": "solid",
+                "color": "#000000"
+              }
+            },
+            "0_3": {
+              "all": {
+                "width": 0,
+                "style": "solid",
+                "color": "#000000"
+              },
+              "bottom": {
+                "width": 1,
+                "style": "solid",
+                "color": "#000000"
+              }
+            },
+            "1_0": {
+              "all": {
+                "width": 0,
+                "style": "solid",
+                "color": "#000000"
+              },
+              "bottom": {
+                "width": 1,
+                "style": "solid",
+                "color": "#000000"
+              }
+            },
+            "1_1": {
+              "all": {
+                "width": 0,
+                "style": "solid",
+                "color": "#000000"
+              },
+              "bottom": {
+                "width": 1,
+                "style": "solid",
+                "color": "#000000"
+              }
+            },
+            "1_2": {
+              "all": {
+                "width": 0,
+                "style": "solid",
+                "color": "#000000"
+              },
+              "bottom": {
+                "width": 1,
+                "style": "solid",
+                "color": "#000000"
+              }
+            },
+            "1_3": {
+              "all": {
+                "width": 0,
+                "style": "solid",
+                "color": "#000000"
+              },
+              "bottom": {
+                "width": 1,
+                "style": "solid",
+                "color": "#000000"
+              }
+            }
+          },
+          "elementId": "InvoiceLines",
+          "elementRole": "report-body"
+        },
+        "content": "",
+        "id": "el-1761661823880-8lrainkrn"
+      },
+      {
+        "type": "table",
+        "x": 10,
+        "y": 271,
+        "width": 190,
+        "height": 12,
+        "properties": {
+          "rows": 1,
+          "cols": 3,
+          "rowSizes": [
+            1
+          ],
+          "colSizes": [
+            0.6287963267508774,
+            0.19352889254551975,
+            0.17767478070360287
+          ],
+          "tableCellContents": {
+            "0_2": "<p><img src=\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAHkAAAAoBAMAAAAoBkgoAAAABGdBTUEAALGPC/xhBQAAAAFzUkdCAK7OHOkAAAGHaVRYdFhNTDpjb20uYWRvYmUueG1wAAAAAAA8P3hwYWNrZXQgYmVnaW49J++7vycgaWQ9J1c1TTBNcENlaGlIenJlU3pOVGN6a2M5ZCc/Pg0KPHg6eG1wbWV0YSB4bWxuczp4PSJhZG9iZTpuczptZXRhLyI+PHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj48cmRmOkRlc2NyaXB0aW9uIHJkZjphYm91dD0idXVpZDpmYWY1YmRkNS1iYTNkLTExZGEtYWQzMS1kMzNkNzUxODJmMWIiIHhtbG5zOnRpZmY9Imh0dHA6Ly9ucy5hZG9iZS5jb20vdGlmZi8xLjAvIj48dGlmZjpPcmllbnRhdGlvbj4xPC90aWZmOk9yaWVudGF0aW9uPjwvcmRmOkRlc2NyaXB0aW9uPjwvcmRmOlJERj48L3g6eG1wbWV0YT4NCjw/eHBhY2tldCBlbmQ9J3cnPz4slJgLAAAACXBIWXMAABYlAAAWJQFJUiTwAAAAKlBMVEX////m6e25wM04TXB9i6JUZoTV2uH29/miq7vv8PNtfJaOmq7GzNaHk6n+mamxAAADW0lEQVRIx83Wz0/TUBwA8O+2rlvh0jFgbuEA7dCFaML2gMzJYawbQbnwYwOil+IYGLxsLIghHsCJCqdiIB70IEyMxssMCTHIYRfjwX/KV/reKz56w4Mv6eWbftLv971vvy3sBrgVAoAKHwzgoMshmOXXIb6xlw9qOOjlgzkZ0sCtNnwpfNCDL4EPuq+uFzZgj2UzRnRrGvx2joalxVEQ7aB+rodHIYjoGiD67DcILIhkSz/uMNx2sNvUUv7QQWdzDrovJ/PaF65gPaWhTGza1ksi1kkVJZRjW4d2y2400IuSyhbVrmgb1mkVdYOvxnSmHeu4B/UDFJnuyeBnJ3AcIEI1SlgaobSXaW3A0gjNuJlWkaURSko0c6WH6sFdps27LY30aarNU7I0aqhk12yNuqepRojpCZXqKmI6XqV1A9NN9uyRbgfdk2b6dpDowijLHJi+l2daPmYnljdY5kSb1RAdFx3qToJD3YNQIxqfyrmeUox9xNedVHQB8XWnlF8iPbHNkKWH4JrdLSMBS6fgzTTTNwOWHjREjeo8rduoX+jULMl8Q73QqVlS98Q+6/OmRPTsqq1fiUQP+W097ytbOiWyPi/MEJ2SbL3zke6aXGe6VCD6PCMr8+w3uucbRabHpqg2MyI6Nke1mRHfqQk/07udVJsZEV0JUG1mdPEdw2O0C+kae8eCpjbHaL1R/Psdk3CwNuulvWZOh4OAqWdKVOfqWA+bY7eejLA9L2CdNIO1VBfplvklh9ky3+kwW550Aj9boHHdQd9456BXhMv6xYyDjnx10C258iVdMRzmuUt2mOdS6F9/Da6o3+vQBNBhDdZ8MtGG5AqvuXjt84FeMQzfBd0//ql0CutHwpGQ8/TTTm3vGOv1yNpQ/W7efYdoz4OWDS22OLr8cHL2dZFqOeNvBItBb8kboFpbiITUPhlmh4yod5V8xzyfX57U+krgb87dylaJ3otj3aoVhWVbj+c7emL3ZbERnYh6BHJinq32k2Js8ay0uD35IyhbenPqtNQUf1ZLweKzOJ0t+UhYUWX/UuzDzvpWmdStS358wHrlbdlYq5QtvdVwH8DTL67v4slelujtRyvXFwWj1YiFs0the8+l/+e8Mwq3nuN4lA+q5l8PH4zKcKU/rj/MwjHpu5niygAAAABJRU5ErkJggg==\"></p>",
+            "0_1": "<p><a href=\"www.infomedics.nl\" rel=\"noopener noreferrer\" target=\"_blank\" style=\"color: rgb(0, 102, 204); font-size: 8pt;\">www.infomedics.nl</a></p>",
+            "0_0": "<p><span style=\"font-size: 6.5pt;\">Uw zorgaanbieder heeft Infomedics B.V. de opdracht gegeven om de vordering op u te innen. Tegelijkertijd heeft uw</span></p><p><span style=\"font-size: 6.5pt;\">zorgaanbieder het eigendom van die vordering overgedragen aan Infomedics Finance B.V. (gecedeerd).</span></p>"
+          },
+          "tableCellVAlign": {
+            "0_1": "bottom",
+            "0_0": "bottom"
+          },
+          "tableCellPadding": {
+            "0_1": [
+              0,
+              0,
+              1,
+              0
+            ],
+            "0_0": [
+              0,
+              0,
+              1,
+              0
+            ]
+          },
+          "elementRole": "report-body",
+          "elementId": "FooterIso"
+        },
+        "content": "",
+        "id": "el-1761665633059-wohbktolt"
+      },
+      {
+        "type": "table",
+        "x": 10,
+        "y": 248,
+        "width": 190,
+        "height": 23,
+        "properties": {
+          "rows": 1,
+          "cols": 4,
+          "rowSizes": [
+            1
+          ],
+          "colSizes": [
+            0.14478634868545992,
+            0.25288256578943946,
+            0.23270460526336328,
+            0.36962648026173733
+          ],
+          "tableCellContents": {
+            "0_0": "<p><strong style=\"font-size: 8.5pt;\">Infomedics B.V.</strong></p><p><span style=\"font-size: 8.5pt;\">Postbus 60108</span></p><p><span style=\"font-size: 8.5pt;\">1320 AC Almere</span></p>",
+            "0_1": "<p><span style=\"font-family: Roboto, sans-serif; font-size: 8.5pt;\">036 – 20 31 900</span></p><p><span style=\"font-family: Roboto, sans-serif; font-size: 8.5pt;\">ma t/m vr van 9.00 – 17.00 uu</span></p>",
+            "0_2": "<p><span style=\"font-family: Roboto, sans-serif; font-size: 8.5pt;\">AGB-code: 98098705</span></p><p><span style=\"font-family: Roboto, sans-serif; font-size: 8.5pt;\">IBAN: NL34 ABNA 0243 2400 5</span></p>",
+            "0_3": "<p><span style=\"font-family: Roboto, sans-serif; font-size: 8.5pt;\">KvK nr: 04048143</span></p><p><span style=\"font-family: Roboto, sans-serif; font-size: 8.5pt;\">BTW nr: NL8035.98.130.B.01</span></p>"
+          },
+          "tableCellLineHeight": {
+            "0_1": 1.3,
+            "0_0": 1.3,
+            "0_2": 1.3,
+            "0_3": 1.3
+          },
+          "tableCellVAlign": {
+            "0_0": "bottom",
+            "0_1": "bottom",
+            "0_2": "bottom",
+            "0_3": "bottom"
+          },
+          "elementRole": "report-body",
+          "elementId": "InfomedicsFoot"
+        },
+        "content": "",
+        "id": "el-1761666454420-auq38gft9"
+      },
+      {
+        "type": "table",
+        "x": 10,
+        "y": 222,
+        "width": 190,
+        "height": 24,
+        "properties": {
+          "rows": 1,
+          "cols": 1,
+          "rowSizes": [
+            1
+          ],
+          "colSizes": [
+            1
+          ],
+          "tableCellPadding": {
+            "0_0": [
+              0,
+              0,
+              0,
+              0
+            ]
+          },
+          "tableCellBorders": {
+            "0_0": {
+              "all": {
+                "width": 1,
+                "style": "solid",
+                "color": "#000000"
+              }
+            }
+          },
+          "tableCellBorderWidth": {
+            "0_0": 1
+          },
+          "tableCellBorderStyle": {
+            "0_0": "solid"
+          },
+          "tableCellBorderColor": {
+            "0_0": "#000000"
+          },
+          "tableCellSubTables": {
+            "0_0": {
+              "rows": 1,
+              "cols": 4,
+              "rowSizes": [
+                1
+              ],
+              "colSizes": [
+                0.20508382936561276,
+                0.27901630377993947,
+                0.3874175543007909,
+                0.12848231255365677
+              ],
+              "level": 1,
+              "cellContents": {
+                "0_0": "<p><strong style=\"font-size: 9pt;\">Betaalgegevens</strong><span style=\"font-family: Roboto, sans-serif; font-size: 9pt;\">:</span></p><p><span style=\"font-family: Roboto, sans-serif; font-size: 9pt;\">Bedrag:</span></p><p><span style=\"font-family: Roboto, sans-serif; font-size: 9pt;\">Betalingskenmerk:</span></p><p><span style=\"font-family: Roboto, sans-serif; font-size: 9pt;\">Vervaldatum:</span></p><p><br/></p><p><span style=\"font-family: Roboto, sans-serif; font-size: 9pt;\">Ten name van:</span></p><p><span style=\"font-family: Roboto, sans-serif; font-size: 9pt;\">IBAN:</span></p>",
+                "0_1": "<p><br/></p><p><strong style=\"font-size: 9pt;\">€ 60,30</strong></p><p><span style=\"font-family: Roboto, sans-serif; font-size: 9pt;\">0230 0036 0410 71</span></p><p><span style=\"font-family: Roboto, sans-serif; font-size: 9pt;\">19 mei 2024</span></p><p><br/></p><p><span style=\"font-family: Roboto, sans-serif; font-size: 9pt;\">Infomedics B.V.</span></p><p><span style=\"font-family: Roboto, sans-serif; font-size: 9pt;\">NL34 ABNA 0243 2400 58</span></p>",
+                "0_2": "<p><strong style=\"font-size: 9pt; font-family: Roboto, sans-serif;\">Direct betalen?</strong></p><p><span style=\"font-size: 9pt; font-family: Roboto, sans-serif;\">Betaal veilig online met iDEAL. Dan verwerken</span></p><p><span style=\"font-size: 9pt; font-family: Roboto, sans-serif;\">we uw betaling het snelst.</span></p><p><span style=\"font-size: 9pt; font-family: Roboto, sans-serif;\">•  Scan de code met de camera van uw</span></p><p><span style=\"font-size: 9pt; font-family: Roboto, sans-serif;\">   telefoon of tablet.</span></p><p><span style=\"font-size: 9pt; font-family: Roboto, sans-serif;\">•  Of ga naar www.infomedics.nl en vul het</span></p><p><span style=\"font-size: 9pt; font-family: Roboto, sans-serif;\">   betalingskenmerk in.</span></p>",
+                "0_3": "<p><img src=\"data:image/png;base64,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\"></p>"
+              },
+              "cellPadding": {
+                "0_0": [
+                  1,
+                  1,
+                  1,
+                  0
+                ],
+                "0_1": [
+                  1,
+                  1,
+                  1,
+                  0
+                ],
+                "0_2": [
+                  1,
+                  1,
+                  1,
+                  0
+                ],
+                "0_3": [
+                  1,
+                  1,
+                  1,
+                  0
+                ]
+              },
+              "cellHAlign": {
+                "0_0": "left",
+                "0_1": "left",
+                "0_2": "left",
+                "0_3": "right"
+              },
+              "cellVAlign": {
+                "0_0": "top",
+                "0_1": "top",
+                "0_2": "top",
+                "0_3": "middle"
+              },
+              "cellFontFamily": {},
+              "cellFontSize": {},
+              "cellFontWeight": {},
+              "cellFontStyle": {},
+              "cellLineHeight": {},
+              "cellTextDecoration": {},
+              "cellSubTables": {}
+            }
+          },
+          "elementId": "PaymentFooter",
+          "elementRole": "report-body",
+          "tableCellContents": {},
+          "tableCellLineHeight": {
+            "0_0": 0.95
+          }
+        },
+        "content": "",
+        "id": "el-1761667055523-65qjx1d0n"
+      },
+      {
+        "type": "table",
+        "x": 10,
+        "y": 213,
+        "width": 190,
+        "height": 9,
+        "properties": {
+          "rows": 1,
+          "cols": 1,
+          "rowSizes": [
+            1
+          ],
+          "colSizes": [
+            1
+          ],
+          "tableCellContents": {
+            "0_0": "<p><span style=\"font-family: Roboto, sans-serif; font-size: 9pt;\">Wij vragen u vriendelijk het bedrag binnen 30 dagen aan ons over te maken. Hieronder treft u de betaalgegevens aan.</span></p><p><span style=\"font-family: Roboto, sans-serif; font-size: 9pt;\">Vermeld bij uw betaling altijd het betalingskenmerk.</span></p>"
+          },
+          "elementRole": "report-body"
+        },
+        "content": "",
+        "id": "el-1761722463735-jwzy2e152"
+      }
+    ],
+    "gridSize": 10,
+    "canvasWidth": 210,
+    "canvasHeight": 297
+  },
+  "pageGutters": {
+    "top": 10,
+    "right": 10,
+    "bottom": 10,
+    "left": 10
+  },
+  "visualGridSize": 10,
+  "logicalGridSize": 1,
+  "calibrationScale": 0.966183574879227,
+  "canvasZoomMode": "actual"
+}
