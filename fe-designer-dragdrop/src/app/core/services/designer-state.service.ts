@@ -486,7 +486,7 @@ export class DesignerStateService {
       .replace(/__BOTTOM__/g, `${margins.bottom}mm`)
       .replace(/__LEFT__/g, `${margins.left}mm`);
 
-    return `<html xmlns="http://www.w3.org/1999/xhtml">\n` +
+    let xhtml = `<html xmlns="http://www.w3.org/1999/xhtml">\n` +
       `  <head>\n` +
       `    <title>${safeTitle}</title>\n` +
       `    <style type="text/css" media="all">\n` +
@@ -494,6 +494,15 @@ export class DesignerStateService {
       `    </style>\n` +
       `  </head>\n` +
       `  <body>\n${bodyContent}\n  </body>\n</html>`;
+    // Ensure all <img> tags have explicit closing </img>
+    xhtml = this.ensureImageTagsClosed(xhtml);
+    return xhtml;
+  }
+
+  private ensureImageTagsClosed(html: string): string {
+    // Replace <img ...> that do not self-close or already have </img>
+    // Pattern: <img ...> (not followed immediately by </img>)
+    return html.replace(/<img\b([^>]*)>(?!\s*<\/img>)/gi, '<img$1></img>');
   }
 
   private a4StylesCache: string | null = null; // Set by preload provider
