@@ -736,16 +736,17 @@ export class DesignerStateService {
             const fontSizeMap = element.properties?.['tableCellFontSize'] as Record<string, number> | undefined;
             const lineHeightMap = element.properties?.['tableCellLineHeight'] as Record<string, number> | undefined;
             const fontFamilyMap = element.properties?.['tableCellFontFamily'] as Record<string, string> | undefined;
-            const fontStyle = fontStyleMap?.[key];
-            const fontWeight = fontWeightMap?.[key];
-            const fontSize = Number.isFinite(fontSizeMap?.[key]) ? fontSizeMap![key]! : 9;
-            const lineHeightRaw = lineHeightMap?.[key];
-            const fontFamily = fontFamilyMap?.[key] || 'Roboto, sans-serif';
-            const fontCss = (fontStyle ? `font-style:${fontStyle};` : '') +
-              (fontWeight ? `font-weight:${fontWeight};` : '') +
-              (fontSize ? `font-size:${fontSize}pt;` : '') +
-              (Number.isFinite(lineHeightRaw) ? `line-height:${lineHeightRaw};` : '') +
-              (fontFamily ? `font-family:${fontFamily};` : '');
+            const textDecorationMap = element.properties?.['tableCellTextDecoration'] as Record<string, string> | undefined;
+            const rawFontSize = fontSizeMap?.[key];
+            const rawLineHeight = lineHeightMap?.[key];
+            const fontStyle = fontStyleMap?.[key] || 'normal';
+            const fontWeight = fontWeightMap?.[key] || 'normal';
+            const fontSize = Number.isFinite(rawFontSize) ? rawFontSize! : 9;
+            const lineHeight = Number.isFinite(rawLineHeight) ? rawLineHeight! : 1;
+            const fontFamilyRaw = fontFamilyMap?.[key];
+            const fontFamily = fontFamilyRaw && fontFamilyRaw.length ? fontFamilyRaw : 'Roboto, sans-serif';
+            const textDecoration = textDecorationMap?.[key] || 'none';
+            const fontCss = `font-style:${fontStyle};font-weight:${fontWeight};font-size:${fontSize}pt;line-height:${lineHeight};font-family:${fontFamily};text-decoration:${textDecoration};`;
             return `        <td style="width:${colWidthStr}mm;height:${rowHeightStr}mm;padding:${pt}mm ${pr}mm ${pb}mm ${pl}mm;text-align:${hAlign};vertical-align:${vAlign};${borderCss}${fontCss}">${cellContent}</td>`;
           })
           .join('\n');
@@ -808,16 +809,16 @@ export class DesignerStateService {
             const cellBorderBottomCss = this.borderSpecToCss(this.composeBorderSpec(cellBorderConfig, nestedLegacy, 'bottom'));
             const cellBorderLeftCss = this.borderSpecToCss(this.composeBorderSpec(cellBorderConfig, nestedLegacy, 'left'));
             const borderCss = `border-top:${cellBorderTopCss};border-right:${cellBorderRightCss};border-bottom:${cellBorderBottomCss};border-left:${cellBorderLeftCss};`;
-            const fontStyle = subTable.cellFontStyle?.[key] || '';
-            const fontWeight = subTable.cellFontWeight?.[key] || '';
-            const fontSize = Number.isFinite(subTable.cellFontSize?.[key]) ? subTable.cellFontSize![key]! : 9;
-            const lineHeight = subTable.cellLineHeight?.[key];
-            const fontFamily = subTable.cellFontFamily?.[key] || 'Roboto, sans-serif';
-            const fontCss = (fontStyle ? `font-style:${fontStyle};` : '') +
-              (fontWeight ? `font-weight:${fontWeight};` : '') +
-              (fontSize ? `font-size:${fontSize}pt;` : '') +
-              (Number.isFinite(lineHeight) ? `line-height:${lineHeight};` : '') +
-              (fontFamily ? `font-family:${fontFamily};` : '');
+            const rawSubFontSize = subTable.cellFontSize?.[key];
+            const rawSubLineHeight = subTable.cellLineHeight?.[key];
+            const fontStyle = subTable.cellFontStyle?.[key] || 'normal';
+            const fontWeight = subTable.cellFontWeight?.[key] || 'normal';
+            const fontSize = Number.isFinite(rawSubFontSize) ? rawSubFontSize! : 9;
+            const lineHeight = Number.isFinite(rawSubLineHeight) ? rawSubLineHeight! : 1;
+            const fontFamilyRaw = subTable.cellFontFamily?.[key];
+            const fontFamily = fontFamilyRaw && fontFamilyRaw.length ? fontFamilyRaw : 'Roboto, sans-serif';
+            const textDecoration = subTable.cellTextDecoration?.[key] || 'none';
+            const fontCss = `font-style:${fontStyle};font-weight:${fontWeight};font-size:${fontSize}pt;line-height:${lineHeight};font-family:${fontFamily};text-decoration:${textDecoration};`;
 
             return `          <td style="width:${colWidthStr}mm;height:${rowHeightStr}mm;padding:${pt}mm ${pr}mm ${pb}mm ${pl}mm;text-align:${hAlign};vertical-align:${vAlign};${borderCss}${fontCss}">${cellContent}</td>`;
           })
