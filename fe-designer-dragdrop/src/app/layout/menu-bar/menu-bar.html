@@ -113,6 +113,13 @@
       </div>
     }
   </div>
+
+  <div
+    class="menu-layout-name"
+    [attr.title]="layoutDisplayName()"
+    data-testid="menu-layout-name">
+    {{ layoutDisplayName() }}
+  </div>
 </div>
 
 <!-- Click outside to close menus -->

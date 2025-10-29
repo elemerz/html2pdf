@@ -70,6 +70,20 @@ export class DesignerStateService {
   readonly statusMessage = signal('Ready');
   readonly cursorPosition = signal({ x: 0, y: 0 });
 
+  private designSourceNameSignal = signal<string | null>(null);
+  readonly layoutDisplayName = computed(() => {
+    const layoutName = (this.currentLayoutSignal().name || '').trim();
+    const sourceName = this.designSourceNameSignal();
+    const fallback = sourceName && sourceName.trim().length ? sourceName.trim() : 'Untitled Layout';
+    if (!layoutName.length) {
+      return fallback;
+    }
+    if (layoutName === 'Untitled Layout') {
+      return fallback;
+    }
+    return layoutName;
+  });
+
   // Grid configuration
   readonly visualGridSize = signal(10); // Background grid display size in mm
   readonly logicalGridSize = signal(1); // Snap-to-grid quantum in mm
@@ -122,6 +136,7 @@ export class DesignerStateService {
     this.clearHistory();
     this.addToHistory(this.elementsSignal());
     this.clearTableCellSelection();
+    this.designSourceNameSignal.set(null);
   }
 
   /**
@@ -243,6 +258,7 @@ export class DesignerStateService {
     this.clearHistory();
     this.addToHistory(this.elementsSignal());
     this.clearTableCellSelection();
+    this.designSourceNameSignal.set(null);
   }
 
   /**
@@ -256,6 +272,7 @@ export class DesignerStateService {
     this.clearHistory();
     this.addToHistory([]);
     this.clearTableCellSelection();
+    this.designSourceNameSignal.set(null);
   }
 
   // History management
@@ -357,6 +374,17 @@ export class DesignerStateService {
    */
   setCursorPosition(x: number, y: number) {
     this.cursorPosition.set({ x, y });
+  }
+
+  private extractDesignFileBase(fileName?: string | null): string | null {
+    if (!fileName) {
+      return null;
+    }
+    const trimmed = fileName.trim();
+    if (!trimmed.length) {
+      return null;
+    }
+    return trimmed.replace(/\.json$/i, '');
   }
 
   // Panel controls
@@ -1099,7 +1127,7 @@ export class DesignerStateService {
     }
     
     // Extract title from head
-    const title = doc.querySelector('title')?.textContent || filename.replace(/\.xhtml$/i, '');
+    const title = doc.querySelector('title')?.textContent || filename.replace(/\.(x?html)$/i, '');
     
     return {
       name: title,
@@ -1719,7 +1747,7 @@ export class DesignerStateService {
   /**
    * Loads a designer state from a JSON export.
    */
-  importDesign(jsonContent: string): void {
+  importDesign(jsonContent: string, fileName?: string): void {
     const parsed = JSON.parse(jsonContent);
     if (!parsed || typeof parsed !== 'object') {
       throw new Error('Invalid design JSON');
@@ -1764,5 +1792,7 @@ export class DesignerStateService {
     if (parsed.canvasZoomMode) {
       this.setCanvasZoomMode(parsed.canvasZoomMode);
     }
+
+    this.designSourceNameSignal.set(this.extractDesignFileBase(fileName));
   }
 }

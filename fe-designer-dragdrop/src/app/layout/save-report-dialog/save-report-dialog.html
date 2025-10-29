@@ -1,0 +1,43 @@
+<form
+  #dialogForm
+  [attr.hidden]="isOpen() ? null : ''"
+  popover
+  class="save-report-popover"
+  (submit)="onSubmit($event)"
+  autocomplete="off">
+  <h2 class="title">Save Report Design</h2>
+
+  <label class="field">
+    <span class="label">Layout name</span>
+    <input
+      #layoutInput
+      type="text"
+      maxlength="120"
+      [value]="layoutName()"
+      (input)="onLayoutNameInput($any($event.target).value)"
+      data-testid="input-layout-name"
+      required />
+  </label>
+
+  <label class="field">
+    <span class="label">File name</span>
+    <input
+      #fileInput
+      type="text"
+      maxlength="120"
+      [value]="fileName()"
+      (input)="onFileNameInput($any($event.target).value)"
+      placeholder="untitled-layout"
+      data-testid="input-file-name"
+      required />
+  </label>
+
+  @if (validationMessage()) {
+    <div class="error" role="alert">{{ validationMessage() }}</div>
+  }
+
+  <div class="actions">
+    <button type="submit" class="primary" data-testid="button-save-report">Save</button>
+    <button type="button" class="secondary" (click)="onCancelClick()" data-testid="button-cancel-save-report">Cancel</button>
+  </div>
+</form>

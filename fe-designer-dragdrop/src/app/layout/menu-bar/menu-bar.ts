@@ -19,6 +19,7 @@ export class MenuBarComponent {
   protected canUndo = this.designerState.canUndo;
   protected canRedo = this.designerState.canRedo;
   protected canvasZoomMode = this.designerState.canvasZoomMode;
+  protected layoutDisplayName = this.designerState.layoutDisplayName;
 
   // Output events
   onNew = output<void>();

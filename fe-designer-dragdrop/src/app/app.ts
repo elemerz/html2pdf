@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, ViewChild, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DesignerStateService } from './core/services/designer-state.service';
 import { MenuBarComponent } from './layout/menu-bar/menu-bar';
@@ -9,7 +9,7 @@ import { CanvasComponent } from './designer/canvas/canvas';
 import { SaveDialogComponent } from './layout/save-dialog/save-dialog';
 import { OptionsDialogComponent } from './shared/dialogs/options-dialog/options-dialog';
 import { ScreenCalibrationDialogComponent } from './shared/dialogs/screen-calibration/screen-calibration-dialog';
-import { ReportLayout } from './shared/models/schema';
+import { SaveReportDialogComponent } from './layout/save-report-dialog/save-report-dialog';
 
 /**
  * Root application shell responsible for wiring together layout chrome and handling global menu actions.
@@ -24,6 +24,7 @@ import { ReportLayout } from './shared/models/schema';
     PropertyPanelComponent,
     CanvasComponent,
     SaveDialogComponent,
+    SaveReportDialogComponent,
     OptionsDialogComponent,
     ScreenCalibrationDialogComponent
   ],
@@ -33,6 +34,7 @@ import { ReportLayout } from './shared/models/schema';
 })
 export class App {
   protected designerState = inject(DesignerStateService);
+  @ViewChild(SaveReportDialogComponent) private saveReportDialog?: SaveReportDialogComponent;
 
   // Dialog visibility signals
   protected showSaveDialog = signal(false);
@@ -119,12 +121,13 @@ export class App {
    * Exports the current design as JSON for later re-import.
    */
   onSaveDesign(): void {
-    const defaultName = this.designerState.currentLayout().name || 'layout';
-    const entered = prompt('Enter report design file name', defaultName);
-    const fileNameBase = (entered || defaultName).trim() || 'layout';
-    const json = this.designerState.exportDesign();
-    this.triggerDownload(`${fileNameBase}.json`, json, 'application/json');
-    this.designerState.setStatusMessage('Report design saved');
+    const dialog = this.saveReportDialog;
+    if (!dialog) {
+      console.warn('Save report dialog is unavailable.');
+      return;
+    }
+    const currentLayoutName = this.designerState.currentLayout().name?.trim() || 'Untitled Layout';
+    dialog.open(currentLayoutName, this.computeDefaultFileBase(currentLayoutName));
   }
 
   /**
@@ -141,7 +144,7 @@ export class App {
       reader.onload = (e) => {
         try {
           const jsonContent = e.target?.result as string;
-          this.designerState.importDesign(jsonContent);
+          this.designerState.importDesign(jsonContent, file.name);
           this.designerState.setStatusMessage('Report design loaded');
         } catch (err) {
           console.error('Error loading design:', err);
@@ -189,7 +192,7 @@ export class App {
     const trimmedName = name.trim() || 'layout';
     try {
       const xhtml = this.designerState.generateXhtmlDocument(trimmedName);
-      this.triggerDownload(`${trimmedName}.xhtml`, xhtml, 'application/xhtml+xml');
+      this.triggerDownload(`${trimmedName}.html`, xhtml, 'application/xhtml+xml');
       this.designerState.setStatusMessage(`Layout "${trimmedName}" exported`);
       this.showSaveDialog.set(false);
     } catch (error) {
@@ -203,6 +206,38 @@ export class App {
         this.showSaveDialog.set(false);
       }
     }
+  }
+
+  handleSaveReport(payload: { layoutName: string; fileName: string }): void {
+    const sanitizedLayoutName = payload.layoutName.trim() || 'Untitled Layout';
+    const safeFileBase = this.normalizeFileBase(payload.fileName);
+    this.designerState.updateLayoutName(sanitizedLayoutName);
+    const json = this.designerState.exportDesign();
+    this.triggerDownload(`${safeFileBase}.json`, json, 'application/json');
+    this.designerState.setStatusMessage('Report design saved');
+  }
+
+  handleCancelSaveReport(): void {
+    this.designerState.setStatusMessage('Report save cancelled');
+  }
+
+  private computeDefaultFileBase(layoutName: string): string {
+    if (!layoutName.trim() || layoutName.trim() === 'Untitled Layout') {
+      return 'untitled-layout';
+    }
+    return this.normalizeFileBase(layoutName);
+  }
+
+  private normalizeFileBase(raw: string): string {
+    const trimmed = raw.trim().toLowerCase().replace(/\.json$/i, '');
+    if (!trimmed.length) {
+      return 'untitled-layout';
+    }
+    const slug = trimmed
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .replace(/--+/g, '-');
+    return slug.length ? slug : 'untitled-layout';
   }
 
   /**

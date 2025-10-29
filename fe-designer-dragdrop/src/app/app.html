@@ -69,6 +69,11 @@
   (onExportAsXhtml)="handleSave($event)">
 </app-save-dialog>
 
+<app-save-report-dialog
+  (onSave)="handleSaveReport($event)"
+  (onCancel)="handleCancelSaveReport()">
+</app-save-report-dialog>
+
 @if (showOptionsDialog()) {
   <app-options-dialog
     (close)="closeOptionsDialog()">

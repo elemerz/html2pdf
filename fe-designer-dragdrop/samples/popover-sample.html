@@ -1,0 +1,20 @@
+<button class="btn" popovertarget="user-form">Open form</button>
+
+<form id="user-form" popover class="card" method="post" action="/submit">
+  <h2>Enter details</h2>
+
+  <label>
+    First name
+    <input name="firstName" required autofocus>
+  </label>
+
+  <label>
+    Email
+    <input name="email" type="email" required>
+  </label>
+
+  <div class="row">
+    <button type="submit" class="primary">Submit</button>
+    <button type="button" popovertarget="user-form" popovertargetaction="hide">Cancel</button>
+  </div>
+</form>
