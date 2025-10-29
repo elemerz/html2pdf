@@ -11,16 +11,18 @@ html, body {
   margin: 0 0 0 0;
 }
 .page { position: relative; min-height: 276.7mm; }
-.page + .page { page-break-before: page; break-before: page; }
+.page + .page { page-break-before: always; }
 
-.pagebreak {break-before: always; page-break-after: always; }
+.pagebreak {page-break-before: always;}
+/*Use this to force pagebreak
+<br style="-fs-page-break-min-height: 10cm;clear:both;"/>
+*/
 
 /*** Custom font Definitions ***/
 @font-face {
   font-family: 'Roboto';
   font-weight: normal;
   font-style: normal;
-  font-display: swap;
   -fs-pdf-font-embed: embed;
   -fs-pdf-font-encoding: Identity-H;
 }
@@ -28,7 +30,6 @@ html, body {
   font-family: 'KIX Barcode';
   font-weight: normal;
   font-style: normal;
-  font-display: swap;
   -fs-pdf-font-embed: embed;
   -fs-pdf-font-encoding: Identity-H;
 }

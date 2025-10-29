@@ -109,7 +109,11 @@ export class PropertyPanelComponent {
    * Retrieves the semantic role assigned to the element.
    */
   getElementRole(element: CanvasElement): string {
-    return element.properties?.['elementRole'] || '';
+    const role = element.properties?.['elementRole'];
+    if (role === 'report-header' || role === 'report-footer') {
+      return role;
+    }
+    return 'report-body';
   }
 
   /**
@@ -118,7 +122,10 @@ export class PropertyPanelComponent {
   updateElementRole(value: string) {
     const el = this.selectedElement();
     if (!el) return;
-    this.updateElementProperties({ elementRole: value });
+    const normalized = value === 'report-header' || value === 'report-footer' ? value : 'report-body';
+    const current = el.properties?.['elementRole'];
+    if (current === normalized) return;
+    this.updateElementProperties({ elementRole: normalized });
   }
 
   /**

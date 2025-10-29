@@ -101,6 +101,7 @@ export function createDefaultCanvasElement(
 ): InsertCanvasElement {
   const element = toolbarElement || toolbarElements.find(e => e.type === type);
   const properties: Record<string, any> = {};
+  properties['elementRole'] = 'report-body';
 
   if (type === 'table') {
     properties['rows'] = 1;

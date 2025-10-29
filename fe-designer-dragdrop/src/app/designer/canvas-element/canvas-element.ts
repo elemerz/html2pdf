@@ -54,7 +54,10 @@ export class CanvasElementComponent {
   /**
    * Emits the semantic role as a data attribute for adjacency validation.
    */
-  @HostBinding('attr.data-role') get dataRole() { return this.element.properties?.['elementRole'] || null; }
+  @HostBinding('attr.data-role') get dataRole() {
+    const role = this.element.properties?.['elementRole'];
+    return role === 'report-header' || role === 'report-footer' ? role : 'report-body';
+  }
 
   private elementRef = inject(ElementRef);
   private designerState = inject(DesignerStateService);

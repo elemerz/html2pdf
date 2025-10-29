@@ -449,23 +449,27 @@ export class DesignerStateService {
   }
 
   /**
+   * Determines the normalized semantic role for a canvas element.
+   */
+  private resolveElementRole(element: CanvasElement | null | undefined): 'report-header' | 'report-body' | 'report-footer' {
+    const role = element?.properties?.['elementRole'];
+    return role === 'report-header' || role === 'report-footer' ? role : 'report-body';
+  }
+
+  /**
    * Validates that elements with matching roles are grouped contiguously.
    */
   private validateRoleAdjacency(elements: CanvasElement[]): void {
-    const roledElements = elements.filter(el => el.properties?.['elementRole']);
-    
-    if (roledElements.length === 0) {
-      return; // No roles to validate
+    if (elements.length === 0) {
+      return;
     }
 
-    // Get unique roles
     const roles = new Set<string>();
-    roledElements.forEach(el => {
-      const role = el.properties?.['elementRole'];
-      if (role) {
-        roles.add(role);
-      }
-    });
+    elements.forEach(el => roles.add(this.resolveElementRole(el)));
+
+    if (roles.size <= 1) {
+      return; // Nothing to validate when only one role exists
+    }
 
     // Check for each possible intercalation pattern
     // Pattern: role1 + role2 + role1 (where role1 != role2)
@@ -508,7 +512,7 @@ export class DesignerStateService {
     let currentGroup: { role: string | null; elements: CanvasElement[] } | null = null;
 
     for (const el of elements) {
-      const role = el.properties?.['elementRole'] || null;
+      const role = this.resolveElementRole(el);
       
       if (!currentGroup || currentGroup.role !== role) {
         // Start a new group
@@ -679,10 +683,10 @@ export class DesignerStateService {
 
     // Extract id and data-role attributes
     const elementId = element.properties?.['elementId'] || '';
-    const elementRole = element.properties?.['elementRole'] || '';
+    const elementRole = this.resolveElementRole(element);
     const idAttr = elementId ? ` id="${this.escapeHtml(elementId)}"` : '';
     // Only include data-role if requested (not when wrapped in parent tag)
-    const roleAttr = (includeDataRole && elementRole) ? ` data-role="${this.escapeHtml(elementRole)}"` : '';
+    const roleAttr = includeDataRole ? ` data-role="${this.escapeHtml(elementRole)}"` : '';
 
     const subTablesMap = element.properties?.['tableCellSubTables'] as Record<string, any> | undefined;
 
@@ -1156,7 +1160,8 @@ export class DesignerStateService {
     // Extract id and data-role attributes
     const elementId = table.getAttribute('id') || '';
     // Use override role if provided (from wrapper tag), otherwise use data-role attribute
-    const elementRole = overrideRole || table.getAttribute('data-role') || '';
+    const rawRole = overrideRole || table.getAttribute('data-role') || '';
+    const elementRole = rawRole === 'report-header' || rawRole === 'report-footer' ? rawRole : 'report-body';
     
     // Parse table structure
     const tbody = table.querySelector('tbody');
