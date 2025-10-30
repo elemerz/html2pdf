@@ -183,11 +183,11 @@ export class CellEditorDialogComponent implements OnInit, OnDestroy {
         }],
         [{ 'color': [] }, { 'background': [] }],
         // lineheight pending proper custom toolbar module, removed for now
-        ['link', 'image', 'qr']
+        ['link', 'image'], // removed 'qr' so we can inject manually for reliability
       ],
       handlers: {
-        symbol: () => this.toggleSymbolPalette(),
-        qr: () => this.insertQrCode()
+        symbol: () => this.toggleSymbolPalette()
+        // qr handler bound manually when injecting button
       }
     }
   };
@@ -224,8 +224,11 @@ export class CellEditorDialogComponent implements OnInit, OnDestroy {
             qrBtn.innerHTML = '<span class="ql-qr-icon" style="font-size:11px;font-weight:600;letter-spacing:.5px">QR</span>';
             qrBtn.addEventListener('click', () => this.insertQrCode());
             imageBtn.after(qrBtn); // place directly after image button
+            console.debug('[CellEditorDialog] QR button injected after image button');
+          } else {
+            console.debug('[CellEditorDialog] QR button already exists or image button missing', { hasImage: !!imageBtn, hasQr: !!existingQr });
           }
-        } catch {}
+        } catch (e) { console.warn('[CellEditorDialog] QR injection error', e); }
         const fontPicker = toolbarEl.querySelector('.ql-font');
         // Locate the formats group containing the font picker
         const formatsGroups = Array.from(toolbarEl.querySelectorAll(':scope > .ql-formats')) as HTMLElement[];
