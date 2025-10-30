@@ -718,11 +718,13 @@ export class CellEditorDialogComponent implements OnInit, OnDestroy {
     const text = window.prompt('QR Code content:', '');
     if (!text) return;
     try {
+      // Generate SVG QR code then embed as an image (Quill strips raw <svg> markup)
       const svg = new (QRCode as any)({ content: text, padding: 0, width: 128, height: 128, color: '#000', background: 'transparent', ecl: 'M' }).svg();
+      const dataUrl = 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
       const range = this.quill.getSelection(true);
       const index = range ? range.index : this.quill.getLength();
-      // Insert the SVG markup directly at current cursor position
-      this.quill.clipboard.dangerouslyPasteHTML(index, svg);
+      this.quill.insertEmbed(index, 'image', dataUrl, 'user');
+      this.quill.setSelection(index + 1, 0, 'silent');
     } catch (e) {
       console.error('QR generation failed', e);
     }
