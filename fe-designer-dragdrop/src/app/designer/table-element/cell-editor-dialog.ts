@@ -3,6 +3,7 @@ import Quill from 'quill';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { QuillModule } from 'ngx-quill';
+import QRCode from 'qrcode-svg';
 
 const SYMBOL_CODE_RANGES: Array<[number, number]> = [
   [0x00A1, 0x00FF],
@@ -182,10 +183,11 @@ export class CellEditorDialogComponent implements OnInit, OnDestroy {
         }],
         [{ 'color': [] }, { 'background': [] }],
         // lineheight pending proper custom toolbar module, removed for now
-        ['link', 'image']
+        ['link', 'image', 'qr']
       ],
       handlers: {
-        symbol: () => this.toggleSymbolPalette()
+        symbol: () => this.toggleSymbolPalette(),
+        qr: () => this.insertQrCode()
       }
     }
   };
@@ -692,6 +694,21 @@ export class CellEditorDialogComponent implements OnInit, OnDestroy {
     const sizeVal = Math.min(120, Math.max(1, this.currentFontSize));
     this.currentFontSize = sizeVal;
     this.quill.format('size', sizeVal + 'pt');
+  }
+
+  insertQrCode(): void {
+    if (!this.quill) return;
+    const text = window.prompt('QR Code content:', '');
+    if (!text) return;
+    try {
+      const svg = new (QRCode as any)({ content: text, padding: 0, width: 128, height: 128, color: '#000', background: 'transparent', ecl: 'M' }).svg();
+      const range = this.quill.getSelection(true);
+      const index = range ? range.index : this.quill.getLength();
+      // Insert the SVG markup directly at current cursor position
+      this.quill.clipboard.dangerouslyPasteHTML(index, svg);
+    } catch (e) {
+      console.error('QR generation failed', e);
+    }
   }
 
   ngOnDestroy(): void {
