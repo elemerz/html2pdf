@@ -60,7 +60,11 @@ export class DesignerStateService {
 
   readonly canUndo = computed(() => this.historyIndexSignal() > 0);
   readonly canRedo = computed(() => this.historyIndexSignal() < this.historySignal().length - 1);
-  readonly isDesignDirty = computed(() => this.historyIndexSignal() !== this.savedHistoryIndexSignal());
+  readonly isDesignDirty = computed(() => {
+    // If canvas empty treat as not dirty regardless of history indices
+    if (this.elementsSignal().length === 0) return false;
+    return this.historyIndexSignal() !== this.savedHistoryIndexSignal();
+  });
 
   // Panel states
   readonly westCollapsed = signal(false);

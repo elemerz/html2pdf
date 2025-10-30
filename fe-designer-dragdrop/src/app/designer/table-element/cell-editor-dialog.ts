@@ -257,10 +257,113 @@ export class CellEditorDialogComponent implements OnInit, OnDestroy {
         return;
       }
       const format = this.quill.getFormat(range);
-      const size = format['size'];
-      if (typeof size === 'string') {
-        const match = /^(\d+(?:\.\d+)?)pt$/.exec(size);
-        if (match) this.currentFontSize = parseFloat(match[1]);
+
+      // Update font size spinner
+      let sizeVal: number | null = null;
+      const sizeFmt = format['size'];
+      if (typeof sizeFmt === 'string') {
+        const match = /^(\d+(?:\.\d+)?)pt$/.exec(sizeFmt);
+        if (match) sizeVal = parseFloat(match[1]);
+      }
+      if (sizeVal == null) {
+        // Fallback: read computed style at cursor position
+        try {
+          const leaf = this.quill.getLeaf(range.index)?.[0] as any;
+          const node: HTMLElement | null = leaf?.domNode || null;
+          if (node) {
+            const cs = getComputedStyle(node);
+            const fs = cs.fontSize; // typically in px
+            const pxMatch = /^(\d+(?:\.\d+)?)px$/.exec(fs);
+            if (pxMatch) {
+              // Convert px to pt (1pt = 1.3333px) => pt = px * 72 / 96
+              const px = parseFloat(pxMatch[1]);
+              sizeVal = Math.round((px * 72 / 96) * 100) / 100;
+            }
+            const ptMatch = /^(\d+(?:\.\d+)?)pt$/.exec(fs);
+            if (ptMatch) sizeVal = parseFloat(ptMatch[1]);
+          }
+        } catch {}
+      }
+      const inputEl = (this.quill.container.parentElement?.querySelector('.ql-custom-size input') as HTMLInputElement | null);
+      if (sizeVal != null) {
+        this.currentFontSize = sizeVal;
+        if (inputEl) inputEl.value = this.currentFontSize.toString();
+      } else {
+        // Completely neutral (no explicit size format) -> derive from computed style of leaf or editor root
+        try {
+          const leafNeutral = this.quill.getLeaf(range.index)?.[0] as any;
+          let elNeutral: HTMLElement | null = leafNeutral?.domNode instanceof HTMLElement ? leafNeutral.domNode : null;
+          if (!elNeutral && leafNeutral?.domNode?.parentElement) {
+            elNeutral = leafNeutral.domNode.parentElement as HTMLElement;
+          }
+          const csNeutral = elNeutral ? getComputedStyle(elNeutral) : getComputedStyle(this.quill.root);
+          const fsNeutral = csNeutral.fontSize;
+          const pxMatchNeutral = /^(\d+(?:\.\d+)?)px$/.exec(fsNeutral);
+          if (pxMatchNeutral) {
+            const px = parseFloat(pxMatchNeutral[1]);
+            this.currentFontSize = Math.round((px * 72 / 96) * 100) / 100; // convert px->pt
+            if (inputEl) inputEl.value = this.currentFontSize.toString();
+          }
+        } catch {}
+      }
+
+      // Update font dropdown to reflect current selection font
+      const toolbarEl = this.quill.container.parentElement?.querySelector('.ql-toolbar') as HTMLElement | null;
+      if (toolbarEl) {
+        const fontSelect = toolbarEl.querySelector('select.ql-font') as HTMLSelectElement | null;
+        const fontFmt = format['font'];
+        if (fontSelect && typeof fontFmt === 'string' && fontFmt.length) {
+          fontSelect.value = fontFmt;
+        } else if (fontSelect) {
+          // Derive from computed style (inherited case)
+          try {
+            const leaf2 = this.quill.getLeaf(range.index)?.[0] as any;
+            const node2: HTMLElement | null = leaf2?.domNode || null;
+            let el: HTMLElement | null = node2 instanceof HTMLElement ? node2 : null;
+            if (!el && node2 && node2.parentElement) {
+              el = node2.parentElement as HTMLElement; // ascend from text node
+            }
+            const cs = el ? getComputedStyle(el) : getComputedStyle(this.quill.root);
+            const fam = cs.fontFamily.toLowerCase();
+            const candidates: Record<string,string[]> = {
+              'arial': ['arial'],
+              'helvetica': ['helvetica'],
+              'verdana': ['verdana'],
+              'tahoma': ['tahoma'],
+              'trebuchet': ['trebuchet'],
+              'times-new-roman': ['times new roman','times-new-roman','times'],
+              'georgia': ['georgia'],
+              'calibri': ['calibri'],
+              'roboto': ['roboto'],
+              'open-sans': ['open sans','open-sans'],
+              'lato': ['lato'],
+              'montserrat': ['montserrat'],
+              'poppins': ['poppins'],
+              'kix-barcode': ['kix barcode','kix-barcode']
+            };
+            for (const key of Object.keys(candidates)) {
+              if (candidates[key].some(token => fam.includes(token))) {
+                if (fontSelect.value !== key) {
+                  fontSelect.value = key;
+                  fontSelect.dispatchEvent(new Event('change'));
+                }
+                break;
+              }
+            }
+
+            // Inherited font-size fallback (px -> use numeric px as pt for spinner display)
+            const fs = cs.fontSize;
+            const pxMatch2 = /^(\d+(?:\.\d+)?)px$/.exec(fs);
+            if (!sizeVal && pxMatch2) {
+              // Convert inherited px to pt for display consistency
+              const pxInherited = parseFloat(pxMatch2[1]);
+              this.currentFontSize = Math.round((pxInherited * 72 / 96) * 100) / 100;
+              const inputEl2 = (this.quill.container.parentElement?.querySelector('.ql-custom-size input') as HTMLInputElement | null);
+              if (inputEl2) inputEl2.value = this.currentFontSize.toString();
+            }
+          } catch {}
+        }
+        // Quill auto-updates button active states for bold/italic/underline/color
       }
     });
   }
@@ -472,6 +575,7 @@ export class CellEditorDialogComponent implements OnInit, OnDestroy {
 
       const reverseFontMap: Record<string, string> = {
         'Arial, Helvetica, sans-serif': 'arial',
+        'Helvetica, Arial, sans-serif': 'helvetica',
         'Helvetica, sans-serif': 'helvetica',
         'Verdana, Geneva, sans-serif': 'verdana',
         'Tahoma, Geneva, sans-serif': 'tahoma',
@@ -493,8 +597,7 @@ export class CellEditorDialogComponent implements OnInit, OnDestroy {
       class FontStyleAttributor extends StyleAttributor {
         constructor() {
           super('font', 'font-family', {
-            scope: Parchment.Scope.INLINE,
-            whitelist: Object.keys(fontMap)
+            scope: Parchment.Scope.INLINE // Removed whitelist so Quill preserves existing inline font-family values
           });
         }
         

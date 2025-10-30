@@ -58,10 +58,8 @@ export class App {
    * Resets the current layout after user confirmation and clears designer state.
    */
   onNewLayout(): void {
-    if (confirm('Clear the current layout?')) {
-      this.designerState.clearLayout();
-      this.designerState.setStatusMessage('New layout created');
-    }
+    this.designerState.clearLayout();
+    this.designerState.setStatusMessage('New layout created');
   }
 
   /**
@@ -111,10 +109,8 @@ export class App {
    * Clears the current layout when the user confirms closing it.
    */
   onCloseLayout(): void {
-    if (confirm('Close the current layout?')) {
-      this.designerState.clearLayout();
-      this.designerState.setStatusMessage('Layout closed');
-    }
+    this.designerState.clearLayout();
+    this.designerState.setStatusMessage('Layout closed');
   }
 
   /**
