@@ -1,8 +1,141 @@
-import {Component, Input, Output, EventEmitter, OnInit, ElementRef, ViewChild, HostListener} from '@angular/core';
+import {Component, Input, Output, EventEmitter, OnInit, ElementRef, ViewChild, HostListener, OnDestroy} from '@angular/core';
 import Quill from 'quill';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { QuillModule } from 'ngx-quill';
+
+const SYMBOL_CODE_RANGES: Array<[number, number]> = [
+  [0x00A1, 0x00FF],
+  [0x2010, 0x203A],
+  [0x20A0, 0x20CF],
+  [0x2100, 0x214F],
+  [0x2150, 0x218F],
+  [0x2190, 0x21FF],
+  [0x2200, 0x22FF],
+  [0x2300, 0x23FF],
+  [0x2460, 0x24FF],
+  [0x2500, 0x257F],
+  [0x25A0, 0x25FF],
+  [0x2600, 0x26FF],
+  [0x2700, 0x27BF],
+  [0x2B00, 0x2BFF]
+];
+
+const FALLBACK_SYMBOLS = Array.from('•‣◦▪▫‥…—–―‘’“”„†‡‰′″‹›§¶©®™°±×÷←→↑↓↔↕↖↗↘↙⇐⇒⇑⇓⇔∀∂∃∅∇∈∉∋∏∑√∞∠∧∨∩∪≈≠≤≥⊂⊃⊆⊇⊕⊗⊥⋂⋃⌂⌘⌛⌨⌫⏎◆◇◈◉○●◎☎☏☑☒☓☕☘☙☚☛☜☝☞☟☺☹☻♠♡♢♣♤♥♦♪♫♩♬♭♮♯⚐⚑⚡⚙⚖⚗⚕⚜⛏⛑✁✂✃✄✆✇✈✉✍✎✏✑✒✓✔✕✖✗✘✚✛✜✢✣✤✥✧✩✪✫✬✭✮✯❀❁❂❃❄❅❆❇❈❉❊❖❘❙❚❝❞❡❦❧');
+
+const ARROW_SYMBOLS = Array.from('←→↑↓↔↕↖↗↘↙⇐⇒⇑⇓⇔↠↦↩↪↺↻↢↣↤↥↦↧↨↩↪↫↬↭↮↯↰↱↲↳↴↵↶↷↸↹↺↻⇀⇁⇂⇃⇄⇅⇆⇇⇈⇉⇊⇋⇌⇍⇎⇏⇐⇑⇓⇒⇔⇖⇗⇘⇙⇚⇛⇜⇝⇞⇟⇠⇡⇢⇣⇤⇥⇦⇧⇨⇩⇪');
+const CARD_SYMBOLS = Array.from('♠♣♥♦♤♧♡♢♣♠♥♦');
+const REPLACEMENT_SYMBOLS = Array.from(new Set([...ARROW_SYMBOLS, ...CARD_SYMBOLS]));
+
+const SYMBOL_SET = buildSymbolSet(256);
+
+function buildSymbolSet(limit: number): string[] {
+  const symbols: string[] = [];
+  const seen = new Set<string>();
+  let replacementCursor = 0;
+
+  const pushSymbol = (char: string) => {
+    if (!char || seen.has(char) || symbols.length >= limit) {
+      return;
+    }
+    seen.add(char);
+    symbols.push(char);
+  };
+
+  const pushReplacement = () => {
+    if (!REPLACEMENT_SYMBOLS.length) {
+      return false;
+    }
+    for (let offset = 0; offset < REPLACEMENT_SYMBOLS.length; offset++) {
+      const candidate = REPLACEMENT_SYMBOLS[(replacementCursor + offset) % REPLACEMENT_SYMBOLS.length];
+      if (!seen.has(candidate)) {
+        pushSymbol(candidate);
+        replacementCursor = (replacementCursor + offset + 1) % REPLACEMENT_SYMBOLS.length;
+        return true;
+      }
+    }
+    return false;
+  };
+
+  for (const [start, end] of SYMBOL_CODE_RANGES) {
+    for (let code = start; code <= end; code++) {
+      if (symbols.length >= limit) {
+        return symbols;
+      }
+      const char = String.fromCodePoint(code);
+      if (!isUsableSymbol(code, char)) {
+        continue;
+      }
+      if (isDiacriticalLetter(code, char)) {
+        if (!pushReplacement()) {
+          continue;
+        }
+        continue;
+      }
+      pushSymbol(char);
+    }
+  }
+
+  for (const char of FALLBACK_SYMBOLS) {
+    if (symbols.length >= limit) {
+      break;
+    }
+    const code = char.codePointAt(0) ?? 0;
+    if (isDiacriticalLetter(code, char)) {
+      if (!pushReplacement()) {
+        continue;
+      }
+      continue;
+    }
+    pushSymbol(char);
+  }
+
+  while (symbols.length < limit) {
+    symbols.push('•');
+  }
+
+  return symbols;
+}
+
+function isUsableSymbol(code: number, char: string): boolean {
+  if (!char || /[\u0000-\u001F\u007F]/.test(char)) {
+    return false;
+  }
+  if (/\s/.test(char)) {
+    return false;
+  }
+  if (code >= 0x00A1 && code <= 0x00FF && /[A-Za-z0-9]/.test(char)) {
+    return false;
+  }
+  if (code === 0x00AD) {
+    return false;
+  }
+  return true;
+}
+
+function isLetter(char: string): boolean {
+  if (!char) return false;
+  const lower = char.toLowerCase();
+  const upper = char.toUpperCase();
+  if (lower === upper) {
+    return false;
+  }
+  return true;
+}
+
+function isDiacriticalLetter(code: number, char: string): boolean {
+  if (!isLetter(char)) {
+    return false;
+  }
+  if (/[A-Za-z]/.test(char)) {
+    return false;
+  }
+  if (code >= 0x00C0 && code <= 0x02AF) {
+    return true;
+  }
+  const normalized = char.normalize('NFD');
+  return normalized !== char && /[\u0300-\u036F]/.test(normalized);
+}
 
 /**
  * Draggable dialog that provides rich text editing for table cells via Quill.
@@ -14,7 +147,7 @@ import { QuillModule } from 'ngx-quill';
   templateUrl: './cell-editor-dialog.html',
   styleUrl: './cell-editor-dialog.less'
 })
-export class CellEditorDialogComponent implements OnInit {
+export class CellEditorDialogComponent implements OnInit, OnDestroy {
   @Input() initialContent: string = '';
   @Output() closed = new EventEmitter<void>();
   @Output() saved = new EventEmitter<string>();
@@ -32,30 +165,42 @@ export class CellEditorDialogComponent implements OnInit {
   contentValue = '';
 
   quillModules = {
-    toolbar: [
-      ['bold', 'italic', 'underline'],
-      [{ 'font': [
-        'arial',
-        'helvetica',
-        'verdana',
-        'tahoma',
-        'trebuchet',
-        'times-new-roman',
-        'georgia',
-        'calibri',
-        'roboto',
-        'open-sans',
-        'lato',
-        'montserrat',
-        'poppins',
-        'kix-barcode'
-      ] }],
-
-      [{ 'color': [] }, { 'background': [] }],
-      // lineheight pending proper custom toolbar module, removed for now
-      ['link', 'image']
-    ]
+    toolbar: {
+      container: [
+        ['bold', 'italic', 'underline', 'symbol'],
+        [{
+          'font': [
+            'arial',
+            'helvetica',
+            'verdana',
+            'tahoma',
+            'trebuchet',
+            'times-new-roman',
+            'georgia',
+            'calibri',
+            'roboto',
+            'open-sans',
+            'lato',
+            'montserrat',
+            'poppins',
+            'kix-barcode'
+          ]
+        }],
+        [{ 'color': [] }, { 'background': [] }],
+        // lineheight pending proper custom toolbar module, removed for now
+        ['link', 'image']
+      ],
+      handlers: {
+        symbol: () => this.toggleSymbolPalette()
+      }
+    }
   };
+
+  private symbolButtonEl: HTMLButtonElement | null = null;
+  private symbolPaletteEl: HTMLDivElement | null = null;
+  private symbolPaletteVisible = false;
+  private boundDocumentClick = (event: MouseEvent) => this.handleDocumentClick(event);
+  private boundDocumentKeydown = (event: KeyboardEvent) => this.handleDocumentKeydown(event);
 
   /**
    * Captures the Quill instance and decorates the toolbar with custom controls.
@@ -65,8 +210,10 @@ export class CellEditorDialogComponent implements OnInit {
     // Track selection to update spinner
     // Inject custom font size spinner into toolbar after font picker
     try {
-      const toolbarEl = q.container.parentElement?.querySelector('.ql-toolbar');
+      const toolbarModule: any = q.getModule('toolbar');
+      const toolbarEl = (toolbarModule?.container as HTMLElement) ?? (q.container.parentElement?.querySelector('.ql-toolbar') as HTMLElement | null);
       if (toolbarEl) {
+        this.setupSymbolToolbar(toolbarEl);
         const fontPicker = toolbarEl.querySelector('.ql-font');
         // Locate the formats group containing the font picker
         const formatsGroups = Array.from(toolbarEl.querySelectorAll(':scope > .ql-formats')) as HTMLElement[];
@@ -105,7 +252,10 @@ export class CellEditorDialogComponent implements OnInit {
 
     this.quill.on('selection-change', () => {
       const range = this.quill.getSelection();
-      if (!range) return;
+      if (!range) {
+        this.hideSymbolPalette();
+        return;
+      }
       const format = this.quill.getFormat(range);
       const size = format['size'];
       if (typeof size === 'string') {
@@ -114,6 +264,171 @@ export class CellEditorDialogComponent implements OnInit {
       }
     });
   }
+
+  private setupSymbolToolbar(toolbarEl: HTMLElement) {
+    const computedPosition = getComputedStyle(toolbarEl).position;
+    if (computedPosition === 'static') {
+      toolbarEl.style.position = 'relative';
+    }
+
+    this.symbolButtonEl = toolbarEl.querySelector('button.ql-symbol') as HTMLButtonElement | null;
+    if (this.symbolButtonEl) {
+      this.symbolButtonEl.setAttribute('type', 'button');
+      this.symbolButtonEl.setAttribute('aria-label', 'Insert symbol');
+       this.symbolButtonEl.setAttribute('aria-haspopup', 'true');
+       this.symbolButtonEl.setAttribute('aria-expanded', 'false');
+      if (!this.symbolButtonEl.innerHTML.trim()) {
+        this.symbolButtonEl.innerHTML = '<span class="ql-symbol-icon">Ω</span>';
+      }
+    }
+
+    if (!this.symbolPaletteEl) {
+      this.symbolPaletteEl = this.buildSymbolPalette();
+    }
+
+    if (this.symbolPaletteEl && !toolbarEl.contains(this.symbolPaletteEl)) {
+      toolbarEl.appendChild(this.symbolPaletteEl);
+    }
+  }
+
+  private buildSymbolPalette(): HTMLDivElement {
+    const palette = document.createElement('div');
+    palette.className = 'ql-symbol-palette';
+    palette.setAttribute('aria-hidden', 'true');
+    palette.setAttribute('role', 'menu');
+    palette.setAttribute('tabindex', '-1');
+
+    const grid = document.createElement('div');
+    grid.className = 'ql-symbol-grid';
+    palette.appendChild(grid);
+
+    SYMBOL_SET.forEach(symbol => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'ql-symbol-option';
+      button.title = `Insert ${symbol}`;
+      button.textContent = symbol;
+      button.addEventListener('click', () => this.insertSymbol(symbol));
+      grid.appendChild(button);
+    });
+
+    return palette;
+  }
+
+  private toggleSymbolPalette(): void {
+    if (!this.ensureSymbolPaletteElements()) {
+      return;
+    }
+    if (this.symbolPaletteVisible) {
+      this.hideSymbolPalette();
+    } else {
+      this.showSymbolPalette();
+    }
+  }
+
+  private ensureSymbolPaletteElements(): boolean {
+    if (this.symbolButtonEl && this.symbolPaletteEl) {
+      return true;
+    }
+    if (!this.quill) {
+      return false;
+    }
+    const toolbarModule: any = this.quill.getModule('toolbar');
+    const toolbarEl = toolbarModule?.container as HTMLElement | undefined;
+    if (toolbarEl) {
+      this.setupSymbolToolbar(toolbarEl);
+    }
+    return !!(this.symbolButtonEl && this.symbolPaletteEl);
+  }
+
+  private showSymbolPalette(): void {
+    if (!this.symbolButtonEl || !this.symbolPaletteEl) {
+      return;
+    }
+    const toolbarEl = this.symbolButtonEl.closest('.ql-toolbar') as HTMLElement | null;
+    if (!toolbarEl) {
+      return;
+    }
+
+    const buttonRect = this.symbolButtonEl.getBoundingClientRect();
+    const toolbarRect = toolbarEl.getBoundingClientRect();
+
+    this.symbolPaletteEl.style.left = `${buttonRect.left - toolbarRect.left}px`;
+    this.symbolPaletteEl.style.top = `${buttonRect.bottom - toolbarRect.top + 4}px`;
+    this.symbolPaletteEl.classList.add('show');
+    this.symbolPaletteEl.setAttribute('aria-hidden', 'false');
+    this.symbolButtonEl.classList.add('ql-active');
+    this.symbolButtonEl.setAttribute('aria-expanded', 'true');
+    this.symbolPaletteVisible = true;
+    document.addEventListener('mousedown', this.boundDocumentClick, true);
+    document.addEventListener('keydown', this.boundDocumentKeydown, true);
+  }
+
+  private hideSymbolPalette(): void {
+    if (!this.symbolPaletteVisible || !this.symbolPaletteEl) {
+      this.symbolPaletteVisible = false;
+      return;
+    }
+    this.symbolPaletteEl.classList.remove('show');
+    this.symbolPaletteEl.setAttribute('aria-hidden', 'true');
+    this.symbolButtonEl?.classList.remove('ql-active');
+    this.symbolButtonEl?.setAttribute('aria-expanded', 'false');
+    this.symbolPaletteVisible = false;
+    document.removeEventListener('mousedown', this.boundDocumentClick, true);
+    document.removeEventListener('keydown', this.boundDocumentKeydown, true);
+  }
+
+  private handleDocumentClick(event: MouseEvent): void {
+    if (!this.symbolPaletteVisible) {
+      return;
+    }
+    const target = event.target as Node | null;
+    if (!target) {
+      return;
+    }
+    if (this.symbolPaletteEl?.contains(target) || this.symbolButtonEl?.contains(target)) {
+      return;
+    }
+    this.hideSymbolPalette();
+  }
+
+  private handleDocumentKeydown(event: KeyboardEvent): void {
+    if (!this.symbolPaletteVisible) {
+      return;
+    }
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      this.hideSymbolPalette();
+      this.symbolButtonEl?.focus();
+    }
+  }
+
+  private insertSymbol(symbol: string): void {
+    if (!this.quill) {
+      return;
+    }
+    const range = this.quill.getSelection(true);
+    if (range) {
+      this.quill.insertText(range.index, symbol, 'user');
+      this.quill.setSelection(range.index + symbol.length, 0, 'silent');
+    } else {
+      const index = this.quill.getLength() - 1;
+      this.quill.insertText(index, symbol, 'user');
+      this.quill.setSelection(index + symbol.length, 0, 'silent');
+    }
+    this.quill.focus();
+    this.hideSymbolPalette();
+  }
+
+  private teardownSymbolPalette(): void {
+    this.hideSymbolPalette();
+    if (this.symbolPaletteEl) {
+      this.symbolPaletteEl.remove();
+    }
+    this.symbolPaletteEl = null;
+    this.symbolButtonEl = null;
+  }
+
   /**
    * Normalizes Quill output to XHTML-friendly markup.
    */
@@ -298,6 +613,10 @@ export class CellEditorDialogComponent implements OnInit {
     this.quill.format('size', sizeVal + 'pt');
   }
 
+  ngOnDestroy(): void {
+    this.teardownSymbolPalette();
+  }
+
   /**
    * Emits sanitized editor contents and closes the dialog.
    */
@@ -318,6 +637,7 @@ export class CellEditorDialogComponent implements OnInit {
    * Emits the close event without persisting changes.
    */
   close(): void {
+    this.hideSymbolPalette();
     this.closed.emit();
   }
 }

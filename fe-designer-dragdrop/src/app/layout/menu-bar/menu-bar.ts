@@ -30,7 +30,7 @@ export class MenuBarComponent {
   onClose = output<void>();
   onUndo = output<void>();
   onRedo = output<void>();
-  onOptions = output<void>();
+  onSettings = output<void>();
   onZoomChange = output<CanvasZoomMode>();
   onCalibrate = output<void>();
 
@@ -83,6 +83,10 @@ export class MenuBarComponent {
    * Emits the close-layout action and closes the menu.
    */
   handleClose() {
+    // Warn if there are unsaved changes
+    if (this.designerState.isDesignDirty() && !confirm('You have unsaved changes. Close without saving?')) {
+      return;
+    }
     this.onClose.emit();
     this.closeMenu();
   }
@@ -104,10 +108,10 @@ export class MenuBarComponent {
   }
 
   /**
-   * Opens the options dialog and closes the menu.
+   * Opens the settings dialog and closes the menu.
    */
-  handleOptions() {
-    this.onOptions.emit();
+  handleSettings() {
+    this.onSettings.emit();
     this.closeMenu();
   }
 

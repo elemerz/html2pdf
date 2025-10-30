@@ -58,12 +58,17 @@ To fix:
 - Paddings on Level > 0 => apply on Level-0 cell instead of sub-cell! => to Fix.
 
 ## Still to implement (Not in POC)
-
-- Own Database support
-- Unit and Integration & End-To-End test.
+- Apply Property Default values even if not modified by user. => Ok
+- Make hotkeys work: Ctl-O,Ctl-N,Ctl-E, etc. => Ok.
+- Apply Infomedics Huisstyle
+- Support QRCode and Barcode in designer
+- Quill Editor: sync font controls with current selection
+- Implement ruler
+- Implement zoom to object with ruler syncing
 - Implement Preview PDF.
 - Support Dynamic report variables
-- Support QRCode and Barcode in designer
+- Own Database support
+- Unit and Integration & End-To-End test.
 - Custom Font management
 - Logo image management
 - Image optimizations (at least png, if possible also SVG)
@@ -71,4 +76,3 @@ To fix:
 - Use anchor-positioning for resize handles, cog and .action-toolbar
 - Implement Undo / Redo
 - Extend scalability above virtual threads (Kafka, etc)
-- Apply Defaults even if not modified by user.

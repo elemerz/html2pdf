@@ -11,7 +11,7 @@
       (onClose)="onCloseLayout()"
       (onUndo)="onUndo()"
       (onRedo)="onRedo()"
-      (onOptions)="onOptions()"
+      (onSettings)="onSettings()"
       (onCalibrate)="onCalibrateScreen()">
     </app-menu-bar>
   </div>
@@ -74,7 +74,7 @@
   (onCancel)="handleCancelSaveReport()">
 </app-save-report-dialog>
 
-@if (showOptionsDialog()) {
+@if (showSettingsDialog()) {
   <app-options-dialog
     (close)="closeOptionsDialog()">
   </app-options-dialog>

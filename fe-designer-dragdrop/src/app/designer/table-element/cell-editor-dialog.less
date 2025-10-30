@@ -95,3 +95,71 @@
 :host ::ng-deep .ql-font-kix-barcode {
   font-family: 'KIX Barcode';
 }
+
+:host ::ng-deep .ql-toolbar.ql-snow {
+  position: relative;
+}
+
+:host ::ng-deep .ql-toolbar button.ql-symbol {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+:host ::ng-deep .ql-toolbar button.ql-symbol .ql-symbol-icon {
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+:host ::ng-deep .ql-toolbar button.ql-symbol.ql-active,
+:host ::ng-deep .ql-toolbar button.ql-symbol:hover {
+  color: @primary;
+}
+
+:host ::ng-deep .ql-toolbar .ql-symbol-palette {
+  position: absolute;
+  display: none;
+  min-width: 384px;
+  max-width: min(90vw, 512px);
+  background: @surface;
+  color: @surface-foreground;
+  border: 1px solid @border;
+  border-radius: @radius-sm;
+  padding: 8px;
+  box-shadow: @shadow-lg;
+  z-index: @z-tooltip;
+  max-height: 400px;
+  overflow: auto;
+}
+
+:host ::ng-deep .ql-toolbar .ql-symbol-palette.show {
+  display: block;
+}
+
+:host ::ng-deep .ql-toolbar .ql-symbol-grid {
+  display: grid;
+  grid-template-columns: repeat(16, 1fr);
+  gap: 4px;
+}
+
+:host ::ng-deep .ql-toolbar .ql-symbol-option {
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: transparent;
+  font-size: 16px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+:host ::ng-deep .ql-toolbar .ql-symbol-option:hover,
+:host ::ng-deep .ql-toolbar .ql-symbol-option:focus {
+  background: fade(@primary, 20%);
+  color: @primary;
+  outline: none;
+}

@@ -59,8 +59,9 @@
           <span>Redo</span>
           <span class="shortcut">Ctrl+Y</span>
         </button>
-        <button class="dropdown-item" (click)="handleOptions()" data-testid="menu-edit-options">
-          <span>Options</span>
+        <button class="dropdown-item" (click)="handleSettings()" data-testid="menu-edit-options">
+          <span>Setting</span>
+          <span class="shortcut">Ctrl+Alt+S</span>
         </button>
       </div>
     }
@@ -82,6 +83,7 @@
           [class.active]="canvasZoomMode() === 'fit'"
           data-testid="menu-view-zoom-fit">
           <span>Zoom To Fit</span>
+          <span class="shortcut">F4</span>
         </button>
         <button
           class="dropdown-item"
@@ -102,13 +104,15 @@
           (click)="handleZoom('actual')"
           [class.active]="canvasZoomMode() === 'actual'"
           data-testid="menu-view-zoom-actual">
-          <span>Zoom 1:1 (Actual Size)</span>
+          <span>Zoom 1:1</span>
+          <span class="shortcut">Shift-F4</span>
         </button>
         <button
           class="dropdown-item"
           (click)="openCalibration()"
           data-testid="menu-view-calibrate">
-          <span>Calibrate Screen...</span>
+          <span>Calibrate Screen</span>
+          <span class="shortcut">F12</span>
         </button>
       </div>
     }

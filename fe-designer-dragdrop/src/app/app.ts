@@ -1,4 +1,4 @@
-import { Component, ViewChild, inject, signal } from '@angular/core';
+import { Component, ViewChild, inject, signal, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DesignerStateService } from './core/services/designer-state.service';
 import { MenuBarComponent } from './layout/menu-bar/menu-bar';
@@ -38,7 +38,7 @@ export class App {
 
   // Dialog visibility signals
   protected showSaveDialog = signal(false);
-  protected showOptionsDialog = signal(false);
+  protected showSettingsDialog = signal(false);
   protected showCalibrationDialog = signal(false);
 
   // Expose signals to template
@@ -78,13 +78,13 @@ export class App {
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = '.xhtml,.html,.xml';
-    
+
     input.onchange = (event: Event) => {
       const file = (event.target as HTMLInputElement).files?.[0];
       if (!file) return;
 
       const reader = new FileReader();
-      
+
       reader.onload = (e) => {
         try {
           const xhtmlContent = e.target?.result as string;
@@ -173,8 +173,8 @@ export class App {
   /**
    * Shows the options dialog so the user can adjust global settings.
    */
-  onOptions(): void {
-    this.showOptionsDialog.set(true);
+  onSettings(): void {
+    this.showSettingsDialog.set(true);
   }
 
   /**
@@ -215,6 +215,7 @@ export class App {
     const json = this.designerState.exportDesign();
     this.triggerDownload(`${safeFileBase}.json`, json, 'application/json');
     this.designerState.setStatusMessage('Report design saved');
+    this.designerState.markDesignSaved();
   }
 
   handleCancelSaveReport(): void {
@@ -251,7 +252,7 @@ export class App {
    * Dismisses the options dialog overlay.
    */
   closeOptionsDialog(): void {
-    this.showOptionsDialog.set(false);
+    this.showSettingsDialog.set(false);
   }
 
   /**
@@ -272,5 +273,41 @@ export class App {
     anchor.download = filename;
     anchor.click();
     URL.revokeObjectURL(url);
+  }
+
+  // Global keyboard shortcuts mapping to menu actions.
+  @HostListener('document:keydown', ['$event'])
+  handleGlobalKeydown(event: KeyboardEvent): void {
+    const key = event.key.toLowerCase();
+    const ctrl = event.ctrlKey || event.metaKey; // meta for Mac support
+    const alt = event.altKey;
+    const shift = event.shiftKey;
+
+    // Prevent default browser actions for handled shortcuts.
+    const prevent = () => { event.preventDefault(); event.stopPropagation(); };
+
+    if (ctrl && !alt && !shift) {
+      switch (key) {
+        case 'n': prevent(); this.onNewLayout(); return;
+        case 'o': prevent(); this.onLoadDesign(); return;
+        case 's': prevent(); this.onSaveDesign(); return;
+        case 'e': prevent(); this.onSaveLayout(); return;
+        case 'w': prevent(); this.onCloseLayout(); return;
+        case 'z': prevent(); this.onUndo(); return;
+        case 'y': prevent(); this.onRedo(); return;
+      }
+    }
+
+    // Ctrl+Alt+S (Settings)
+    if (ctrl && alt && key === 's') { prevent(); this.onSettings(); return; }
+
+    // F4 (Zoom to Fit)
+    if (!ctrl && !alt && !shift && event.key === 'F4') { prevent(); this.designerState.setCanvasZoomMode('fit'); return; }
+
+    // Shift+F4 (Zoom 1:1)
+    if (shift && !ctrl && !alt && event.key === 'F4') { prevent(); this.designerState.setCanvasZoomMode('actual'); return; }
+
+    // F12 (Calibrate Screen)
+    if (!ctrl && !alt && !shift && event.key === 'F12') { prevent(); this.onCalibrateScreen(); return; }
   }
 }

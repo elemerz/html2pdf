@@ -56,9 +56,11 @@ export class DesignerStateService {
   // History for undo/redo
   private historySignal = signal<HistoryEntry[]>([]);
   private historyIndexSignal = signal<number>(-1);
+  private savedHistoryIndexSignal = signal<number>(-1); // Tracks last saved history index
 
   readonly canUndo = computed(() => this.historyIndexSignal() > 0);
   readonly canRedo = computed(() => this.historyIndexSignal() < this.historySignal().length - 1);
+  readonly isDesignDirty = computed(() => this.historyIndexSignal() !== this.savedHistoryIndexSignal());
 
   // Panel states
   readonly westCollapsed = signal(false);
@@ -137,6 +139,7 @@ export class DesignerStateService {
     this.addToHistory(this.elementsSignal());
     this.clearTableCellSelection();
     this.designSourceNameSignal.set(null);
+    this.markDesignSaved();
   }
 
   /**
@@ -259,6 +262,7 @@ export class DesignerStateService {
     this.addToHistory(this.elementsSignal());
     this.clearTableCellSelection();
     this.designSourceNameSignal.set(null);
+    this.markDesignSaved();
   }
 
   /**
@@ -273,6 +277,7 @@ export class DesignerStateService {
     this.addToHistory([]);
     this.clearTableCellSelection();
     this.designSourceNameSignal.set(null);
+    this.markDesignSaved();
   }
 
   // History management
@@ -1794,5 +1799,12 @@ export class DesignerStateService {
     }
 
     this.designSourceNameSignal.set(this.extractDesignFileBase(fileName));
+    this.markDesignSaved();
+  }
+
+  /** Marks current history index as saved */
+  markDesignSaved() {
+    this.savedHistoryIndexSignal.set(this.historyIndexSignal());
   }
 }
+
