@@ -113,7 +113,7 @@
         @let padding = getSelectedCellPadding();
         <section class="property-section">
           <header class="section-header" (click)="toggleSection('cell')"><span>Cell</span><button type="button" class="section-toggle" (click)="toggleSection('cell'); $event.stopPropagation()">{{ collapsed('cell') ? '▸' : '▾' }}</button></header>
-          <div class="section-body">
+          <div class="section-body" *ngIf="!collapsed('cell')">
             <div class="property-grid">
               <div class="property-field">
                 <label class="property-label">Pad Top (mm)</label>

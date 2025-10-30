@@ -37,7 +37,7 @@ function preloadManagedFonts(): Promise<void> {
   }
   // Fallback: if no fonts discovered (e.g. styles not yet parsed), attempt known files
   if (!discovered.length) {
-    const fallbackFiles = ['KIXBarcode.woff2', 'Roboto-Regular.woff2', 'PublicSans-Regular.woff2'];
+    const fallbackFiles = ['KIXBarcode.woff2', 'Roboto-Regular.woff2', 'Bariol-Regular.woff2'];
     for (const file of fallbackFiles) {
       const fam = file.split('.')[0].replace(/[-_](Regular|Bold|Medium|Light|Italic)$/i, '');
       if (!seen.has(fam)) {

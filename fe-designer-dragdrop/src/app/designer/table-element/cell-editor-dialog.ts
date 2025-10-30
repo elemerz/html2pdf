@@ -175,7 +175,7 @@ export class CellEditorDialogComponent implements OnInit, OnDestroy {
             'helvetica',
             'kix-barcode',
             'open-sans',
-            'public-sans',
+            'bariol',
             'roboto',
             'times-new-roman'
           ]
@@ -327,7 +327,7 @@ export class CellEditorDialogComponent implements OnInit, OnDestroy {
               'helvetica': ['helvetica'],
               'kix-barcode': ['kix barcode','kix-barcode'],
               'open-sans': ['Open Sans','open-sans'],
-              'public-sans': ['Public Sans','public-sans'],
+              'bariol': ['Bariol','bariol'],
               'roboto': ['roboto'],
               'times-new-roman': ['times new roman','times-new-roman','times']
             };
@@ -552,7 +552,7 @@ export class CellEditorDialogComponent implements OnInit, OnDestroy {
         'helvetica': 'Helvetica, sans-serif',
         'kix-barcode': '"KIX Barcode"',
         'open-sans': '"Open Sans", sans-serif',
-        'public-sans': '"Public Sans", sans-serif',
+        'bariol': '"Bariol", sans-serif',
         'roboto': 'Roboto, sans-serif',
         'times-new-roman': '"Times New Roman", Times, serif'
       };
@@ -566,7 +566,7 @@ export class CellEditorDialogComponent implements OnInit, OnDestroy {
         '"KIX Barcode"': 'kix-barcode',
         'KIX Barcode': 'kix-barcode',
         '"Open Sans", sans-serif': 'open-sans',
-        '"Public Sans", sans-serif': 'public-sans',
+        '"Bariol", sans-serif': 'bariol',
         'Roboto, sans-serif': 'roboto',
         '"Times New Roman", Times, serif': 'times-new-roman'
       };

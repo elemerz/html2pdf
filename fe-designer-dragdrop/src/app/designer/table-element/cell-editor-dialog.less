@@ -164,3 +164,20 @@
   color: @primary;
   outline: none;
 }
+
+// Custom font picker labels (ensure Bariol appears)
+:host ::ng-deep .ql-snow .ql-picker.ql-font .ql-picker-item[data-value="bariol"]::before,
+:host ::ng-deep .ql-snow .ql-picker.ql-font .ql-picker-label[data-value="bariol"]::before {
+  content: 'Bariol';
+  font-family: 'Bariol', sans-serif;
+}
+
+:host ::ng-deep .ql-snow .ql-picker.ql-font .ql-picker-item[data-value="bariol"]::before,
+:host ::ng-deep .ql-snow .ql-picker.ql-font .ql-picker-label[data-value="bariol"]::before {
+  content: 'Bariol';
+  font-family: 'Bariol', sans-serif;
+}
+
+// (Inline styles used for font application, class helpers for fallback rendering)
+:host ::ng-deep .ql-font-open-sans { font-family: 'Open Sans', sans-serif; }
+:host ::ng-deep .ql-font-bariol { font-family: 'Bariol', sans-serif; }
