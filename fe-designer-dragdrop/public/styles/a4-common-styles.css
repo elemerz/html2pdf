@@ -27,6 +27,13 @@ html, body {
   -fs-pdf-font-encoding: Identity-H;
 }
 @font-face {
+  font-family: 'Public Sans';
+  font-weight: normal;
+  font-style: normal;
+  -fs-pdf-font-embed: embed;
+  -fs-pdf-font-encoding: Identity-H;
+}
+@font-face {
   font-family: 'KIX Barcode';
   font-weight: normal;
   font-style: normal;

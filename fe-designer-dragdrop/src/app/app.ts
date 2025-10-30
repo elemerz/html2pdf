@@ -303,7 +303,7 @@ export class App {
     // Shift+F4 (Zoom 1:1)
     if (shift && !ctrl && !alt && event.key === 'F4') { prevent(); this.designerState.setCanvasZoomMode('actual'); return; }
 
-    // F12 (Calibrate Screen)
-    if (!ctrl && !alt && !shift && event.key === 'F12') { prevent(); this.onCalibrateScreen(); return; }
+    // Ctrl+F12 (Calibrate Screen)
+    if (ctrl && !alt && !shift && event.key === 'F12') { prevent(); this.onCalibrateScreen(); return; }
   }
 }

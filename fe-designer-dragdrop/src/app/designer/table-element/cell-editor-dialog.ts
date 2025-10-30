@@ -171,19 +171,13 @@ export class CellEditorDialogComponent implements OnInit, OnDestroy {
         [{
           'font': [
             'arial',
-            'helvetica',
-            'verdana',
-            'tahoma',
-            'trebuchet',
-            'times-new-roman',
-            'georgia',
             'calibri',
-            'roboto',
+            'helvetica',
+            'kix-barcode',
             'open-sans',
-            'lato',
-            'montserrat',
-            'poppins',
-            'kix-barcode'
+            'public-sans',
+            'roboto',
+            'times-new-roman'
           ]
         }],
         [{ 'color': [] }, { 'background': [] }],
@@ -329,19 +323,13 @@ export class CellEditorDialogComponent implements OnInit, OnDestroy {
             const fam = cs.fontFamily.toLowerCase();
             const candidates: Record<string,string[]> = {
               'arial': ['arial'],
-              'helvetica': ['helvetica'],
-              'verdana': ['verdana'],
-              'tahoma': ['tahoma'],
-              'trebuchet': ['trebuchet'],
-              'times-new-roman': ['times new roman','times-new-roman','times'],
-              'georgia': ['georgia'],
               'calibri': ['calibri'],
+              'helvetica': ['helvetica'],
+              'kix-barcode': ['kix barcode','kix-barcode'],
+              'open-sans': ['Open Sans','open-sans'],
+              'public-sans': ['Public Sans','public-sans'],
               'roboto': ['roboto'],
-              'open-sans': ['open sans','open-sans'],
-              'lato': ['lato'],
-              'montserrat': ['montserrat'],
-              'poppins': ['poppins'],
-              'kix-barcode': ['kix barcode','kix-barcode']
+              'times-new-roman': ['times new roman','times-new-roman','times']
             };
             for (const key of Object.keys(candidates)) {
               if (candidates[key].some(token => fam.includes(token))) {
@@ -552,49 +540,37 @@ export class CellEditorDialogComponent implements OnInit, OnDestroy {
       // Import the StyleAttributor class from Parchment
       const Parchment: any = Quill.import('parchment');
       const StyleAttributor = Parchment.StyleAttributor || Parchment.Attributor.Style;
-      
+
       if (!StyleAttributor) {
         throw new Error('StyleAttributor not found in Parchment');
       }
-      
+
       // Font family mapping
       const fontMap: Record<string, string> = {
         'arial': 'Arial, Helvetica, sans-serif',
-        'helvetica': 'Helvetica, sans-serif',
-        'verdana': 'Verdana, Geneva, sans-serif',
-        'tahoma': 'Tahoma, Geneva, sans-serif',
-        'trebuchet': '"Trebuchet MS", sans-serif',
-        'times-new-roman': '"Times New Roman", Times, serif',
-        'georgia': 'Georgia, serif',
         'calibri': '"Calibri", sans-serif',
-        'roboto': 'Roboto, sans-serif',
+        'helvetica': 'Helvetica, sans-serif',
+        'kix-barcode': '"KIX Barcode"',
         'open-sans': '"Open Sans", sans-serif',
-        'lato': 'Lato, sans-serif',
-        'montserrat': 'Montserrat, sans-serif',
-        'poppins': 'Poppins, sans-serif',
-        'kix-barcode': '"KIX Barcode"'
+        'public-sans': '"Public Sans", sans-serif',
+        'roboto': 'Roboto, sans-serif',
+        'times-new-roman': '"Times New Roman", Times, serif'
       };
 
       const reverseFontMap: Record<string, string> = {
         'Arial, Helvetica, sans-serif': 'arial',
+        'Calibri, sans-serif': 'calibri',
+        '"Calibri", sans-serif': 'calibri',
         'Helvetica, Arial, sans-serif': 'helvetica',
         'Helvetica, sans-serif': 'helvetica',
-        'Verdana, Geneva, sans-serif': 'verdana',
-        'Tahoma, Geneva, sans-serif': 'tahoma',
-        '"Trebuchet MS", sans-serif': 'trebuchet',
-        '"Times New Roman", Times, serif': 'times-new-roman',
-        'Georgia, serif': 'georgia',
-        '"Calibri", sans-serif': 'calibri',
-        'Calibri, sans-serif': 'calibri',
-        'Roboto, sans-serif': 'roboto',
-        '"Open Sans", sans-serif': 'open-sans',
-        'Lato, sans-serif': 'lato',
-        'Montserrat, sans-serif': 'montserrat',
-        'Poppins, sans-serif': 'poppins',
         '"KIX Barcode"': 'kix-barcode',
-        'KIX Barcode': 'kix-barcode'
+        'KIX Barcode': 'kix-barcode',
+        '"Open Sans", sans-serif': 'open-sans',
+        '"Public Sans", sans-serif': 'public-sans',
+        'Roboto, sans-serif': 'roboto',
+        '"Times New Roman", Times, serif': 'times-new-roman'
       };
-      
+
       // Create custom font attributor
       class FontStyleAttributor extends StyleAttributor {
         constructor() {
@@ -602,14 +578,14 @@ export class CellEditorDialogComponent implements OnInit, OnDestroy {
             scope: Parchment.Scope.INLINE // Removed whitelist so Quill preserves existing inline font-family values
           });
         }
-        
+
         // When reading from DOM
         value(domNode: HTMLElement): string {
           const cssValue = super.value(domNode);
           // Map CSS font-family back to identifier for toolbar
           return reverseFontMap[cssValue] || cssValue;
         }
-        
+
         // When writing to DOM - override to set the CSS value directly
         add(node: HTMLElement, value: string): boolean {
           // Convert identifier to CSS value
@@ -622,10 +598,10 @@ export class CellEditorDialogComponent implements OnInit, OnDestroy {
           return false;
         }
       }
-      
+
       const FontStyle = new FontStyleAttributor();
       Quill.register(FontStyle, true);
-      
+
       // Use style-based attributor for font-size (generates inline styles)
       // Flexible size attributor allowing arbitrary pt values
       const ParchmentAny: any = Quill.import('parchment');
@@ -640,7 +616,7 @@ export class CellEditorDialogComponent implements OnInit, OnDestroy {
         }
       }
       Quill.register(new FlexibleSizeAttributor(), true);
-      
+
       // Color and background already use inline styles by default in Quill
     } catch (e) {
       console.error('Quill configuration error:', e);
