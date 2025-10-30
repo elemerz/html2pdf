@@ -212,6 +212,20 @@ export class CellEditorDialogComponent implements OnInit, OnDestroy {
       const toolbarEl = (toolbarModule?.container as HTMLElement) ?? (q.container.parentElement?.querySelector('.ql-toolbar') as HTMLElement | null);
       if (toolbarEl) {
         this.setupSymbolToolbar(toolbarEl);
+        // Ensure a QR button exists even if Quill did not auto-generate one for custom handler
+        try {
+          const imageBtn = toolbarEl.querySelector('button.ql-image');
+          const existingQr = toolbarEl.querySelector('button.ql-qr');
+          if (imageBtn && !existingQr) {
+            const qrBtn = document.createElement('button');
+            qrBtn.type = 'button';
+            qrBtn.className = 'ql-qr';
+            qrBtn.setAttribute('aria-label', 'Insert QR Code');
+            qrBtn.innerHTML = '<span class="ql-qr-icon" style="font-size:11px;font-weight:600;letter-spacing:.5px">QR</span>';
+            qrBtn.addEventListener('click', () => this.insertQrCode());
+            imageBtn.after(qrBtn); // place directly after image button
+          }
+        } catch {}
         const fontPicker = toolbarEl.querySelector('.ql-font');
         // Locate the formats group containing the font picker
         const formatsGroups = Array.from(toolbarEl.querySelectorAll(':scope > .ql-formats')) as HTMLElement[];
