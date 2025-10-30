@@ -207,6 +207,8 @@ export class CellEditorDialogComponent implements OnInit, OnDestroy {
    */
   onEditorCreated(q: Quill) {
     this.quill = q;
+    // Autofocus editor so user can type immediately (ensure contenteditable root gets focus)
+    setTimeout(() => { try { this.quill.focus(); (this.quill.root as HTMLElement).focus(); } catch {} }, 0);
     // Track selection to update spinner
     // Inject custom font size spinner into toolbar after font picker
     try {

@@ -73,7 +73,8 @@
 :host ::ng-deep .ql-snow .ql-picker.ql-font .ql-picker-item[data-value="kix-barcode"]::before,
 :host ::ng-deep .ql-snow .ql-picker.ql-font .ql-picker-label[data-value="kix-barcode"]::before {
   content: 'KIX Barcode';
-  font-family: 'KIX Barcode';
+  /* Use readable font for symbol preview */
+  font-family: Arial, Helvetica, sans-serif !important;
 }
 
 :host ::ng-deep .ql-snow .ql-picker.ql-font .ql-picker-item[data-value="roboto"]::before,

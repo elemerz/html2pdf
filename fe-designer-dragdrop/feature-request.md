@@ -60,8 +60,10 @@ To fix:
 ## Still to implement (Not in POC)
 - Apply Property Default values even if not modified by user. => Ok
 - Make hotkeys work: Ctl-O,Ctl-N,Ctl-E, etc. => Ok.
-- Apply Infomedics Huisstyle
+- Quill Editor: Support Custom symbols => Ok.
+- Quill Editor: Support Kix Barcode font => ...
 - Support QRCode and Barcode in designer
+- Apply Infomedics Huisstyle
 - Quill Editor: sync font controls with current selection
 - Implement ruler
 - Implement zoom to object with ruler syncing

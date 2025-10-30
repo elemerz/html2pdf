@@ -24,7 +24,7 @@ export class ToolbarPanelComponent {
     { id: 'custom-templates', label: 'Custom Templates', passive: true },
     { id: 'report-variables', label: 'Report Variables', passive: true },
     { id: 'custom-symbols', label: 'Custom Symbols', passive: true },
-    { id: 'manage-fonts', label: 'Manage Fonts', passive: true },
+    { id: 'manage-managed-fonts', label: 'Manage Fonts', passive: true },
     { id: 'manage-images', label: 'Manage Images', passive: true }
   ];
 

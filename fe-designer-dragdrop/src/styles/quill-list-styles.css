@@ -60,3 +60,16 @@
 .ql-editor .ql-font-lato { font-family: Lato, Arial, sans-serif; }
 .ql-editor .ql-font-montserrat { font-family: Montserrat, Arial, sans-serif; }
 .ql-editor .ql-font-poppins { font-family: Poppins, Arial, sans-serif; }
+/* Symbol font preview override: show human-readable label using Arial instead of barcode glyphs */
+/* Apply Arial directly to the picker elements (override inline style) */
+/* Higher specificity override */
+.ql-snow .ql-toolbar .ql-picker.ql-font .ql-picker-options .ql-picker-item[data-value="kix-barcode"],
+.ql-snow .ql-toolbar .ql-picker.ql-font .ql-picker-label[data-value="kix-barcode"],
+.ql-snow .ql-toolbar .ql-picker.ql-font .ql-picker-item[data-value="kix-barcode"][data-value="kix-barcode"] { font-family: Arial, Helvetica, sans-serif !important; font-weight: normal !important; }
+.ql-snow .ql-toolbar .ql-picker.ql-font .ql-picker-options .ql-picker-item[data-value="kix-barcode"]::before,
+.ql-snow .ql-toolbar .ql-picker.ql-font .ql-picker-label[data-value="kix-barcode"]::before { font-family: Arial, Helvetica, sans-serif !important; content: "KIX Barcode"; }
+/* Pseudo-element label preview (kept for consistency) */
+.ql-snow .ql-picker.ql-font .ql-picker-item[data-value="kix-barcode"]::before,
+.ql-snow .ql-picker.ql-font .ql-picker-label[data-value="kix-barcode"]::before { font-family: Arial, sans-serif; content: "KIX Barcode"; }
+/* Ensure editor content still renders actual barcode font when chosen */
+.ql-editor .ql-font-kix-barcode { font-family: "KIX Barcode"; }

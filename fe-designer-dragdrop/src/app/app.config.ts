@@ -9,6 +9,7 @@ import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http'
 
 import { routes } from './app.routes';
 import { A4_STYLES_PRELOAD_PROVIDER } from './core/startup/a4-styles.preload';
+import { MANAGED_FONTS_PRELOAD_PROVIDER } from './core/startup/managed-fonts.preload';
 import {QuillModule} from 'ngx-quill';
 
 export const appConfig: ApplicationConfig = {
@@ -18,6 +19,7 @@ export const appConfig: ApplicationConfig = {
     provideRouter(routes),
     provideHttpClient(withInterceptorsFromDi()),
     importProvidersFrom(QuillModule.forRoot()),
-    A4_STYLES_PRELOAD_PROVIDER
+    A4_STYLES_PRELOAD_PROVIDER,
+    MANAGED_FONTS_PRELOAD_PROVIDER
   ]
 };
