@@ -29,6 +29,7 @@
     "@angular/platform-browser": "^20.3.7",
     "@angular/router": "^20.3.7",
     "ngx-quill": "^28.0.1",
+    "qrcode-svg": "^1.1.0",
     "quill": "^2.0.3",
     "quill-delta": "^5.1.0",
     "quill-image-resize-module": "^3.0.0",
