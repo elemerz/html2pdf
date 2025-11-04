@@ -671,10 +671,10 @@ export class DesignerStateService {
       const sizeMm = parseFloat(sizeMmStr);
       const ecVal = ecAttr ? ecAttr[1] : 'M';
       const marginVal = marginAttr ? marginAttr[1] : '2';
-      const correction = (() => { try { const v = localStorage.getItem('trueSizeScale'); return v ? parseFloat(v) : 1; } catch { return 1; } })();
-      const pxPerMm = 96 / 25.4; // nominal CSS px per mm
-      // Invert screen calibration scale for export so physical print matches designer mm.
-      const sizePx = Math.max(1, Math.round(sizeMm * pxPerMm / (correction > 0 ? correction : 1)));
+      // Use dedicated export px/mm factor (empirically derived) instead of trueSizeScale.
+      const overrideFactor = (() => { try { const v = localStorage.getItem('qrExportPxPerMm'); return v ? parseFloat(v) : NaN; } catch { return NaN; } })();
+      const pxPerMm = Number.isFinite(overrideFactor) && overrideFactor > 0 ? overrideFactor : 4.63; // empirical default
+      const sizePx = Math.max(1, Math.round(sizeMm * pxPerMm));
       return `<object type="application/qrcode" data="${dataVal}" width="${sizePx}" height="${sizePx}" data-ec-level="${ecVal}" data-margin="${marginVal}" />`;
     });
   }
