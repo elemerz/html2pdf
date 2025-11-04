@@ -643,6 +643,8 @@ export class CellEditorDialogComponent implements OnInit, OnDestroy {
 
 
     this.contentValue = this.initialContent && this.initialContent !== '&nbsp;' ? this.initialContent : '';
+    // After content loaded, attach QR handlers for existing images
+    setTimeout(() => this.attachQrHandlers(), 0);
   }
 
   /**
@@ -716,9 +718,42 @@ export class CellEditorDialogComponent implements OnInit, OnDestroy {
   // State for QR code dialog
   showQrDialog: boolean = false;
   qrForm = { data: '', size: 32, ec: 'M', margin: 2 };
+  private qrEditImg: HTMLImageElement | null = null; // currently edited QR image
+  private qrEditMode: boolean = false; // true when editing existing QR
+  private attachQrHandlers() {
+    if (!this.quill) return;
+    const imgs = Array.from(this.quill.root.querySelectorAll('img[data-type="application/qrcode"]')) as HTMLImageElement[];
+    imgs.forEach(img => {
+      if ((img as any)._qrDblBound) return;
+      img.addEventListener('dblclick', (ev) => {
+        ev.preventDefault(); ev.stopPropagation();
+        this.openQrDialog(img);
+      });
+      (img as any)._qrDblBound = true;
+    });
+  }
 
-  openQrDialog(): void {
-    this.qrForm = { data: '', size: 32, ec: 'M', margin: 2 }; // reset each time (size now in mm)
+  openQrDialog(existingImg?: HTMLImageElement): void {
+    if (existingImg) {
+      // Edit mode
+      this.qrEditImg = existingImg;
+      this.qrEditMode = true;
+      const data = existingImg.getAttribute('data-data') || '';
+      const sizeMmStr = existingImg.getAttribute('data-size') || '32';
+      const ec = existingImg.getAttribute('data-ec') || 'M';
+      const marginStr = existingImg.getAttribute('data-margin') || '2';
+      this.qrForm = {
+        data,
+        size: Math.max(1, parseFloat(sizeMmStr) || 32),
+        ec: ec || 'M',
+        margin: Math.max(0, parseInt(marginStr, 10) || 2)
+      };
+    } else {
+      // Insert mode
+      this.qrEditImg = null;
+      this.qrEditMode = false;
+      this.qrForm = { data: '', size: 32, ec: 'M', margin: 2 }; // reset each time (size now in mm)
+    }
     this.showQrDialog = true;
   }
 
@@ -731,36 +766,50 @@ export class CellEditorDialogComponent implements OnInit, OnDestroy {
     const { data, size, ec, margin } = this.qrForm;
     if (!data || size <= 0) { this.showQrDialog = false; return; }
     try {
-      const mm = size; // size entered by user in millimeters
-      const pxPerMm = 96 / 25.4; // CSS nominal pixels per mm
-      const sizePx = Math.max(1, Math.round(mm * pxPerMm)); // screen preview size (no calibration scale applied here)
+      const mm = size; // size in millimeters
+      const pxPerMm = 96 / 25.4; // nominal CSS px per mm
+      const sizePx = Math.max(1, Math.round(mm * pxPerMm));
       const svg = new (QRCode as any)({ content: data, padding: margin, width: sizePx, height: sizePx, color: '#000', background: 'transparent', ecl: ec }).svg();
       const dataUrl = 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
-      const range = this.quill.getSelection(true);
-      const index = range ? range.index : this.quill.getLength();
-      this.quill.insertEmbed(index, 'image', dataUrl, 'user');
-      this.quill.setSelection(index + 1, 0, 'silent');
-      // Attach data-* attributes to the inserted <img>
-      setTimeout(() => {
-        try {
-          const img = this.quill.root.querySelector(`img[src="${dataUrl}"]`) as HTMLImageElement | null;
-          if (img) {
-            img.setAttribute('data-type', 'application/qrcode');
-            img.setAttribute('data-data', data);
-            img.setAttribute('data-size', mm.toString()); // store mm value
-            img.setAttribute('data-ec', ec);
-            img.setAttribute('data-margin', margin.toString());
-          }
-        } catch {}
-      }, 0);
+
+      if (this.qrEditMode && this.qrEditImg) {
+        // Update existing image
+        this.qrEditImg.src = dataUrl;
+        this.qrEditImg.setAttribute('data-data', data);
+        this.qrEditImg.setAttribute('data-size', mm.toString());
+        this.qrEditImg.setAttribute('data-ec', ec);
+        this.qrEditImg.setAttribute('data-margin', margin.toString());
+      } else {
+        // Insert new image
+        const range = this.quill.getSelection(true);
+        const index = range ? range.index : this.quill.getLength();
+        this.quill.insertEmbed(index, 'image', dataUrl, 'user');
+        this.quill.setSelection(index + 1, 0, 'silent');
+        setTimeout(() => {
+          try {
+            const img = this.quill.root.querySelector(`img[src="${dataUrl}"]`) as HTMLImageElement | null;
+            if (img) {
+              img.setAttribute('data-type', 'application/qrcode');
+              img.setAttribute('data-data', data);
+              img.setAttribute('data-size', mm.toString());
+              img.setAttribute('data-ec', ec);
+              img.setAttribute('data-margin', margin.toString());
+              this.attachQrHandlers(); // bind dblclick
+            }
+          } catch {}
+        }, 0);
+      }
     } catch (e) {
       console.error('QR generation failed', e);
     }
     this.showQrDialog = false;
+    this.qrEditImg = null;
+    this.qrEditMode = false;
   }
 
   ngOnDestroy(): void {
     this.teardownSymbolPalette();
+    this.qrEditImg = null;
   }
 
   /**
