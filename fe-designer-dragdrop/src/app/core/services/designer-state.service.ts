@@ -660,18 +660,21 @@ export class DesignerStateService {
    * We map data-data => data, data-size => width/height, data-ec => data-ec-level, data-margin => data-margin.
    */
   private transformQrImages(html: string): string {
-    // Use a regex to find QR img tags; keep it conservative to avoid false positives.
+    // Convert QR <img> placeholders (size now stored in mm) to <object> with pixel dimensions.
     return html.replace(/<img([^>]*\bdata-type="application\/qrcode"[^>]*)><\/img>/gi, (match, attrs) => {
       const dataAttr = /\bdata-data="([^"]*)"/.exec(attrs);
-      const sizeAttr = /\bdata-size="([^"]*)"/.exec(attrs);
+      const sizeAttr = /\bdata-size="([^"]*)"/.exec(attrs); // millimeter value
       const ecAttr = /\bdata-ec="([^"]*)"/.exec(attrs);
       const marginAttr = /\bdata-margin="([^"]*)"/.exec(attrs);
       const dataVal = dataAttr ? this.escapeHtml(dataAttr[1]) : '';
-      const sizeVal = sizeAttr ? sizeAttr[1] : '64';
+      const sizeMmStr = sizeAttr ? sizeAttr[1] : '20';
+      const sizeMm = parseFloat(sizeMmStr);
       const ecVal = ecAttr ? ecAttr[1] : 'M';
       const marginVal = marginAttr ? marginAttr[1] : '2';
-      // width/height from sizeVal (assumed px already for export consumer)
-      return `<object type="application/qrcode" data="${dataVal}" width="${sizeVal}" height="${sizeVal}" data-ec-level="${ecVal}" data-margin="${marginVal}" />`;
+      const correction = (() => { try { const v = localStorage.getItem('trueSizeScale'); return v ? parseFloat(v) : 1; } catch { return 1; } })();
+      const pxPerMm = 96 / 25.4; // nominal CSS px per mm
+      const sizePx = Math.max(1, Math.round(sizeMm * pxPerMm * correction));
+      return `<object type="application/qrcode" data="${dataVal}" width="${sizePx}" height="${sizePx}" data-ec-level="${ecVal}" data-margin="${marginVal}" />`;
     });
   }
 

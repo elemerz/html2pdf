@@ -715,10 +715,10 @@ export class CellEditorDialogComponent implements OnInit, OnDestroy {
 
   // State for QR code dialog
   showQrDialog: boolean = false;
-  qrForm = { data: '', size: 128, ec: 'M', margin: 2 };
+  qrForm = { data: '', size: 32, ec: 'M', margin: 2 };
 
   openQrDialog(): void {
-    this.qrForm = { data: '', size: 128, ec: 'M', margin: 2 }; // reset each time
+    this.qrForm = { data: '', size: 32, ec: 'M', margin: 2 }; // reset each time (size now in mm)
     this.showQrDialog = true;
   }
 
@@ -731,7 +731,10 @@ export class CellEditorDialogComponent implements OnInit, OnDestroy {
     const { data, size, ec, margin } = this.qrForm;
     if (!data || size <= 0) { this.showQrDialog = false; return; }
     try {
-      const svg = new (QRCode as any)({ content: data, padding: margin, width: size, height: size, color: '#000', background: 'transparent', ecl: ec }).svg();
+      const mm = size; // size entered by user in millimeters
+      const pxPerMm = 96 / 25.4; // CSS nominal pixels per mm
+      const sizePx = Math.max(1, Math.round(mm * pxPerMm)); // screen preview size (no calibration scale applied here)
+      const svg = new (QRCode as any)({ content: data, padding: margin, width: sizePx, height: sizePx, color: '#000', background: 'transparent', ecl: ec }).svg();
       const dataUrl = 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
       const range = this.quill.getSelection(true);
       const index = range ? range.index : this.quill.getLength();
@@ -744,7 +747,7 @@ export class CellEditorDialogComponent implements OnInit, OnDestroy {
           if (img) {
             img.setAttribute('data-type', 'application/qrcode');
             img.setAttribute('data-data', data);
-            img.setAttribute('data-size', size.toString());
+            img.setAttribute('data-size', mm.toString()); // store mm value
             img.setAttribute('data-ec', ec);
             img.setAttribute('data-margin', margin.toString());
           }
