@@ -64,6 +64,36 @@
   border-color: @primary;
 }
 
+.qr-popover {
+  position: absolute;
+  top: 56px;
+  right: 16px;
+  width: 320px;
+  max-width: calc(100% - 32px);
+  background: @surface;
+  color: @surface-foreground;
+  border: 1px solid @border;
+  border-radius: @radius-sm;
+  padding: 12px;
+  box-shadow: @shadow-lg;
+  display: grid;
+  gap: 8px;
+  z-index: @z-tooltip + 1;
+}
+.qr-popover h3 { margin: 0 0 4px; font-size: 14px; }
+.qr-popover form label { display: grid; gap: 4px; font-size: 12px; }
+.qr-popover input, .qr-popover textarea, .qr-popover select {
+  padding: 6px 8px;
+  border: 1px solid @border;
+  border-radius: @radius-sm;
+  font-size: 12px;
+  background: @background;
+  color: @foreground;
+}
+.qr-popover .btns { display: flex; justify-content: flex-end; gap: 6px; }
+.qr-popover button { padding: 4px 10px; font-size: 12px; border: 1px solid @border; background: @background; border-radius: @radius-sm; cursor: pointer; }
+.qr-popover button[type=submit] { background: @primary; color: @primary-foreground; border-color: @primary; }
+
 :host ::ng-deep .ql-snow .ql-picker.ql-font .ql-picker-item[data-value="calibri"]::before,
 :host ::ng-deep .ql-snow .ql-picker.ql-font .ql-picker-label[data-value="calibri"]::before {
   content: 'Calibri';
