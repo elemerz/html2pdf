@@ -511,18 +511,18 @@ export class DesignerStateService {
     // Check for each possible intercalation pattern
     // Pattern: role1 + role2 + role1 (where role1 != role2)
     const roleList = Array.from(roles);
-    
+
     for (let i = 0; i < roleList.length; i++) {
       for (let j = 0; j < roleList.length; j++) {
         if (i === j) continue; // Skip same role pairs
-        
+
         const role1 = roleList[i];
         const role2 = roleList[j];
-        
+
         // Query: *[data-role="role1"]+*[data-role="role2"]+*[data-role="role1"]
         const selector = `app-canvas-element[data-role="${role1}"]+app-canvas-element[data-role="${role2}"]+app-canvas-element[data-role="${role1}"]`;
         const intercalations = document.querySelectorAll(selector);
-        
+
         if (intercalations.length > 0) {
           throw new Error(
             `Validation Error: Elements with role "${role1}" are not adjacent. ` +
@@ -550,7 +550,7 @@ export class DesignerStateService {
 
     for (const el of elements) {
       const role = this.resolveElementRole(el);
-      
+
       if (!currentGroup || currentGroup.role !== role) {
         // Start a new group
         currentGroup = { role, elements: [el] };
@@ -575,11 +575,11 @@ export class DesignerStateService {
     // Generate markup for each group
     let lastFlowBottom = 0;
     let firstFlow = true;
-    
+
     const bodyContent = groups
       .map(group => {
         const groupMarkup: string[] = [];
-        
+
         for (const el of group.elements) {
           if (el.type === 'table') {
             const topMargin = firstFlow ? el.y : Math.max(0, el.y - lastFlowBottom);
@@ -609,7 +609,7 @@ export class DesignerStateService {
 
         // Wrap group in appropriate parent tag based on role
         const groupContent = groupMarkup.join('\n      ');
-        
+
         if (group.role === 'report-header') {
           return `    <header>\n      ${groupContent}\n    </header>`;
         } else if (group.role === 'report-footer') {
@@ -673,7 +673,7 @@ export class DesignerStateService {
       const marginVal = marginAttr ? marginAttr[1] : '2';
       // Use dedicated export px/mm factor (empirically derived) instead of trueSizeScale.
       const overrideFactor = (() => { try { const v = localStorage.getItem('qrExportPxPerMm'); return v ? parseFloat(v) : NaN; } catch { return NaN; } })();
-      const pxPerMm = Number.isFinite(overrideFactor) && overrideFactor > 0 ? overrideFactor : 4.63; // empirical default
+      const pxPerMm = Number.isFinite(overrideFactor) && overrideFactor > 0 ? overrideFactor : 4.44; // empirical default=4.63
       const sizePx = Math.max(1, Math.round(sizeMm * pxPerMm));
       return `<object type="application/qrcode" data="${dataVal}" width="${sizePx}" height="${sizePx}" data-ec-level="${ecVal}" data-margin="${marginVal}" />`;
     });
@@ -767,11 +767,11 @@ export class DesignerStateService {
             const colWidthMm = element.width * colRatio;
             const colWidthStr = this.formatMillimeters(colWidthMm);
             const key = `${rowIndex}_${colIndex}`; // use explicit indices to avoid indexOf duplication
-            
+
             // Check if this cell has a sub-table
             const subTable = subTablesMap?.[key];
             let cellContent: string;
-            
+
             if (subTable) {
               // Serialize the sub-table recursively
               cellContent = this.serializeSubTable(subTable, colWidthMm, rowHeightMm);
@@ -781,7 +781,7 @@ export class DesignerStateService {
               const raw = contents[key];
               cellContent = raw && raw.length ? raw.replace(/&nbsp;/g, '&#160;') : '&#160;'; // numeric nbsp entity
             }
-            
+
             const padMap = element.properties?.['tableCellPadding'] as Record<string, number[]> | undefined;
             const paddings = padMap?.[key];
             const [pt, pr, pb, pl] = Array.isArray(paddings) && paddings.length === 4 ? paddings : [0,0,0,0];
@@ -1097,29 +1097,29 @@ export class DesignerStateService {
   parseXhtmlToLayout(xhtmlContent: string, filename: string): ReportLayout {
     const parser = new DOMParser();
     const doc = parser.parseFromString(xhtmlContent, 'application/xhtml+xml');
-    
+
     // Check for parsing errors
     const parserError = doc.querySelector('parsererror');
     if (parserError) {
       throw new Error('Invalid XHTML: ' + parserError.textContent);
     }
-    
+
     const elements: CanvasElement[] = [];
     let elementIdCounter = 1;
-    
+
     // Extract body elements
     const body = doc.querySelector('body');
     if (!body) {
       throw new Error('No body element found in XHTML');
     }
-    
+
     // Parse all elements (tables, divs, paragraphs, headings, etc.)
     const bodyElements = Array.from(body.children) as HTMLElement[];
-    
+
     for (const elem of bodyElements) {
       try {
         const tagName = elem.tagName.toLowerCase();
-        
+
         // Handle wrapper tags: <header>, <footer>, <div class="report-body">
         if (tagName === 'header') {
           // Parse all table children and assign them 'report-header' role
@@ -1159,10 +1159,10 @@ export class DesignerStateService {
         console.warn('Failed to parse element:', elem, err);
       }
     }
-    
+
     // Extract title from head
     const title = doc.querySelector('title')?.textContent || filename.replace(/\.(x?html)$/i, '');
-    
+
     return {
       name: title,
       elements,
@@ -1171,31 +1171,31 @@ export class DesignerStateService {
       canvasHeight: 297
     };
   }
-  
+
   /**
    * Converts a DOM element into the corresponding canvas element representation.
    */
   private parseXhtmlElement(elem: HTMLElement, idCounter: number): CanvasElement | null {
     const tagName = elem.tagName.toLowerCase();
-    
+
     // Parse table elements
     if (tagName === 'table') {
       return this.parseXhtmlTable(elem, idCounter);
     }
-    
+
     // Parse other elements (div, p, h1, etc.)
     const style = elem.getAttribute('style') || '';
     const position = this.parseStylePosition(style);
-    
+
     if (!position) {
       return null; // Skip elements without position/size
     }
-    
+
     let type: 'paragraph' | 'heading' | 'text' | 'div' = 'div';
     if (tagName === 'p') type = 'paragraph';
     else if (tagName === 'h1' || tagName === 'h2' || tagName === 'h3') type = 'heading';
     else if (tagName === 'div') type = elem.classList.contains('element') ? 'text' : 'div';
-    
+
     return {
       id: `element-${idCounter}`,
       type,
@@ -1207,14 +1207,14 @@ export class DesignerStateService {
       properties: {}
     };
   }
-  
+
   /**
    * Reconstructs a canvas table element from an XHTML table node.
    */
   private parseXhtmlTable(table: HTMLElement, idCounter: number, overrideRole?: string): CanvasElement | null {
     const style = table.getAttribute('style') || '';
     const position = this.parseStylePosition(style, true);
-    
+
     if (!position) {
       return null;
     }
@@ -1224,28 +1224,28 @@ export class DesignerStateService {
     // Use override role if provided (from wrapper tag), otherwise use data-role attribute
     const rawRole = overrideRole || table.getAttribute('data-role') || '';
     const elementRole = rawRole === 'report-header' || rawRole === 'report-footer' ? rawRole : 'report-body';
-    
+
     // Parse table structure
     const tbody = table.querySelector('tbody');
     if (!tbody) {
       return null;
     }
-    
+
     const rows = Array.from(tbody.querySelectorAll(':scope > tr')) as HTMLTableRowElement[];
     const numRows = rows.length;
-    
+
     if (numRows === 0) {
       return null;
     }
-    
+
     // Get number of columns from first row
     const firstRowCells = Array.from(rows[0].querySelectorAll('td')) as HTMLTableCellElement[];
     const numCols = firstRowCells.length;
-    
+
     if (numCols === 0) {
       return null;
     }
-    
+
     // Parse cell contents and properties
     const tableCellContents: Record<string, string> = {};
     const tableCellPadding: Record<string, number[]> = {};
@@ -1262,11 +1262,11 @@ export class DesignerStateService {
     const tableCellFontFamily: Record<string, string> = {};
     const tableCellTextDecoration: Record<string, string> = {};
     const tableCellSubTables: Record<string, any> = {};
-    
+
     // Parse row and column sizes
     const rowSizes: number[] = [];
     const colSizes: number[] = [];
-    
+
     // Calculate row sizes
     const totalHeight = position.height;
     for (const row of rows) {
@@ -1275,7 +1275,7 @@ export class DesignerStateService {
         rowSizes.push(parseFloat(heightStr) / totalHeight);
       }
     }
-    
+
     // Calculate column sizes from first row
     const totalWidth = position.width;
     for (const cell of firstRowCells) {
@@ -1284,16 +1284,16 @@ export class DesignerStateService {
         colSizes.push(parseFloat(widthStr) / totalWidth);
       }
     }
-    
+
     // Parse each cell
     rows.forEach((row, rowIndex) => {
       const cells = Array.from(row.querySelectorAll(':scope > td')) as HTMLTableCellElement[];
       cells.forEach((cell, colIndex) => {
         const key = `${rowIndex}_${colIndex}`;
-        
+
         // Check if cell contains a nested table
         const nestedTable = cell.querySelector(':scope > table') as HTMLElement | null;
-        
+
         if (nestedTable) {
           // Parse the nested table as a sub-table
           const subTable = this.parseNestedSubTable(nestedTable, position.width * colSizes[colIndex], position.height * rowSizes[rowIndex], 1);
@@ -1305,18 +1305,18 @@ export class DesignerStateService {
           // Content
           tableCellContents[key] = cell.innerHTML;
         }
-        
+
         // Padding
         const paddingTop = this.parseStyleValue(cell.style.paddingTop || '0');
         const paddingRight = this.parseStyleValue(cell.style.paddingRight || '0');
         const paddingBottom = this.parseStyleValue(cell.style.paddingBottom || '0');
         const paddingLeft = this.parseStyleValue(cell.style.paddingLeft || '0');
         tableCellPadding[key] = [paddingTop, paddingRight, paddingBottom, paddingLeft];
-        
+
         // Alignment
         tableCellHAlign[key] = cell.style.textAlign || 'left';
         tableCellVAlign[key] = cell.style.verticalAlign || 'top';
-        
+
         // Border - parse from style attribute
         const cellStyle = cell.getAttribute('style') || '';
         const border = cell.style.border || '';
@@ -1347,7 +1347,7 @@ export class DesignerStateService {
             }
           };
         }
-        
+
         // Font properties from <td> element's inline style (generic cell properties)
         // Parse from both cell.style and raw attribute to handle all formats
         let fontFamily = cell.style.fontFamily;
@@ -1364,42 +1364,42 @@ export class DesignerStateService {
           fontFamily = fontFamily.replace(/"/g, "'").trim();
           tableCellFontFamily[key] = fontFamily;
         }
-        
+
         if (cell.style.fontSize) {
           tableCellFontSize[key] = this.parseStyleValue(cell.style.fontSize);
         } else {
           const fontSizeMatch = cellStyle.match(/font-size:\s*([0-9.]+)pt/i);
           if (fontSizeMatch) tableCellFontSize[key] = parseFloat(fontSizeMatch[1]);
         }
-        
+
         if (cell.style.fontWeight) {
           tableCellFontWeight[key] = cell.style.fontWeight;
         } else {
           const fontWeightMatch = cellStyle.match(/font-weight:\s*(\w+)/i);
           if (fontWeightMatch) tableCellFontWeight[key] = fontWeightMatch[1];
         }
-        
+
         if (cell.style.fontStyle) {
           tableCellFontStyle[key] = cell.style.fontStyle;
         } else {
           const fontStyleMatch = cellStyle.match(/font-style:\s*(\w+)/i);
           if (fontStyleMatch) tableCellFontStyle[key] = fontStyleMatch[1];
         }
-        
+
         if (cell.style.lineHeight) {
           tableCellLineHeight[key] = parseFloat(cell.style.lineHeight) || 1;
         } else {
           const lineHeightMatch = cellStyle.match(/line-height:\s*([0-9.]+)/i);
           if (lineHeightMatch) tableCellLineHeight[key] = parseFloat(lineHeightMatch[1]);
         }
-        
+
         if (cell.style.textDecoration) {
           tableCellTextDecoration[key] = cell.style.textDecoration;
         } else {
           const textDecorationMatch = cellStyle.match(/text-decoration:\s*([^;]+)/i);
           if (textDecorationMatch) tableCellTextDecoration[key] = textDecorationMatch[1].trim();
         }
-        
+
         // Override with any inline styles from Quill content (these take precedence)
         const styledElements = cell.querySelectorAll('[style]') as NodeListOf<HTMLElement>;
         styledElements.forEach(elem => {
@@ -1412,7 +1412,7 @@ export class DesignerStateService {
         });
       });
     });
-    
+
     return {
       id: `element-${idCounter}`,
       type: 'table',
@@ -1637,22 +1637,22 @@ export class DesignerStateService {
       ...(Object.keys(cellSubTables).length > 0 ? { cellSubTables } : {})
     };
   }
-  
+
   /**
    * Extracts positioning information from inline style declarations.
    */
   private parseStylePosition(style: string, isTable: boolean = false): { x: number; y: number; width: number; height: number } | null {
     // For tables, look for margin-top and margin-left (flow positioning)
     // For other elements, look for left/top (absolute positioning)
-    
+
     let x = 0, y = 0, width = 0, height = 0;
-    
+
     if (isTable) {
       const marginTopMatch = style.match(/margin-top:\s*([0-9.]+)mm/);
       const marginLeftMatch = style.match(/margin-left:\s*([0-9.]+)mm/);
       const widthMatch = style.match(/width:\s*([0-9.]+)mm/);
       const heightMatch = style.match(/(^|;)\s*height:\s*([0-9.]+)mm/);
-      
+
       if (marginTopMatch) y = parseFloat(marginTopMatch[1]);
       if (marginLeftMatch) x = parseFloat(marginLeftMatch[1]);
       if (widthMatch) width = parseFloat(widthMatch[1]);
@@ -1667,17 +1667,17 @@ export class DesignerStateService {
       const topMatch = style.match(/top:\s*([0-9.]+)mm/);
       const widthMatch = style.match(/width:\s*([0-9.]+)mm/);
       const heightMatch = style.match(/height:\s*([0-9.]+)mm/);
-      
+
       if (leftMatch) x = parseFloat(leftMatch[1]);
       if (topMatch) y = parseFloat(topMatch[1]);
       if (widthMatch) width = parseFloat(widthMatch[1]);
       if (heightMatch) height = parseFloat(heightMatch[1]);
     }
-    
+
     if (width <= 0 || height <= 0) {
       return null;
     }
-    
+
     return { x, y, width, height };
   }
 
@@ -1749,7 +1749,7 @@ export class DesignerStateService {
     }
     return `${spec.width}px ${spec.style} ${spec.color}`;
   }
-  
+
   /**
    * Parses numeric values from inline style strings, handling units.
    */
