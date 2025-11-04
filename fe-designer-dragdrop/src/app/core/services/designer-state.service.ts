@@ -673,7 +673,8 @@ export class DesignerStateService {
       const marginVal = marginAttr ? marginAttr[1] : '2';
       const correction = (() => { try { const v = localStorage.getItem('trueSizeScale'); return v ? parseFloat(v) : 1; } catch { return 1; } })();
       const pxPerMm = 96 / 25.4; // nominal CSS px per mm
-      const sizePx = Math.max(1, Math.round(sizeMm * pxPerMm * correction));
+      // Invert screen calibration scale for export so physical print matches designer mm.
+      const sizePx = Math.max(1, Math.round(sizeMm * pxPerMm / (correction > 0 ? correction : 1)));
       return `<object type="application/qrcode" data="${dataVal}" width="${sizePx}" height="${sizePx}" data-ec-level="${ecVal}" data-margin="${marginVal}" />`;
     });
   }
