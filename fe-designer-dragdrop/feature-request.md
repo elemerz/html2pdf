@@ -55,15 +55,15 @@ To fix:
 - Align ContentEditor more elegantly on Open. => Ok
 - Merge "ROWS" and "COLUMNS" 	from ".property-section": "TABLE" into the "GENERAL" section.
   Place "ROWS", "COLUMNS" after the "TYPE" .property-field.
-- Paddings on Level > 0 => apply on Level-0 cell instead of sub-cell! => to Fix.
+- Paddings on Level > 0 => apply on Level-0 cell instead of sub-cell! => Ok.
 
 ## Still to implement (Not in POC)
 - Apply Property Default values even if not modified by user. => Ok
 - Make hotkeys work: Ctl-O,Ctl-N,Ctl-E, etc. => Ok.
 - Quill Editor: Support Custom symbols => Ok.
-- Quill Editor: Support Kix Barcode font => ...
-- Support QRCode and Barcode in designer
-- Apply Infomedics Huisstyle
+- Quill Editor: Support Kix Barcode font => Ok
+- Support QRCode and Barcode in designer => Started...
+- Apply Infomedics Huisstyle => Done.
 - Quill Editor: sync font controls with current selection
 - Implement ruler
 - Implement zoom to object with ruler syncing

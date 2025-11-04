@@ -222,7 +222,7 @@ export class CellEditorDialogComponent implements OnInit, OnDestroy {
             qrBtn.className = 'ql-qr';
             qrBtn.setAttribute('aria-label', 'Insert QR Code');
             qrBtn.innerHTML = '<span class="ql-qr-icon" style="font-size:11px;font-weight:600;letter-spacing:.5px">QR</span>';
-            qrBtn.addEventListener('click', () => this.insertQrCode());
+            qrBtn.addEventListener('click', () => this.openQrDialog());
             imageBtn.after(qrBtn); // place directly after image button
             console.debug('[CellEditorDialog] QR button injected after image button');
           } else {
@@ -713,21 +713,47 @@ export class CellEditorDialogComponent implements OnInit, OnDestroy {
     this.quill.format('size', sizeVal + 'pt');
   }
 
-  insertQrCode(): void {
-    if (!this.quill) return;
-    const text = window.prompt('QR Code content:', '');
-    if (!text) return;
+  // State for QR code dialog
+  showQrDialog: boolean = false;
+  qrForm = { data: '', size: 128, ec: 'M', margin: 2 };
+
+  openQrDialog(): void {
+    this.qrForm = { data: '', size: 128, ec: 'M', margin: 2 }; // reset each time
+    this.showQrDialog = true;
+  }
+
+  cancelQrDialog(): void {
+    this.showQrDialog = false;
+  }
+
+  submitQrDialog(): void {
+    if (!this.quill) { this.showQrDialog = false; return; }
+    const { data, size, ec, margin } = this.qrForm;
+    if (!data || size <= 0) { this.showQrDialog = false; return; }
     try {
-      // Generate SVG QR code then embed as an image (Quill strips raw <svg> markup)
-      const svg = new (QRCode as any)({ content: text, padding: 0, width: 128, height: 128, color: '#000', background: 'transparent', ecl: 'M' }).svg();
+      const svg = new (QRCode as any)({ content: data, padding: margin, width: size, height: size, color: '#000', background: 'transparent', ecl: ec }).svg();
       const dataUrl = 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
       const range = this.quill.getSelection(true);
       const index = range ? range.index : this.quill.getLength();
       this.quill.insertEmbed(index, 'image', dataUrl, 'user');
       this.quill.setSelection(index + 1, 0, 'silent');
+      // Attach data-* attributes to the inserted <img>
+      setTimeout(() => {
+        try {
+          const img = this.quill.root.querySelector(`img[src="${dataUrl}"]`) as HTMLImageElement | null;
+          if (img) {
+            img.setAttribute('data-type', 'application/qrcode');
+            img.setAttribute('data-data', data);
+            img.setAttribute('data-size', size.toString());
+            img.setAttribute('data-ec', ec);
+            img.setAttribute('data-margin', margin.toString());
+          }
+        } catch {}
+      }, 0);
     } catch (e) {
       console.error('QR generation failed', e);
     }
+    this.showQrDialog = false;
   }
 
   ngOnDestroy(): void {
