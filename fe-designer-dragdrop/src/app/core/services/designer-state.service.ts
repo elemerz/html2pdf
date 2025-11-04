@@ -642,6 +642,8 @@ export class DesignerStateService {
       `  <body>\n${bodyContent}\n  </body>\n</html>`;
     // Ensure all <img> tags have explicit closing </img>
     xhtml = this.ensureImageTagsClosed(xhtml);
+    // Transform QR code <img> placeholders into <object type="application/qrcode"> for OpenHTMLtoPDF
+    xhtml = this.transformQrImages(xhtml);
     return xhtml;
   }
 
@@ -650,8 +652,27 @@ export class DesignerStateService {
    */
   private ensureImageTagsClosed(html: string): string {
     // Replace <img ...> that do not self-close or already have </img>
-    // Pattern: <img ...> (not followed immediately by </img>)
     return html.replace(/<img\b([^>]*)>(?!\s*<\/img>)/gi, '<img$1></img>');
+  }
+
+  /**
+   * Converts QR code <img data-type="application/qrcode" ...></img> to <object type="application/qrcode" ... /> markup.
+   * We map data-data => data, data-size => width/height, data-ec => data-ec-level, data-margin => data-margin.
+   */
+  private transformQrImages(html: string): string {
+    // Use a regex to find QR img tags; keep it conservative to avoid false positives.
+    return html.replace(/<img([^>]*\bdata-type="application\/qrcode"[^>]*)><\/img>/gi, (match, attrs) => {
+      const dataAttr = /\bdata-data="([^"]*)"/.exec(attrs);
+      const sizeAttr = /\bdata-size="([^"]*)"/.exec(attrs);
+      const ecAttr = /\bdata-ec="([^"]*)"/.exec(attrs);
+      const marginAttr = /\bdata-margin="([^"]*)"/.exec(attrs);
+      const dataVal = dataAttr ? this.escapeHtml(dataAttr[1]) : '';
+      const sizeVal = sizeAttr ? sizeAttr[1] : '64';
+      const ecVal = ecAttr ? ecAttr[1] : 'M';
+      const marginVal = marginAttr ? marginAttr[1] : '2';
+      // width/height from sizeVal (assumed px already for export consumer)
+      return `<object type="application/qrcode" data="${dataVal}" width="${sizeVal}" height="${sizeVal}" data-ec-level="${ecVal}" data-margin="${marginVal}" />`;
+    });
   }
 
   private a4StylesCache: string | null = null; // Set by preload provider
