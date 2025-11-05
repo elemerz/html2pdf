@@ -3,6 +3,7 @@ package nl.infomedics.reporting.service;
 import com.openhtmltopdf.pdfboxout.PdfRendererBuilder;
 import com.openhtmltopdf.svgsupport.BatikSVGDrawer;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 import org.w3c.dom.Document;
 
@@ -56,6 +57,7 @@ public class Html2PdfConverterService {
         return thread;
     });
     private final int maxConcurrentConversions;
+    private final byte[] srgbColorProfile;
 
     /**
      * Creates the converter service with an injected font registry for renderer configuration.
@@ -66,6 +68,7 @@ public class Html2PdfConverterService {
     public Html2PdfConverterService(FontRegistry fontRegistry,
                                     @Value("${converter.max-concurrent:16}") int configuredMaxConcurrent) {
         this.fontRegistry = fontRegistry;
+        this.srgbColorProfile = loadSrgbColorProfile();
         if (configuredMaxConcurrent < 1) {
             System.err.println("Configured converter.max-concurrent " + configuredMaxConcurrent
                     + " is invalid; defaulting to 1.");
@@ -156,9 +159,20 @@ public class Html2PdfConverterService {
         builder.useSlowMode();
         builder.useSVGDrawer(new BatikSVGDrawer());
         builder.useObjectDrawerFactory(objectFactory);
-        builder.usePdfAConformance(PdfRendererBuilder.PdfAConformance.NONE);
+        builder.usePdfVersion(1.4f);
+        builder.usePdfAConformance(PdfRendererBuilder.PdfAConformance.PDFA_2_A);
+        builder.useColorProfile(srgbColorProfile);
         fontRegistry.registerEmbeddedFonts(builder);
         return builder;
+    }
+
+    private byte[] loadSrgbColorProfile() {
+        ClassPathResource resource = new ClassPathResource("colorspaces/sRGB.icc");
+        try (InputStream inputStream = resource.getInputStream()) {
+            return inputStream.readAllBytes();
+        } catch (IOException ex) {
+            throw new IllegalStateException("Unable to load sRGB color profile required for PDF/A output.", ex);
+        }
     }
 
     private String serializeDocument(Document document) throws Exception {
