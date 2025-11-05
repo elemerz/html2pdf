@@ -1,0 +1,1 @@
+java -jar ./target/xhtml2pdf-0.0.1-SNAPSHOT.jar
