@@ -17,16 +17,10 @@ import javax.xml.transform.stream.StreamResult;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
-import java.nio.file.LinkOption;
-import java.nio.file.attribute.BasicFileAttributes;
-import java.nio.file.FileVisitResult;
-import java.nio.file.SimpleFileVisitor;
 import java.time.Instant;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -36,11 +30,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Stream;
 
 /**
- * Watches an input directory for marker files, pairs them with XHTML input, and converts the content to PDF.
- * Conversion is delegated to OpenHTMLtoPDF, and failures are quarantined for review.
+ * Converts XHTML input into PDF output and tracks conversion statistics.
  */
 @Service
 public class Html2PdfConverterService {
@@ -65,9 +57,7 @@ public class Html2PdfConverterService {
     private final AtomicLong lastConversionFinishMillis = new AtomicLong();
     private final AtomicReference<ScheduledFuture<?>> pendingBatchCompletionLog = new AtomicReference<>();
     private final int maxConcurrentConversions;
-    private volatile Thread watcherThread;
     private volatile boolean warmupAttempted;
-    private volatile boolean initialScanScheduled;
 
     @Value("${input.path.html}")
     private String htmlInputPath;
@@ -102,44 +92,6 @@ public class Html2PdfConverterService {
                 + this.maxConcurrentConversions + " simultaneous conversions.");
     }
 
-    private void registerAllDirectories(Path start, WatchService watchService, Map<WatchKey, Path> watchKeys) throws IOException {
-        if (start == null) {
-            return;
-        }
-        if (!Files.exists(start)) {
-            try {
-                Files.createDirectories(start);
-            } catch (IOException ioe) {
-                System.err.println("Unable to create input directory " + start + ": " + ioe.getMessage());
-                return;
-            }
-        }
-        Files.walkFileTree(start, new SimpleFileVisitor<>() {
-            @Override
-            public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
-                registerDirectory(dir, watchService, watchKeys);
-                return FileVisitResult.CONTINUE;
-            }
-
-            @Override
-            public FileVisitResult visitFileFailed(Path file, IOException exc) {
-                System.err.println("Unable to access " + file + ": " + exc.getMessage());
-                return FileVisitResult.CONTINUE;
-            }
-        });
-    }
-
-    private void registerDirectory(Path dir, WatchService watchService, Map<WatchKey, Path> watchKeys) throws IOException {
-        if (dir == null) {
-            return;
-        }
-        if (watchKeys.containsValue(dir)) {
-            return;
-        }
-        WatchKey key = dir.register(watchService, StandardWatchEventKinds.ENTRY_CREATE, StandardWatchEventKinds.ENTRY_MODIFY);
-        watchKeys.put(key, dir);
-    }
-
     private Path resolvePdfOutputPath(Path htmlFile, String baseName) {
         Path outputRoot = getOutputRoot();
         Path inputRoot = getInputRoot();
@@ -156,19 +108,6 @@ public class Html2PdfConverterService {
         return targetDir.resolve(baseName + ".pdf");
     }
 
-    private void submitExistingMarkers(Path directory) {
-        if (directory == null) {
-            return;
-        }
-        try (Stream<Path> files = Files.list(directory)) {
-            files.filter(Files::isRegularFile)
-                    .filter(this::isMarkerFile)
-                    .forEach(this::submitForConversion);
-        } catch (IOException e) {
-            System.err.println("Unable to scan directory " + directory + " for markers: " + e.getMessage());
-        }
-    }
-
     private Path getInputRoot() {
         return Paths.get(htmlInputPath).toAbsolutePath().normalize();
     }
@@ -177,102 +116,7 @@ public class Html2PdfConverterService {
         return Paths.get(pdfOutputPath).toAbsolutePath().normalize();
     }
 
-    /**
-     * Ensures warm-up runs once, schedules any pre-existing work, and spins up the directory watcher.
-     */
-    public void startWatching() {
-        runWarmupIfConfigured();
-        scheduleExistingFiles();
-        synchronized (this) {
-            if (watcherThread == null || !watcherThread.isAlive()) {
-                watcherThread = Thread.ofPlatform()
-                        .name("html2pdf-watch")
-                        .start(this::watchFolder);
-            }
-        }
-    }
-
-    /**
-     * Submits already-present marker files for conversion when the service starts.
-     */
-    private void scheduleExistingFiles() {
-        Path inputDir = getInputRoot();
-        if (!Files.isDirectory(inputDir)) {
-            return;
-        }
-        synchronized (this) {
-            if (initialScanScheduled) {
-                return;
-            }
-            initialScanScheduled = true;
-        }
-        try (Stream<Path> files = Files.walk(inputDir)) {
-            files.filter(Files::isRegularFile)
-                    .filter(this::isMarkerFile)
-                    .forEach(this::submitForConversion);
-        } catch (IOException e) {
-            System.err.println("Unable to process existing HTML files in " + inputDir + ": " + e.getMessage());
-        }
-    }
-
-    /**
-     * Blocks on file-system events and triggers conversion when a new marker arrives.
-     */
-    private void watchFolder() {
-        Path inputRoot = getInputRoot();
-        try (WatchService watchService = FileSystems.getDefault().newWatchService()) {
-            Map<WatchKey, Path> watchKeys = new HashMap<>();
-            registerAllDirectories(inputRoot, watchService, watchKeys);
-
-            System.out.println("Watching folder: " + inputRoot);
-            while (true) {
-                WatchKey key = watchService.take();
-                Path dir = watchKeys.get(key);
-                if (dir == null) {
-                    key.reset();
-                    continue;
-                }
-
-                for (WatchEvent<?> event : key.pollEvents()) {
-                    WatchEvent.Kind<?> kind = event.kind();
-                    if (kind == StandardWatchEventKinds.OVERFLOW) {
-                        continue;
-                    }
-                    Path relative = (Path) event.context();
-                    if (relative == null) {
-                        continue;
-                    }
-                    Path child = dir.resolve(relative);
-                    if (kind == StandardWatchEventKinds.ENTRY_CREATE) {
-                        if (Files.isDirectory(child, LinkOption.NOFOLLOW_LINKS)) {
-                            registerAllDirectories(child, watchService, watchKeys);
-                            submitExistingMarkers(child);
-                        } else if (isMarkerFile(child)) {
-                            submitForConversion(child);
-                        }
-                    } else if (kind == StandardWatchEventKinds.ENTRY_MODIFY && Files.isRegularFile(child)) {
-                        if (isMarkerFile(child)) {
-                            submitForConversion(child);
-                        }
-                    }
-                }
-
-                boolean valid = key.reset();
-                if (!valid) {
-                    watchKeys.remove(key);
-                    if (watchKeys.isEmpty()) {
-                        break;
-                    }
-                }
-            }
-        } catch (InterruptedException ie) {
-            Thread.currentThread().interrupt();
-        } catch (IOException ioe) {
-            System.err.println("Watcher stopped due to I/O error: " + ioe.getMessage());
-        }
-    }
-
-    private void submitForConversion(Path markerFile) {
+    public void submitMarker(Path markerFile) {
         if (markerFile == null) {
             return;
         }
@@ -464,7 +308,7 @@ public class Html2PdfConverterService {
      * @param file candidate path
      * @return {@code true} if the file uses a marker extension
      */
-    private boolean isMarkerFile(Path file) {
+    boolean isMarkerFile(Path file) {
         if (file == null) {
             return false;
         }
@@ -575,7 +419,7 @@ public class Html2PdfConverterService {
     /**
      * Executes an optional inline warm-up render to amortize initialization costs before real work begins.
      */
-    private void runWarmupIfConfigured() {
+    void warmUpIfConfigured() {
         if (warmupAttempted) {
             return;
         }
