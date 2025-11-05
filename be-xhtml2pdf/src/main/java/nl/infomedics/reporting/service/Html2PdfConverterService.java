@@ -14,14 +14,16 @@ import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.*;
 import java.time.Instant;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -39,45 +41,27 @@ public class Html2PdfConverterService {
 
     private final QrBarcodeObjectFactory objectFactory = new QrBarcodeObjectFactory();
     private final FontRegistry fontRegistry;
-    private static final int PARSE_RETRY_ATTEMPTS = 10;
-    private static final long PARSE_RETRY_DELAY_MS = 150L;
     private static final long CONVERSION_IDLE_THRESHOLD_MS = 1_000L;
     private static final DateTimeFormatter TIMESTAMP_FORMATTER = DateTimeFormatter.ofPattern("HH:mm:ss");
     private static final ZoneId SYSTEM_ZONE = ZoneId.systemDefault();
-    private final ExecutorService conversionExecutor = Executors.newVirtualThreadPerTaskExecutor();
-    private final ScheduledExecutorService conversionTimingExecutor = Executors.newSingleThreadScheduledExecutor(r -> {
-        Thread thread = new Thread(r, "conversion-timing");
-        thread.setDaemon(true);
-        return thread;
-    });
     private final Semaphore conversionPermits;
     private final AtomicInteger activeConversions = new AtomicInteger();
     private final AtomicInteger peakConcurrentConversions = new AtomicInteger();
     private final AtomicLong firstConversionStartMillis = new AtomicLong();
     private final AtomicLong lastConversionFinishMillis = new AtomicLong();
     private final AtomicReference<ScheduledFuture<?>> pendingBatchCompletionLog = new AtomicReference<>();
+    private final ScheduledExecutorService conversionTimingExecutor = Executors.newSingleThreadScheduledExecutor(r -> {
+        Thread thread = new Thread(r, "conversion-timing");
+        thread.setDaemon(true);
+        return thread;
+    });
     private final int maxConcurrentConversions;
-    private volatile boolean warmupAttempted;
-
-    @Value("${input.path.html}")
-    private String htmlInputPath;
-
-    @Value("${output.path.pdf}")
-    private String pdfOutputPath;
-
-    @Value("${warmup.html:}")
-    private String warmupHtml;
-
-    @Value("${debug:false}")
-    private boolean debugEnabled;
-
-    @Value("${failed.path.pdf}")
-    private String failedOutputPath;
 
     /**
      * Creates the converter service with an injected font registry for renderer configuration.
      *
-     * @param fontRegistry registry responsible for exposing embedded fonts
+     * @param fontRegistry            registry responsible for exposing embedded fonts
+     * @param configuredMaxConcurrent configured concurrency limit
      */
     public Html2PdfConverterService(FontRegistry fontRegistry,
                                     @Value("${converter.max-concurrent:16}") int configuredMaxConcurrent) {
@@ -92,43 +76,100 @@ public class Html2PdfConverterService {
                 + this.maxConcurrentConversions + " simultaneous conversions.");
     }
 
-    private Path resolvePdfOutputPath(Path htmlFile, String baseName) {
-        Path outputRoot = getOutputRoot();
-        Path inputRoot = getInputRoot();
-        Path htmlAbsolute = htmlFile.toAbsolutePath().normalize();
-        Path relative;
-        try {
-            relative = inputRoot.relativize(htmlAbsolute);
-        } catch (IllegalArgumentException ex) {
-            relative = htmlAbsolute.getFileName();
+    /**
+     * Converts the supplied XHTML content into a PDF document.
+     *
+     * @param htmlContent XHTML content to convert
+     * @return {@link PdfConversionResult} containing the PDF bytes and optional sanitised XHTML snapshot
+     * @throws HtmlToPdfConversionException when conversion fails or the thread is interrupted
+     */
+    public PdfConversionResult convertHtmlToPdf(String htmlContent) throws HtmlToPdfConversionException {
+        if (htmlContent == null) {
+            throw new HtmlToPdfConversionException("HTML content must not be null.");
         }
-
-        Path relativeDir = relative != null ? relative.getParent() : null;
-        Path targetDir = relativeDir != null ? outputRoot.resolve(relativeDir) : outputRoot;
-        return targetDir.resolve(baseName + ".pdf");
-    }
-
-    private Path getInputRoot() {
-        return Paths.get(htmlInputPath).toAbsolutePath().normalize();
-    }
-
-    private Path getOutputRoot() {
-        return Paths.get(pdfOutputPath).toAbsolutePath().normalize();
-    }
-
-    public void submitMarker(Path markerFile) {
-        if (markerFile == null) {
-            return;
-        }
-        conversionExecutor.submit(() -> runWithConversionPermit(markerFile));
-    }
-
-    private void runWithConversionPermit(Path markerFile) {
         try (ConversionPermit ignored = acquireConversionPermit()) {
-            processMarker(markerFile);
+            long startMillis = System.currentTimeMillis();
+            noteConversionStarted();
+            try {
+                Document document = parseDocumentSafely(htmlContent);
+                String sanitisedXhtml = null;
+                if (document != null) {
+                    objectFactory.preprocessDocument(document);
+                    sanitisedXhtml = serializeDocument(document);
+                }
+                byte[] pdfBytes = renderToPdf(document, htmlContent);
+
+                long duration = System.currentTimeMillis() - startMillis;
+                String timestamp = LocalTime.now().format(TIMESTAMP_FORMATTER);
+                System.out.println(timestamp + " Conversion time: " + duration + " ms");
+
+                return new PdfConversionResult(pdfBytes, sanitisedXhtml);
+            } catch (Exception e) {
+                System.err.println("Error converting XHTML content: " + e.getMessage());
+                throw new HtmlToPdfConversionException("Unable to convert XHTML content", e);
+            } finally {
+                long finishMillis = System.currentTimeMillis();
+                scheduleBatchCompletionCheck(finishMillis);
+                if (Thread.interrupted()) {
+                    Thread.currentThread().interrupt();
+                }
+            }
         } catch (InterruptedException ie) {
             Thread.currentThread().interrupt();
-            System.err.println("Conversion interrupted before acquiring permit for " + markerFile);
+            throw new HtmlToPdfConversionException("Interrupted while waiting to acquire conversion permit", ie);
+        }
+    }
+
+    private Document parseDocumentSafely(String htmlContent) {
+        try (InputStream in = new ByteArrayInputStream(htmlContent.getBytes(StandardCharsets.UTF_8))) {
+            return parseDocument(in);
+        } catch (Exception ex) {
+            System.err.println("Unable to parse supplied XHTML content: " + ex.getMessage());
+            return null;
+        }
+    }
+
+    private byte[] renderToPdf(Document document, String htmlContent) throws IOException {
+        try (ByteArrayOutputStream os = new ByteArrayOutputStream()) {
+            renderToPdf(document, htmlContent, os);
+            return os.toByteArray();
+        }
+    }
+
+    private void renderToPdf(Document document, String htmlContent, OutputStream os) throws IOException {
+        try {
+            PdfRendererBuilder builder = configuredBuilder();
+            if (document != null) {
+                builder.withW3cDocument(document, "about:blank");
+            } else {
+                builder.withHtmlContent(htmlContent, "about:blank");
+            }
+            builder.toStream(os);
+            builder.run();
+        } catch (Exception ex) {
+            throw new IOException("Unable to render PDF", ex);
+        }
+    }
+
+    private PdfRendererBuilder configuredBuilder() {
+        PdfRendererBuilder builder = new PdfRendererBuilder();
+        builder.useSlowMode();
+        builder.useSVGDrawer(new BatikSVGDrawer());
+        builder.useObjectDrawerFactory(objectFactory);
+        builder.usePdfAConformance(PdfRendererBuilder.PdfAConformance.NONE);
+        fontRegistry.registerEmbeddedFonts(builder);
+        return builder;
+    }
+
+    private String serializeDocument(Document document) throws Exception {
+        TransformerFactory transformerFactory = TransformerFactory.newInstance();
+        Transformer transformer = transformerFactory.newTransformer();
+        transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+        transformer.setOutputProperty(OutputKeys.METHOD, "xml");
+        transformer.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
+        try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            transformer.transform(new DOMSource(document), new StreamResult(out));
+            return out.toString(StandardCharsets.UTF_8);
         }
     }
 
@@ -142,100 +183,6 @@ public class Html2PdfConverterService {
 
     private void logActiveConversions(int current, int peak) {
         System.out.println("Active conversions: " + current + "/" + maxConcurrentConversions + " (peak: " + peak + ")");
-    }
-
-    private final class ConversionPermit implements AutoCloseable {
-        private boolean closed;
-
-        @Override
-        public void close() {
-            if (closed) {
-                return;
-            }
-            closed = true;
-            int current = activeConversions.decrementAndGet();
-            conversionPermits.release();
-            logActiveConversions(current, peakConcurrentConversions.get());
-        }
-    }
-
-    /**
-     * Resolves the HTML counterpart for the supplied marker and attempts conversion.
-     *
-     * @param markerFile signal file that indicates a report is ready to convert
-     */
-    private void processMarker(Path markerFile) {
-        Path htmlFile = null;
-        try {
-            if (markerFile == null || !Files.exists(markerFile)) {
-                return;
-            }
-            htmlFile = resolveHtmlForMarker(markerFile);
-            if (htmlFile == null || !Files.exists(htmlFile)) {
-                System.err.println("Marker " + markerFile + " found but corresponding HTML/XHTML file is missing.");
-                return;
-            }
-            boolean success = convertHtmlToPdf(htmlFile);
-            if (success) {
-                deleteIfExists(htmlFile);
-                deleteIfExists(markerFile);
-            } else {
-                movePairToFailed(htmlFile, markerFile);
-            }
-        } catch (Exception ex) {
-            System.err.println("Unexpected error processing marker " + markerFile + ": " + ex.getMessage());
-            movePairToFailed(htmlFile, markerFile);
-        }
-    }
-
-    /**
-     * Runs the XHTML to PDF conversion and manages debug artifacts.
-     *
-     * @param htmlFile XHTML/HTML file to convert
-     * @return {@code true} if the PDF was produced successfully; {@code false} otherwise
-     */
-    private boolean convertHtmlToPdf(Path htmlFile) {
-        long startMillis = System.currentTimeMillis();
-        noteConversionStarted();
-        try {
-            String baseName = stripExtension(htmlFile.getFileName().toString());
-            if (baseName == null || baseName.isBlank()) {
-                baseName = "document";
-            }
-            Path pdfFile = resolvePdfOutputPath(htmlFile, baseName);
-            Files.createDirectories(pdfFile.getParent());
-
-            Document document = parseDocumentWithRetry(htmlFile);
-            Path intermediateHtml = null;
-            if (document != null) {
-                objectFactory.preprocessDocument(document);
-                if (debugEnabled) {
-                    intermediateHtml = writeIntermediateHtml(pdfFile, baseName, document);
-                }
-            }
-
-            try (OutputStream os = Files.newOutputStream(pdfFile, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE)) {
-                String baseUrl = document != null ? resolveBaseUrl(htmlFile) : null;
-                renderToPdf(document, htmlFile, baseUrl, os);
-            }
-            System.out.println("Converted: " + htmlFile + " -> " + pdfFile);
-            if (debugEnabled && intermediateHtml != null) {
-                System.out.println("Intermediate HTML saved to: " + intermediateHtml);
-            }
-            long duration = System.currentTimeMillis() - startMillis;
-            String timestamp = LocalTime.now().format(TIMESTAMP_FORMATTER);
-            System.out.println(timestamp + " Conversion time: " + duration + " ms");
-            return true;
-        } catch (Exception e) {
-            System.err.println("Error converting " + htmlFile + ": " + e.getMessage());
-            return false;
-        } finally {
-            long finishMillis = System.currentTimeMillis();
-            scheduleBatchCompletionCheck(finishMillis);
-            if (Thread.interrupted()) {
-                Thread.currentThread().interrupt();
-            }
-        }
     }
 
     private void noteConversionStarted() {
@@ -285,71 +232,6 @@ public class Html2PdfConverterService {
         return Instant.ofEpochMilli(epochMillis).atZone(SYSTEM_ZONE).toLocalTime().format(TIMESTAMP_FORMATTER);
     }
 
-    /**
-     * Drops the trailing extension, if present.
-     *
-     * @param name file name
-     * @return base component without extension
-     */
-    private String stripExtension(String name) {
-        if (name == null) {
-            return null;
-        }
-        int idx = name.lastIndexOf('.');
-        if (idx > 0) {
-            return name.substring(0, idx);
-        }
-        return name;
-    }
-
-    /**
-     * Identifies whether the provided path refers to a marker file.
-     *
-     * @param file candidate path
-     * @return {@code true} if the file uses a marker extension
-     */
-    boolean isMarkerFile(Path file) {
-        if (file == null) {
-            return false;
-        }
-        String lowerName = file.getFileName().toString().toLowerCase();
-        return lowerName.endsWith(".txt");
-    }
-
-    /**
-     * Attempts to parse the document multiple times to guard against transient file-access issues.
-     *
-     * @param htmlFile source file
-     * @return parsed DOM document or {@code null} when parsing fails
-     */
-    private Document parseDocumentWithRetry(Path htmlFile) {
-        for (int attempt = 1; attempt <= PARSE_RETRY_ATTEMPTS; attempt++) {
-            try (InputStream in = Files.newInputStream(htmlFile)) {
-                return parseDocument(in);
-            } catch (Exception ex) {
-                if (attempt == PARSE_RETRY_ATTEMPTS) {
-                    System.err.println("Unable to parse " + htmlFile + " as XHTML after "
-                            + PARSE_RETRY_ATTEMPTS + " attempts: " + ex.getMessage());
-                } else {
-                    try {
-                        Thread.sleep(PARSE_RETRY_DELAY_MS);
-                    } catch (InterruptedException ie) {
-                        Thread.currentThread().interrupt();
-                        break;
-                    }
-                }
-            }
-        }
-        return null;
-    }
-
-    /**
-     * Parses the supplied stream as a safe, namespace-aware DOM document.
-     *
-     * @param input XHTML/HTML stream
-     * @return DOM representation
-     * @throws Exception when the XML cannot be parsed
-     */
     private Document parseDocument(InputStream input) throws Exception {
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
         factory.setNamespaceAware(true);
@@ -362,231 +244,35 @@ public class Html2PdfConverterService {
     }
 
     /**
-     * Configures the renderer, supplying either a DOM document or backing file to produce a PDF.
-     *
-     * @param document parsed document (optional)
-     * @param htmlFile fallback file when the DOM is unavailable
-     * @param baseUrl  base URL for relative resource resolution
-     * @param os       output stream receiving the PDF bytes
-     * @throws IOException when rendering fails
+     * Result wrapper that exposes the generated PDF and an optional sanitised XHTML snapshot.
      */
-    private void renderToPdf(Document document, Path htmlFile, String baseUrl, OutputStream os) throws IOException {
-        try {
-            PdfRendererBuilder builder = configuredBuilder();
-            if (document != null) {
-                builder.withW3cDocument(document, baseUrl != null ? baseUrl : "about:blank");
-            } else if (htmlFile != null) {
-                builder.withFile(htmlFile.toFile());
-            } else {
-                throw new IllegalArgumentException("Document and htmlFile cannot both be null.");
-            }
-            builder.toStream(os);
-            builder.run();
-        } catch (Exception ex) {
-            throw new IOException("Unable to render PDF", ex);
+    public record PdfConversionResult(byte[] pdfContent, String sanitisedXhtml) { }
+
+    /**
+     * Exception raised when XHTML-to-PDF conversion fails.
+     */
+    public static class HtmlToPdfConversionException extends Exception {
+        public HtmlToPdfConversionException(String message) {
+            super(message);
+        }
+
+        public HtmlToPdfConversionException(String message, Throwable cause) {
+            super(message, cause);
         }
     }
 
-    /**
-     * Provides a renderer builder with the application-specific options applied.
-     *
-     * @return configured builder instance
-     */
-    private PdfRendererBuilder configuredBuilder() {
-        PdfRendererBuilder builder = new PdfRendererBuilder();
-        builder.useSlowMode();
-        builder.useSVGDrawer(new BatikSVGDrawer());
-        builder.useObjectDrawerFactory(objectFactory);
-        builder.usePdfAConformance(PdfRendererBuilder.PdfAConformance.NONE);
-        fontRegistry.registerEmbeddedFonts(builder);
-        return builder;
-    }
+    private final class ConversionPermit implements AutoCloseable {
+        private boolean closed;
 
-    /**
-     * Resolves a base URL so relative assets within the XHTML can be located during rendering.
-     *
-     * @param htmlFile source file
-     * @return string form of the base URL
-     */
-    private String resolveBaseUrl(Path htmlFile) {
-        if (htmlFile == null) {
-            return "about:blank";
-        }
-        Path parent = htmlFile.getParent();
-        return parent != null ? parent.toUri().toString() : htmlFile.toUri().toString();
-    }
-
-    /**
-     * Executes an optional inline warm-up render to amortize initialization costs before real work begins.
-     */
-    void warmUpIfConfigured() {
-        if (warmupAttempted) {
-            return;
-        }
-        warmupAttempted = true;
-        String warmupSource = warmupHtml == null ? "" : warmupHtml.trim();
-        if (warmupSource.isEmpty()) {
-            return;
-        }
-        try {
-            Document document;
-            try (InputStream in = new ByteArrayInputStream(warmupSource.getBytes(StandardCharsets.UTF_8))) {
-                document = parseDocument(in);
-            }
-            if (document != null) {
-                objectFactory.preprocessDocument(document);
-            }
-            long start = System.currentTimeMillis();
-            try (ByteArrayOutputStream os = new ByteArrayOutputStream()) {
-                if (document != null) {
-                    renderToPdf(document, null, "about:blank", os);
-                } else {
-                    PdfRendererBuilder builder = configuredBuilder();
-                    builder.withHtmlContent(warmupSource, "about:blank");
-                    builder.toStream(os);
-                    builder.run();
-                }
-            }
-            long duration = System.currentTimeMillis() - start;
-            System.out.println("Warm-up conversion completed in " + duration + " ms");
-        } catch (Exception ex) {
-            System.err.println("Warm-up conversion failed: " + ex.getMessage());
-        }
-    }
-
-    /**
-     * Writes the transformed XHTML to disk when debug mode is enabled.
-     *
-     * @param pdfFile  target PDF path (used to determine sibling location)
-     * @param baseName file base name
-     * @param document DOM to serialise
-     * @return path to the debug XHTML file
-     */
-    private Path writeIntermediateHtml(Path pdfFile, String baseName, Document document) {
-        Path debugFile = pdfFile.getParent().resolve(baseName + "-intermediate.xhtml");
-        try (OutputStream out = Files.newOutputStream(debugFile, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE)) {
-            TransformerFactory transformerFactory = TransformerFactory.newInstance();
-            Transformer transformer = transformerFactory.newTransformer();
-            transformer.setOutputProperty(OutputKeys.INDENT, "yes");
-            transformer.setOutputProperty(OutputKeys.METHOD, "xml");
-            transformer.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
-            transformer.transform(new DOMSource(document), new StreamResult(out));
-        } catch (Exception e) {
-            System.err.println("Unable to write intermediate HTML: " + e.getMessage());
-        }
-        return debugFile;
-    }
-
-    /**
-     * Locates the HTML or XHTML file that corresponds with the provided marker.
-     *
-     * @param markerFile marker signalling conversion readiness
-     * @return matching HTML path or {@code null} if none is found
-     */
-    private Path resolveHtmlForMarker(Path markerFile) {
-        if (markerFile == null) {
-            return null;
-        }
-        String baseName = stripExtension(markerFile.getFileName().toString());
-        if (baseName == null) {
-            return null;
-        }
-        Path directory = markerFile.getParent();
-        if (directory == null) {
-            directory = markerFile.toAbsolutePath().getParent();
-        }
-        if (directory == null) {
-            return null;
-        }
-        String[] extensions = {".xhtml", ".html"};
-        for (String extension : extensions) {
-            Path candidate = directory.resolve(baseName + extension);
-            if (Files.exists(candidate)) {
-                return candidate;
-            }
-        }
-        return null;
-    }
-
-    /**
-     * Attempts to delete the given file, logging errors instead of throwing.
-     *
-     * @param file candidate for deletion
-     */
-    private void deleteIfExists(Path file) {
-        if (file == null) {
-            return;
-        }
-        try {
-            Files.deleteIfExists(file);
-        } catch (IOException e) {
-            System.err.println("Unable to delete file " + file + ": " + e.getMessage());
-        }
-    }
-
-    /**
-     * Moves the HTML/marker pair into the configured failure directory for manual inspection.
-     *
-     * @param htmlFile   HTML input that failed
-     * @param markerFile marker associated with the failure
-     */
-    private void movePairToFailed(Path htmlFile, Path markerFile) {
-        if (failedOutputPath == null || failedOutputPath.trim().isEmpty()) {
-            System.err.println("failed.path.pdf is not configured; leaving files in place for manual review.");
-            return;
-        }
-        Path failedDir = Paths.get(failedOutputPath);
-        moveFileToDirectory(htmlFile, failedDir);
-        moveFileToDirectory(markerFile, failedDir);
-    }
-
-    /**
-     * Moves an individual file into a target directory, ensuring the directory exists first.
-     *
-     * @param source    file to move
-     * @param targetDir destination directory
-     */
-    private void moveFileToDirectory(Path source, Path targetDir) {
-        if (source == null || targetDir == null) {
-            return;
-        }
-        try {
-            if (!Files.exists(source)) {
+        @Override
+        public void close() {
+            if (closed) {
                 return;
             }
-            Files.createDirectories(targetDir);
-            String originalName = source.getFileName().toString();
-            Path destination = targetDir.resolve(originalName);
-            if (Files.exists(destination)) {
-                destination = resolveUniqueDestination(targetDir, originalName);
-            }
-            Files.move(source, destination, StandardCopyOption.REPLACE_EXISTING);
-        } catch (IOException e) {
-            System.err.println("Unable to move " + source + " to " + targetDir + ": " + e.getMessage());
+            closed = true;
+            int current = activeConversions.decrementAndGet();
+            conversionPermits.release();
+            logActiveConversions(current, peakConcurrentConversions.get());
         }
-    }
-
-    /**
-     * Generates a unique destination name when a conflicting file already exists.
-     *
-     * @param directory    target directory
-     * @param originalName original file name
-     * @return collision-free destination path
-     * @throws IOException if directory access fails
-     */
-    private Path resolveUniqueDestination(Path directory, String originalName) throws IOException {
-        String base = stripExtension(originalName);
-        String extension = "";
-        int idx = originalName.lastIndexOf('.');
-        if (idx >= 0) {
-            extension = originalName.substring(idx);
-        }
-        int attempt = 1;
-        Path candidate;
-        do {
-            candidate = directory.resolve(base + "-" + System.currentTimeMillis() + "-" + attempt + extension);
-            attempt++;
-        } while (Files.exists(candidate));
-        return candidate;
     }
 }
