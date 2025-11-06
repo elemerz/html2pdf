@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+  <springProperty scope="context" name="APP_NAME" source="spring.application.name"/>
+  <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <file>/var/log/infomedics/invoice-parser/invoice-parser.log</file>
+    <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+      <fileNamePattern>/var/log/infomedics/invoice-parser/invoice-parser.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+      <maxFileSize>512MB</maxFileSize>
+      <maxHistory>30</maxHistory>
+      <totalSizeCap>2GB</totalSizeCap>
+    </rollingPolicy>
+
+    <encoder>
+      <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} ${HOSTNAME} ${APP_NAME} %5level [trace=%X{traceId:-~},span=%X{spanId:-~}] [%thread] - %40.40logger{40}: %msg%n</pattern>
+    </encoder>
+  </appender>
+  <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+    <encoder>
+      <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} ${HOSTNAME} ${APP_NAME} %5level [trace=%X{traceId:-~},span=%X{spanId:-~}] [%thread] - %40.40logger{40}: %msg%n</pattern>
+    </encoder>
+  </appender>
+
+  <logger name="nl.infomedics" level="INFO" />
+  <logger name="com.sun.jersey.api.client.filter.LoggingFilter" level="ERROR" />
+
+  <root level="INFO">
+    <appender-ref ref="FILE" />
+	<appender-ref ref="CONSOLE" />
+  </root>
+</configuration>
+
+
