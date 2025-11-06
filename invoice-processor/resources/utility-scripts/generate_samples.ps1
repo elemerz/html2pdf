@@ -2,10 +2,10 @@ Param(
     [string]$Prefix = 'fin-sample',
     [int]$startIndex = 1,
     [int]$Digits = 4,
-    [string]$OutputDir = 'samples',
+    [string]$OutputDir = '.',
     [int]$LevelCount = 0,
     [int]$FoldersPerLevel = 0,
-    [int]$FilesPerFolder = 100,
+    [int]$FilesPerFolder = 5000,
     [int]$MinPages = 1,
     [int]$MaxPages = 6,
     [int]$MinCols = 3,
@@ -296,7 +296,7 @@ function New-Sample {
     [void]$builder.AppendLine([string]::Format('<title>{0}</title>', $titleText))
     [void]$builder.AppendLine('<style type="text/css">')
     [void]$builder.AppendLine('@page { size: A4 portrait; margin: 10mm 10mm 10mm 15mm; }')
-    [void]$builder.AppendLine('body { font-family: "Arial", sans-serif; font-size: 11pt; margin: 0; padding: 15mm; color: #1f1f1f; }')
+    [void]$builder.AppendLine('body { font-family: "Roboto", sans-serif; font-size: 11pt; margin: 0; padding: 15mm; color: #1f1f1f; }')
     [void]$builder.AppendLine('h1, h2 { color: #123c69; }')
     [void]$builder.AppendLine('p { line-height: 1.5; }')
     [void]$builder.AppendLine('table { width: 100%; border-collapse: collapse; margin: 12pt 0 18pt 0; }')

@@ -7,6 +7,8 @@ import java.util.concurrent.Executors;
 import org.apache.coyote.ProtocolHandler;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.web.embedded.tomcat.TomcatProtocolHandlerCustomizer;
+import org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactory;
+import org.springframework.boot.web.server.WebServerFactoryCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Lazy;
@@ -51,5 +53,20 @@ public class ServerPerformanceConfiguration implements WebMvcConfigurer {
     public void configureAsyncSupport(AsyncSupportConfigurer configurer) {
         configurer.setDefaultTimeout(DEFAULT_ASYNC_TIMEOUT.toMillis());
         configurer.setTaskExecutor(virtualTaskExecutor);
+    }
+
+    @Bean
+    WebServerFactoryCustomizer<TomcatServletWebServerFactory> tomcatCustomizer() {
+        return factory -> {
+            factory.addConnectorCustomizers(connector -> {
+                int maxSize = -1; // -1 = unlimited
+                connector.setMaxPostSize(maxSize);
+                System.out.println("============================================");
+                System.out.println("TOMCAT CONNECTOR CUSTOMIZATION APPLIED:");
+                System.out.println("Max POST Size set to: " + (maxSize == -1 ? "UNLIMITED" : maxSize + " bytes"));
+                System.out.println("Connector: " + connector);
+                System.out.println("============================================");
+            });
+        };
     }
 }

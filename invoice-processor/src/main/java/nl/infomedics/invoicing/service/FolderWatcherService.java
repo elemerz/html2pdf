@@ -2,6 +2,7 @@ package nl.infomedics.invoicing.service;
 
 import nl.infomedics.invoicing.service.InvoiceProcessorClient.PdfConversionException;
 import nl.infomedics.invoicing.service.InvoiceProcessorClient.PdfConversionResult;
+import jakarta.annotation.PreDestroy;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -28,6 +29,11 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
 /**
@@ -42,7 +48,9 @@ public class FolderWatcherService {
     private static final DateTimeFormatter TIMESTAMP_FORMATTER = DateTimeFormatter.ofPattern("HH:mm:ss");
 
     private final InvoiceProcessorClient invoiceProcessorClient;
-    private final ExecutorService conversionExecutor = Executors.newVirtualThreadPerTaskExecutor();
+    private final ThreadPoolExecutor conversionExecutor;
+    private final Semaphore conversionPermits;
+    private final int maxConcurrentConversions;
     private final Path inputRoot;
     private final Path outputRoot;
     private final Path failedOutputRoot;
@@ -58,13 +66,33 @@ public class FolderWatcherService {
                                 @Value("${output.path.pdf}") String pdfOutputPath,
                                 @Value("${failed.path.pdf}") String failedOutputPath,
                                 @Value("${warmup.html:}") String warmupHtml,
-                                @Value("${debug:false}") boolean debugEnabled) {
+                                @Value("${debug:false}") boolean debugEnabled,
+                                @Value("${folder.watcher.max-concurrent:64}") int maxConcurrent) {
         this.invoiceProcessorClient = invoiceProcessorClient;
         this.inputRoot = normalisePath(htmlInputPath);
         this.outputRoot = normalisePath(pdfOutputPath);
         this.failedOutputRoot = normalisePath(failedOutputPath);
         this.warmupHtml = warmupHtml == null ? "" : warmupHtml;
         this.debugEnabled = debugEnabled;
+        this.maxConcurrentConversions = Math.max(1, maxConcurrent);
+        this.conversionPermits = new Semaphore(this.maxConcurrentConversions);
+        
+        // Create thread pool with bounded queue to prevent memory issues
+        int queueCapacity = this.maxConcurrentConversions * 4; // 256 for default 64
+        this.conversionExecutor = new ThreadPoolExecutor(
+                this.maxConcurrentConversions,
+                this.maxConcurrentConversions,
+                60L, TimeUnit.SECONDS,
+                new LinkedBlockingQueue<>(queueCapacity),
+                r -> {
+                    Thread thread = new Thread(r);
+                    thread.setName("conversion-worker-" + thread.getId());
+                    thread.setDaemon(false);
+                    return thread;
+                },
+                new ThreadPoolExecutor.CallerRunsPolicy() // If queue full, caller processes it
+        );
+        System.out.println("FolderWatcherService initialized with max " + this.maxConcurrentConversions + " concurrent conversions, queue capacity: " + queueCapacity);
     }
 
     /**
@@ -86,6 +114,24 @@ public class FolderWatcherService {
         }
     }
 
+    @PreDestroy
+    public void shutdown() {
+        System.out.println("Shutting down FolderWatcherService...");
+        conversionExecutor.shutdown();
+        try {
+            if (!conversionExecutor.awaitTermination(30, TimeUnit.SECONDS)) {
+                System.err.println("Forcing shutdown of conversion executor...");
+                conversionExecutor.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            conversionExecutor.shutdownNow();
+            Thread.currentThread().interrupt();
+        }
+        if (watcherThread != null && watcherThread.isAlive()) {
+            watcherThread.interrupt();
+        }
+    }
+
     private void watchFolder() {
         try (WatchService watchService = FileSystems.getDefault().newWatchService()) {
             Map<WatchKey, Path> watchKeys = new HashMap<>();
@@ -100,10 +146,14 @@ public class FolderWatcherService {
                     continue;
                 }
 
+                boolean overflowDetected = false;
                 for (WatchEvent<?> event : key.pollEvents()) {
                     WatchEvent.Kind<?> kind = event.kind();
                     if (kind == StandardWatchEventKinds.OVERFLOW) {
-                        continue;
+                        System.err.println("!!! WATCH SERVICE OVERFLOW DETECTED !!!");
+                        System.err.println("Too many file system events at once - rescanning directory: " + dir);
+                        overflowDetected = true;
+                        break; // Stop processing this batch, will rescan
                     }
                     Path relative = (Path) event.context();
                     if (relative == null) {
@@ -122,6 +172,12 @@ public class FolderWatcherService {
                             submitMarker(child);
                         }
                     }
+                }
+
+                if (overflowDetected) {
+                    // Rescan the entire directory to pick up missed files
+                    System.err.println("Rescanning directory after overflow: " + dir);
+                    submitExistingMarkers(dir);
                 }
 
                 boolean valid = key.reset();
@@ -143,7 +199,54 @@ public class FolderWatcherService {
         if (markerFile == null) {
             return;
         }
-        conversionExecutor.submit(() -> processMarker(markerFile));
+        try {
+            conversionExecutor.submit(() -> {
+                boolean acquired = false;
+                try {
+                    acquired = conversionPermits.tryAcquire(30, TimeUnit.SECONDS);
+                    if (!acquired) {
+                        System.err.println("Unable to acquire conversion permit for " + markerFile + " after 30 seconds");
+                        logExecutorState();
+                        Path htmlFile = resolveHtmlForMarker(markerFile);
+                        movePairToFailed(htmlFile, markerFile);
+                        return;
+                    }
+                    processMarker(markerFile);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    System.err.println("Interrupted while processing " + markerFile);
+                    Path htmlFile = resolveHtmlForMarker(markerFile);
+                    movePairToFailed(htmlFile, markerFile);
+                } catch (Exception e) {
+                    System.err.println("Unexpected error processing " + markerFile + ": " + e.getMessage());
+                    e.printStackTrace();
+                    Path htmlFile = resolveHtmlForMarker(markerFile);
+                    movePairToFailed(htmlFile, markerFile);
+                } finally {
+                    if (acquired) {
+                        conversionPermits.release();
+                    }
+                }
+            });
+        } catch (RejectedExecutionException e) {
+            System.err.println("Executor rejected task for " + markerFile + " (queue full or shutdown)");
+            logExecutorState();
+            Path htmlFile = resolveHtmlForMarker(markerFile);
+            movePairToFailed(htmlFile, markerFile);
+        }
+    }
+
+    private void logExecutorState() {
+        int availablePermits = conversionPermits.availablePermits();
+        int queuedTasks = conversionExecutor.getQueue().size();
+        int activeThreads = conversionExecutor.getActiveCount();
+        long completedTasks = conversionExecutor.getCompletedTaskCount();
+        
+        System.err.println("EXECUTOR STATE:");
+        System.err.println("  Available permits: " + availablePermits + "/" + maxConcurrentConversions);
+        System.err.println("  Active threads: " + activeThreads + "/" + maxConcurrentConversions);
+        System.err.println("  Queued tasks: " + queuedTasks);
+        System.err.println("  Completed tasks: " + completedTasks);
     }
 
     private void processMarker(Path markerFile) {
@@ -267,13 +370,27 @@ public class FolderWatcherService {
             }
             initialScanScheduled = true;
         }
-        try (Stream<Path> files = Files.walk(inputRoot)) {
-            files.filter(Files::isRegularFile)
-                    .filter(this::isMarkerFile)
-                    .forEach(this::submitMarker);
-        } catch (IOException e) {
-            System.err.println("Unable to process existing HTML files in " + inputRoot + ": " + e.getMessage());
-        }
+        
+        // Process existing files in a separate thread to avoid blocking the watcher
+        Thread.ofPlatform().name("initial-scan").start(() -> {
+            System.out.println("Starting initial scan of existing files in " + inputRoot);
+            try (Stream<Path> files = Files.walk(inputRoot)) {
+                files.filter(Files::isRegularFile)
+                        .filter(this::isMarkerFile)
+                        .forEach(marker -> {
+                            submitMarker(marker);
+                            // Small delay to avoid overwhelming the executor
+                            try {
+                                Thread.sleep(10);
+                            } catch (InterruptedException e) {
+                                Thread.currentThread().interrupt();
+                            }
+                        });
+                System.out.println("Initial scan completed");
+            } catch (IOException e) {
+                System.err.println("Unable to process existing HTML files in " + inputRoot + ": " + e.getMessage());
+            }
+        });
     }
 
     private void submitExistingMarkers(Path directory) {

@@ -43,6 +43,8 @@ public class HtmlToPdfController {
     )
     public ResponseEntity<HtmlToPdfResponse> convertHtmlToPdf(@Valid @RequestBody HtmlToPdfRequest request)
             throws HtmlToPdfConversionException {
+        int requestSize = request.html() != null ? request.html().length() : 0;
+        System.out.println(">>> Received conversion request - HTML size: " + requestSize + " bytes (" + (requestSize/1024) + " KB)");
         PdfConversionResult result = converterService.convertHtmlToPdf(request.html());
         String pdfBase64 = Base64.getEncoder().encodeToString(result.pdfContent());
         String sanitised = request.includeSanitisedXhtml() ? result.sanitisedXhtml() : null;
