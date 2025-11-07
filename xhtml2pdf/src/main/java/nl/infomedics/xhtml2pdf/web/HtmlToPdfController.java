@@ -18,6 +18,7 @@ import java.util.Base64;
 
 import nl.infomedics.xhtml2pdf.web.dto.HtmlToPdfRequest;
 import nl.infomedics.xhtml2pdf.web.dto.HtmlToPdfResponse;
+import nl.infomedics.xhtml2pdf.web.dto.HtmlToPdfWithModelRequest;
 import nl.infomedics.reporting.service.Html2PdfConverterService;
 import nl.infomedics.reporting.service.Html2PdfConverterService.HtmlToPdfConversionException;
 import nl.infomedics.reporting.service.Html2PdfConverterService.PdfConversionResult;
@@ -46,6 +47,23 @@ public class HtmlToPdfController {
         int requestSize = request.html() != null ? request.html().length() : 0;
         System.out.println(">>> Received conversion request - HTML size: " + requestSize + " bytes (" + (requestSize/1024) + " KB)");
         PdfConversionResult result = converterService.convertHtmlToPdf(request.html());
+        String pdfBase64 = Base64.getEncoder().encodeToString(result.pdfContent());
+        String sanitised = request.includeSanitisedXhtml() ? result.sanitisedXhtml() : null;
+        HtmlToPdfResponse response = new HtmlToPdfResponse(pdfBase64, sanitised, Instant.now());
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping(
+            path = "/convert-with-model",
+            consumes = MediaType.APPLICATION_JSON_VALUE,
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    public ResponseEntity<HtmlToPdfResponse> convertHtmlToPdfWithModel(@Valid @RequestBody HtmlToPdfWithModelRequest request)
+            throws HtmlToPdfConversionException {
+        int requestSize = request.html() != null ? request.html().length() : 0;
+        System.out.println(">>> Received conversion-with-model request - HTML size: " + requestSize + " bytes (" + (requestSize/1024) + " KB)" +
+                ", JSON size: " + (request.jsonModel()!=null?request.jsonModel().length():0));
+        PdfConversionResult result = converterService.convertHtmlToPdf(request.html()); // jsonModel currently unused
         String pdfBase64 = Base64.getEncoder().encodeToString(result.pdfContent());
         String sanitised = request.includeSanitisedXhtml() ? result.sanitisedXhtml() : null;
         HtmlToPdfResponse response = new HtmlToPdfResponse(pdfBase64, sanitised, Instant.now());

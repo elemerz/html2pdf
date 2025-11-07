@@ -15,6 +15,8 @@ import java.nio.file.*;
 import java.util.*;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
+
+import java.util.Objects;
 @Getter @Setter
 @Service
 public class ZipIngestService {
@@ -24,19 +26,25 @@ public class ZipIngestService {
 	private final JsonAssembler json;
 	private final AppProperties props;
 
-	public ZipIngestService(ParseService parse, JsonAssembler json, AppProperties props,
-			@Value("${json.output.folder}") String jsonOut, @Value("${json.pretty:false}") boolean pretty)
+	public ZipIngestService(ParseService parse, JsonAssembler json, AppProperties props, Xhtml2PdfClient pdfClient,
+			@Value("${json.output.folder}") String jsonOut, @Value("${json.pretty:false}") boolean pretty,
+			@Value("${pdf.output.folder:C:/invoice-data/_pdf}") String pdfOut)
 			throws IOException {
 		this.parse = parse;
 		this.json = json;
 		this.props = props;
+		this.pdfClient = pdfClient;
 		this.jsonOutDir = Paths.get(jsonOut);
+		this.pdfOutDir = Paths.get(pdfOut);
 		this.jsonPretty = pretty;
 		Files.createDirectories(this.jsonOutDir);
+		Files.createDirectories(this.pdfOutDir);
 	}
 
 	private final Path jsonOutDir;
+	private final Path pdfOutDir;
 	private final boolean jsonPretty;
+	private final Xhtml2PdfClient pdfClient;
 
 	public void processZip(Path zipPath) {
 		String name = zipPath.getFileName().toString();
@@ -83,9 +91,25 @@ public class ZipIngestService {
 			String jsonStr = json.stringify(bundle, jsonPretty);
 
 			stage = "write json";
-			// write JSON next to archive location for downstream consumers
 			Path out = jsonOutDir.resolve(stripZip(name) + ".json");
 			Files.writeString(out, jsonStr, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+
+			// --- Generate PDF based on meta.invoiceType ---
+			try {
+				Integer type = bundle.getMeta()!=null?bundle.getMeta().getInvoiceType():null;
+				if (type != null) {
+					stage = "load template";
+					String templateName = "templates/for-pdf/factuur-" + type + ".html";
+					String html = new String(Objects.requireNonNull(getClass().getClassLoader().getResourceAsStream(templateName)).readAllBytes(), StandardCharsets.UTF_8);
+					stage = "convert pdf";
+					byte[] pdf = pdfClient.convert(html, jsonStr);
+					stage = "write pdf";
+					Path pdfOut = pdfOutDir.resolve(stripZip(name) + ".pdf");
+					Files.write(pdfOut, pdf, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+				}
+			} catch (Exception pdfEx) {
+				log.warn("PDF generation skipped for {}: {} (stage={})", name, pdfEx.getMessage(), stage);
+			}	
 		} catch (Exception ex) {
 			try {
 				Path err = Paths.get(props.getErrorFolder()).resolve(zipPath.getFileName());
