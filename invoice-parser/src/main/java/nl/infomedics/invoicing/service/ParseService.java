@@ -24,6 +24,10 @@ import nl.infomedics.invoicing.model.MetaInfo;
 import nl.infomedics.invoicing.model.Specificatie;
 import nl.infomedics.invoicing.model.Practitioner;
 
+import javax.xml.stream.XMLInputFactory;
+import javax.xml.stream.XMLStreamConstants;
+import javax.xml.stream.XMLStreamReader;
+
 @Service
 public class ParseService {
 	private static final DateTimeFormatter NL = DateTimeFormatter.ofPattern("dd-MM-yyyy");
@@ -142,4 +146,105 @@ private static String get(com.univocity.parsers.common.record.Record r, int idx)
 		}
 		return map;
 	}
+
+	// ---- XML Notas parsing (for *_Notas.xml) ----
+	public static class NotasParseResult {
+		public Map<String, Debiteur> debiteuren;
+		public Map<String, List<Specificatie>> specificaties;
+		public Practitioner practitioner;
+	}
+
+	public NotasParseResult parseNotas(Reader reader) {
+		NotasParseResult out = new NotasParseResult();
+		out.debiteuren = new LinkedHashMap<>();
+		out.specificaties = new LinkedHashMap<>();
+		out.practitioner = null;
+		try {
+			XMLInputFactory f = XMLInputFactory.newFactory();
+			XMLStreamReader xr = f.createXMLStreamReader(reader);
+			String currentNotaInvoiceNumber=null, currentImageUrl=null; Integer currentInvoiceType=null; LocalDate periodFrom=null, periodTo=null;
+			String debiteurNum=null, debiteurName=null, practitionerName=null, practitionerCity=null;
+			while (xr.hasNext()) {
+				int ev = xr.next();
+				if (ev==XMLStreamConstants.START_ELEMENT) {
+					String local = xr.getLocalName();
+					if ("Nota".equals(local)) {
+						currentNotaInvoiceNumber = attr(xr, "Uniek_document_nr");
+						currentImageUrl = attr(xr, "Tracking_pixel_URL");
+						currentInvoiceType = safeInt(attr(xr, "Type_nota"));
+						periodFrom = parseDateIso(attr(xr, "Dagtekening"));
+						periodTo = parseDateIso(attr(xr, "Uiterste_betaaldatum"));
+					}
+					else if ("Debiteur".equals(local)) {
+						debiteurNum = attr(xr, "Debiteurnummer");
+						debiteurName = attr(xr, "Opgemaakte_naam");
+					}
+					else if ("Aanbieder".equals(local)) {
+						practitionerName = attr(xr, "Naam");
+					}
+					else if ("Adres".equals(local)) {
+						String plaats = attr(xr, "Plaats");
+						if (practitionerName != null && practitionerCity == null && debiteurNum == null) {
+							practitionerCity = plaats;
+						}
+					}
+					else if ("Patient".equals(local)) {
+						String patientName = attr(xr, "Opgemaakte_naam");
+						LocalDate dob = parseDateIso(attr(xr, "Geboortedatum"));
+						String insurer = attr(xr, "Verzekeraar");
+						if (debiteurNum!=null) {
+							Debiteur d = new Debiteur();
+							d.setInvoiceNumber(currentNotaInvoiceNumber);
+							d.setPracticeName(practitionerName);
+							d.setPracticeCity(practitionerCity);
+							d.setInsuredId(debiteurNum);
+							d.setPatientName(patientName!=null?patientName:debiteurName);
+							d.setPatientDob(dob);
+							d.setInsurer(insurer);
+							d.setPeriodFrom(periodFrom);
+							d.setPeriodTo(periodTo);
+							d.setInvoiceType(currentInvoiceType);
+							d.setImageUrl(currentImageUrl);
+							out.debiteuren.put(debiteurNum, d);
+						}
+					}
+					else if ("Prestatie".equals(local)) {
+						String bedrag = attr(xr, "Bedrag");
+						Specificatie s = new Specificatie();
+						s.setInsuredId(debiteurNum);
+						s.setDate(parseDateIso(attr(xr, "Datum")));
+						s.setTreatmentCode(attr(xr, "Prestatiecode"));
+						s.setDescription(attr(xr, "Omschrijving"));
+						s.setTariffCode(attr(xr, "Prestatiecode"));
+						s.setReference(attr(xr, "id"));
+						if (bedrag!=null) {
+							try { s.setAmountCents(new BigDecimal(bedrag).movePointRight(2).intValue()); } catch(Exception ignored) {}
+						}
+						if (debiteurNum!=null) {
+							out.specificaties.computeIfAbsent(debiteurNum,k->new ArrayList<>()).add(s);
+						}
+					}
+				}
+				else if (ev==XMLStreamConstants.END_ELEMENT) {
+					String local = xr.getLocalName();
+					if ("Aanbieder".equals(local)) {
+						if (practitionerName!=null && out.practitioner==null) {
+							out.practitioner = new Practitioner(practitionerName, practitionerCity, null);
+						}
+					}
+				}
+			}
+		} catch (Exception ignored) { }
+		return out;
+	}
+
+	private static String attr(XMLStreamReader xr, String name) {
+		String v = xr.getAttributeValue(null, name);
+		return (v==null||v.isBlank())?null:v;
+	}
+
+	private static LocalDate parseDateIso(String s) {
+		try { return (s==null||s.isBlank())?null: LocalDate.parse(s); } catch(Exception e){ return null; }
+	}
 }
+

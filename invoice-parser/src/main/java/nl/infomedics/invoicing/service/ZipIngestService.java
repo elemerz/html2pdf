@@ -49,22 +49,37 @@ public class ZipIngestService {
 			ZipEntry meta = find(zf, e -> e.getName().endsWith("_Meta.txt"));
 			ZipEntry debi = find(zf, e -> e.getName().endsWith("_Debiteuren.txt"));
 			ZipEntry spec = find(zf, e -> e.getName().endsWith("_Specificaties.txt"));
-			if (meta == null || debi == null || spec == null)
-				throw new IllegalStateException("Missing expected entries in " + name);
-			log.debug("Entries resolved for {} → meta={}, debiteuren={}, specificaties={}", name, //
-					meta.getName(), debi.getName(), spec.getName());
+			ZipEntry notas = find(zf, e -> e.getName().endsWith("_Notas.xml"));
+			if (meta == null) throw new IllegalStateException("Missing meta entry in " + name);
+			boolean xmlType = notas != null;
+			if (!xmlType && (debi == null || spec == null))
+				throw new IllegalStateException("Missing expected classic entries in " + name);
+			log.debug("Entries resolved for {} → meta={}, debiteuren={}, specificaties={}, notasXml={}", name,
+					meta.getName(), debi!=null?debi.getName():"-", spec!=null?spec.getName():"-", notas!=null?notas.getName():"-");
 
 			stage = "parse meta";
 			var metaInfo = parseWithReader(zf, meta, parse::parseMeta);
-			stage = "parse debiteuren";
-			var debiteuren = parseWithReader(zf, debi, parse::parseDebiteuren);
-			stage = "parse specificaties";
-			var specificaties = parseWithReader(zf, spec, parse::parseSpecificaties);
+			Map<String, nl.infomedics.invoicing.model.Debiteur> debiteuren;
+			Map<String, java.util.List<nl.infomedics.invoicing.model.Specificatie>> specificaties;
+			var practitioner = (nl.infomedics.invoicing.model.Practitioner) null;
+			if (xmlType) {
+				stage = "parse notas xml";
+				var nr = parseWithReader(zf, notas, reader1 -> parse.parseNotas(reader1));
+				debiteuren = nr.debiteuren;
+				specificaties = nr.specificaties;
+				practitioner = nr.practitioner;
+			} else {
+				stage = "parse debiteuren";
+				debiteuren = parseWithReader(zf, debi, parse::parseDebiteuren);
+				stage = "parse specificaties";
+				specificaties = parseWithReader(zf, spec, parse::parseSpecificaties);
+				practitioner = parse.getPractitioner();
+			}
 			debiSize = debiteuren.size();
 			specSize = specificaties.size();
 
 			stage = "assemble json";
-			var bundle = json.assemble(metaInfo, parse.getPractitioner(), debiteuren, specificaties);
+			var bundle = json.assemble(metaInfo, practitioner, debiteuren, specificaties);
 			String jsonStr = json.stringify(bundle, jsonPretty);
 
 			stage = "write json";
