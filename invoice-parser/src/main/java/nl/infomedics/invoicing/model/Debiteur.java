@@ -22,5 +22,5 @@ public class Debiteur {
 	private Integer invoiceType;
 	private List<Integer> totals; // raw total fields from source (optional)
 	private String imageUrl;
-	private List<Specificatie> specificaties;
+	private List<Specificatie> treatments; // renamed from specificaties
 }

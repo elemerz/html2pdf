@@ -1,4 +1,4 @@
-# Project: Reporting Backend
+# Project: Invoice Processor
 
 Spring Boot 3.5.6 application for bulk HTML→PDF conversion.
 

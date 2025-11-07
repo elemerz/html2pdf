@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.springframework.stereotype.Service;
 import java.util.*;
 
@@ -14,14 +15,15 @@ public class JsonAssembler {
 	public JsonAssembler() {
 		this.om = new ObjectMapper()
 		.setSerializationInclusion(JsonInclude.Include.NON_NULL)
-		.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+		.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
+		.registerModule(new JavaTimeModule());
 	}
 
 
-	public InvoiceBundle assemble(MetaInfo meta, Map<String, Debiteur> debi, Map<String, List<Specificatie>> specs) {
+	public InvoiceBundle assemble(MetaInfo meta, Practitioner practitioner, Map<String, Debiteur> debi, Map<String, List<Specificatie>> specs) {
 		// join on insuredId
-		debi.forEach((id, d) -> d.setSpecificaties(specs.getOrDefault(id, List.of())));
-		return new InvoiceBundle(meta, new ArrayList<>(debi.values()));
+		debi.forEach((id, d) -> d.setTreatments(specs.getOrDefault(id, List.of())));
+		return new InvoiceBundle(meta, practitioner, new ArrayList<>(debi.values()));
 	}
 
 

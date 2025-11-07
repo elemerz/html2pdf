@@ -40,36 +40,63 @@ public class ZipIngestService {
 
 	public void processZip(Path zipPath) {
 		String name = zipPath.getFileName().toString();
+		String stage = "open zip";
+		log.info("Processing {}", name);
+		int debiSize = 0;
+		int specSize = 0;
 		try (ZipFile zf = new ZipFile(zipPath.toFile(), StandardCharsets.UTF_8)) {
+			stage = "locate entries";
 			ZipEntry meta = find(zf, e -> e.getName().endsWith("_Meta.txt"));
 			ZipEntry debi = find(zf, e -> e.getName().endsWith("_Debiteuren.txt"));
 			ZipEntry spec = find(zf, e -> e.getName().endsWith("_Specificaties.txt"));
 			if (meta == null || debi == null || spec == null)
 				throw new IllegalStateException("Missing expected entries in " + name);
+			log.debug("Entries resolved for {} → meta={}, debiteuren={}, specificaties={}", name, //
+					meta.getName(), debi.getName(), spec.getName());
 
-			var metaInfo = parse.parseMeta(reader(zf, meta));
-			var debiteuren = parse.parseDebiteuren(reader(zf, debi));
-			var specificaties = parse.parseSpecificaties(reader(zf, spec));
+			stage = "parse meta";
+			var metaInfo = parseWithReader(zf, meta, parse::parseMeta);
+			stage = "parse debiteuren";
+			var debiteuren = parseWithReader(zf, debi, parse::parseDebiteuren);
+			stage = "parse specificaties";
+			var specificaties = parseWithReader(zf, spec, parse::parseSpecificaties);
+			debiSize = debiteuren.size();
+			specSize = specificaties.size();
 
-			var bundle = json.assemble(metaInfo, debiteuren, specificaties);
+			stage = "assemble json";
+			var bundle = json.assemble(metaInfo, parse.getPractitioner(), debiteuren, specificaties);
 			String jsonStr = json.stringify(bundle, jsonPretty);
 
-// write JSON next to archive location for downstream consumers
+			stage = "write json";
+			// write JSON next to archive location for downstream consumers
 			Path out = jsonOutDir.resolve(stripZip(name) + ".json");
 			Files.writeString(out, jsonStr, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
-
-// archive
-			Path archive = Paths.get(props.getArchiveFolder()).resolve(name);
-			Files.move(zipPath, archive, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
-			log.info("OK {} → {} ({} debiteuren, {} specificaties)", name, archive.getFileName(), debiteuren.size(),
-					specificaties.size());
 		} catch (Exception ex) {
 			try {
 				Path err = Paths.get(props.getErrorFolder()).resolve(zipPath.getFileName());
 				Files.move(zipPath, err, StandardCopyOption.REPLACE_EXISTING);
-			} catch (Exception ignore) {
+				log.warn("Moved {} to error folder after failure", name);
+			} catch (Exception moveEx) {
+				log.error("Failed to move {} to error folder: {}", name, moveEx.getMessage(), moveEx);
 			}
-			log.error("FAIL {}: {}", name, ex.toString());
+			log.error("FAIL {} during {}: {}", name, stage, ex.getMessage(), ex);
+			return; // abort on failure
+		}
+		// Success path: archive after ZipFile is closed (Windows requires file handle released)
+		stage = "archive zip";
+		try {
+			Path archive = Paths.get(props.getArchiveFolder()).resolve(name);
+			Files.move(zipPath, archive, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+			log.info("OK {} → {} ({} debiteuren, {} specificaties)", name, archive.getFileName(), debiSize, specSize);
+		} catch (Exception ex) {
+			log.error("FAIL {} during {}: {}", name, stage, ex.getMessage(), ex);
+			try {
+				Path err = Paths.get(props.getErrorFolder()).resolve(zipPath.getFileName());
+				Files.move(zipPath, err, StandardCopyOption.REPLACE_EXISTING);
+				log.warn("Moved {} to error folder after failure", name);
+			} catch (Exception moveEx) {
+				log.error("Failed to move {} to error folder: {}", name, moveEx.getMessage(), moveEx);
+			}
 		}
 	}
 
@@ -85,6 +112,17 @@ public class ZipIngestService {
 
 	private static Reader reader(ZipFile zf, ZipEntry e) throws IOException {
 		return new BufferedReader(new InputStreamReader(zf.getInputStream(e), StandardCharsets.UTF_8));
+	}
+
+	private <T> T parseWithReader(ZipFile zf, ZipEntry entry, IOFunction<Reader, T> parser) throws IOException {
+		try (Reader r = reader(zf, entry)) {
+			return parser.apply(r);
+		}
+	}
+
+	@FunctionalInterface
+	private interface IOFunction<I, O> {
+		O apply(I input) throws IOException;
 	}
 
 	private static String stripZip(String s) {

@@ -11,7 +11,7 @@ import lombok.Setter;
 public class Specificatie {
 	private String insuredId; // join key
 	private LocalDate date;
-	private String toothOrJaw; // e.g., "Bovenkaak C90"
+	private String treatmentCode; // renamed from toothOrJaw (e.g., "Bovenkaak C90")
 	private String description; // full Dutch description
 	private String tariffCode; // 1099 / 6723 etc
 	private String reference; // optional reference code

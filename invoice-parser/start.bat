@@ -6,8 +6,9 @@ color 9f
 cls
 
 java -Xmx512M -Xms256M ^
-     -Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=6501 ^
+     -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:6501 ^
      -Dspring.profiles.active=dev ^
 	 -Dlogging.config=./config/logback.xml ^
 	 -Dserver.port=7979 ^
+	 --sun-misc-unsafe-memory-access=allow ^
 	 -jar ./target/invoice-parser-0.0.1-SNAPSHOT.jar

@@ -10,6 +10,8 @@ import lombok.Setter;
 
 @NoArgsConstructor @AllArgsConstructor @Getter @Setter
 public class MetaInfo {
-	private Map<Integer, Integer> invoiceTypeCounts; // e.g., {20=4}
-	private BigDecimal totaalBedrag; // optional aggregate from meta
+    // Slimmed down meta info: only the single relevant invoiceType (count > 0)
+    private Integer invoiceType; // e.g., 27
+    private Integer invoiceCount; // e.g., 6
+    private BigDecimal totaalBedrag; // e.g., 387.88
 }
