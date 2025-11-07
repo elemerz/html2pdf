@@ -1,0 +1,14 @@
+62300164845071;22-09-2025;Bovenkaak C90;Niet nagekomen afspraak;2044;12059192;;;;;;;;;2044
+62300164845071;22-09-2025;Bovenkaak M03;3x Gebitsreiniging, per vijf minuten;3618;12059192;;;;;;;;;3618
+62300164845071;22-09-2025;Onderkaak X10 el.nr. 37;Maken en beoordelen kleine röntgenfoto;1506;12059192;;;;;;;;;1506
+82300164849071;22-09-2025;Bovenkaak A10 el.nr. 22;Geleidings-, infiltratie- en/of intraligamentaire verdoving;1345;12059192;;;;;;;;;1345
+82300164849071;22-09-2025;Bovenkaak X10 el.nr. 22;Maken en beoordelen kleine röntgenfoto;1506;12059192;;;;;;;;;1506
+82300164849071;22-09-2025;Bovenkaak E04 el.nr. 22;Toeslag voor kosten bij gebruik van roterende nikkel-titanium instrumenten;4518;12059192;;;;;;;;;4518
+82300164849071;22-09-2025;Bovenkaak E13 el.nr. 22;Wortelkanaalbehandeling per element met 1 kanaal;9681;12059192;;;;;;;;;9681
+82300164849071;22-09-2025;Bovenkaak R74 el.nr. 23;Opnieuw vastzetten niet plastische restauraties;2151;12059192;;;;;;;;;2151
+82300164849071;22-09-2025;Bovenkaak R74;2x Materiaal- en /of techniekkosten;0;12059192;;;;;;;;;0
+82300164849071;22-09-2025;Bovenkaak R74 el.nr. 27;Opnieuw vastzetten niet plastische restauraties;2151;12059192;;;;;;;;;2151
+82300164849071;22-09-2025;Bovenkaak X10 el.nr. 22;Maken en beoordelen kleine röntgenfoto;1506;12059192;;;;;;;;;1506
+82300164849071;22-09-2025;Bovenkaak C90 el.nr. 22;Niet nagekomen afspraak;1883;12059192;;;;;;;;;1883
+82300164849071;22-09-2025;Bovenkaak C90 el.nr. 22;Niet nagekomen afspraak;1500;12059192;;;;;;;;;1500
+82300164849071;22-09-2025;Bovenkaak R31 el.nr. 22;"Opbouw plastisch materiaal ";5379;12059192;;;;;;;;;5379

@@ -1,0 +1,5 @@
+52300164851071;22-09-2025;C90;Niet nagekomen afspraak;1099;12057153;;;;;;;;;1099
+72300164855071;22-09-2025;C90;Niet nagekomen afspraak;5507;12057153;;;;;;;;;5507
+12300164850071;22-09-2025;Onderkaak V93 el.nr. 33;Drievlaksvulling composiet. Vlakken: BLIMO;6723;12059192;;;;;;;;;6723
+02300164860071;22-09-2025;Bovenkaak C90;Niet nagekomen afspraak;2044;12059192;;;;;;;;;2044
+02300164860071;22-09-2025;Bovenkaak X10 el.nr. 26;Maken en beoordelen kleine röntgenfoto;1506;12059192;;;;;;;;;1506

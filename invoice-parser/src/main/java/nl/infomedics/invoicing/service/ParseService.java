@@ -114,7 +114,21 @@ private static String get(com.univocity.parsers.common.record.Record r, int idx)
 			d.setImageUrl(get(r, 70));
 			if (i == rows.size()-1) {
 				// Last line -> practitioner (doctor)
-				this.practitioner = new Practitioner(d.getPracticeName(), d.getPracticeCity(), d.getImageUrl());
+				// Last classic row is practitioner: extract directly from columns
+				this.practitioner = new Practitioner();
+				this.practitioner.setPracticeName(get(r,1));
+				this.practitioner.setPracticeStreet(get(r,2));
+				String house = get(r,3);
+				String addition = get(r,4); // may be postcode actually; adapt mapping carefully
+				this.practitioner.setPracticeHouseNr(house);
+				this.practitioner.setPracticePostcode(get(r,4));
+				this.practitioner.setPracticeCity(get(r,5));
+				this.practitioner.setAgbCode(get(r,6));
+				this.practitioner.setPracticeCode(""); // unknown in classic line
+				this.practitioner.setPracticeCountry("");
+				this.practitioner.setPracticePhone("");
+				this.practitioner.setLogoNr(0);
+				this.practitioner.normalize();
 				continue; // skip adding as debtor
 			}
 			if (zorgId!=null && !zorgId.isBlank()) {
@@ -181,11 +195,30 @@ private static String get(com.univocity.parsers.common.record.Record r, int idx)
 					}
 					else if ("Aanbieder".equals(local)) {
 						practitionerName = attr(xr, "Naam");
+						String agb = attr(xr, "Agb-code_zorgverlener");
+						String praktijkCode = attr(xr, "Praktijk_code");
+						String logoNr = attr(xr, "Logo_nr");
+						if (out.practitioner==null) out.practitioner = new Practitioner();
+						out.practitioner.setPracticeName(practitionerName);
+						out.practitioner.setAgbCode(agb);
+						out.practitioner.setPracticeCode(praktijkCode);
+						try { out.practitioner.setLogoNr(logoNr==null?0:Integer.parseInt(logoNr)); } catch(Exception e){ out.practitioner.setLogoNr(0); }
 					}
 					else if ("Adres".equals(local)) {
 						String plaats = attr(xr, "Plaats");
-						if (practitionerName != null && practitionerCity == null && debiteurNum == null) {
-							practitionerCity = plaats;
+						String straat = attr(xr, "Straat");
+						String huisnr = attr(xr, "Huisnummer");
+						String postcode = attr(xr, "Postcode");
+						String land = attr(xr, "Land");
+						String tel = attr(xr, "Telefoonnummer");
+						if (practitionerName != null && debiteurNum == null) {
+							if (out.practitioner==null) out.practitioner = new Practitioner();
+							out.practitioner.setPracticeCity(plaats);
+							out.practitioner.setPracticeStreet(straat);
+							out.practitioner.setPracticeHouseNr(huisnr);
+							out.practitioner.setPracticePostcode(postcode);
+							out.practitioner.setPracticeCountry("Nederland".equalsIgnoreCase(land)?"Netherlands":land);
+							out.practitioner.setPracticePhone(tel);
 						}
 					}
 					else if ("Patient".equals(local)) {
@@ -228,8 +261,8 @@ private static String get(com.univocity.parsers.common.record.Record r, int idx)
 				else if (ev==XMLStreamConstants.END_ELEMENT) {
 					String local = xr.getLocalName();
 					if ("Aanbieder".equals(local)) {
-						if (practitionerName!=null && out.practitioner==null) {
-							out.practitioner = new Practitioner(practitionerName, practitionerCity, null);
+						if (out.practitioner!=null) {
+							out.practitioner.normalize();
 						}
 					}
 				}
