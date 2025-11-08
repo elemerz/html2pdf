@@ -1,7 +1,0 @@
-92300164840071;22-09-2025;C90;Niet nagekomen afspraak;4250;12057153;;;;;;;;;4250
-12300164838071;22-09-2025;Bovenkaak C90;Niet nagekomen afspraak;2044;12059192;;;;;;;;;2044
-12300164838071;22-09-2025;Onderkaak V93 el.nr. 33;Drievlaksvulling composiet. Vlakken: BLIMO;6723;12059192;;;;;;;;;6723
-52300164843071;22-09-2025;Bovenkaak C90 el.nr. 13;Niet nagekomen afspraak;2151;12059192;;;;;;;;;2151
-52300164843071;22-09-2025;Bovenkaak C90 el.nr. 13;Niet nagekomen afspraak;0;12059192;;;;;;;;;0
-12300164846071;22-09-2025;Bovenkaak C90;Niet nagekomen afspraak;2044;12059192;;;;;;;;;2044
-12300164846071;22-09-2025;Bovenkaak X10 el.nr. 26;Maken en beoordelen kleine röntgenfoto;1506;12059192;;;;;;;;;1506

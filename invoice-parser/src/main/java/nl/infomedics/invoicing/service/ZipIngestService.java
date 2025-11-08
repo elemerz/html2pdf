@@ -100,7 +100,12 @@ public class ZipIngestService {
 				if (type != null) {
 					stage = "load template";
 					String templateName = "templates/for-pdf/factuur-" + type + ".html";
+					log.info("Loading template: {}", templateName);
 					String html = new String(Objects.requireNonNull(getClass().getClassLoader().getResourceAsStream(templateName)).readAllBytes(), StandardCharsets.UTF_8);
+					stage = "write html template";
+					Path htmlOut = jsonOutDir.resolve(stripZip(name) + ".html");
+					Files.writeString(htmlOut, html, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+					log.info("HTML template written to {}", htmlOut);
 					stage = "convert pdf";
 					byte[] pdf = pdfClient.convert(html, jsonStr);
 					stage = "write pdf";
