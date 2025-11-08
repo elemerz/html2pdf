@@ -1,6 +1,12 @@
 package nl.infomedics.xhtml2pdf.web;
 
-import jakarta.validation.Valid;
+import java.nio.charset.StandardCharsets;
+import java.time.Instant;
+import java.util.Base64;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
+
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -12,16 +18,17 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.nio.charset.StandardCharsets;
-import java.time.Instant;
-import java.util.Base64;
-
-import nl.infomedics.xhtml2pdf.web.dto.HtmlToPdfRequest;
-import nl.infomedics.xhtml2pdf.web.dto.HtmlToPdfResponse;
-import nl.infomedics.xhtml2pdf.web.dto.HtmlToPdfWithModelRequest;
+import jakarta.validation.Valid;
 import nl.infomedics.reporting.service.Html2PdfConverterService;
 import nl.infomedics.reporting.service.Html2PdfConverterService.HtmlToPdfConversionException;
 import nl.infomedics.reporting.service.Html2PdfConverterService.PdfConversionResult;
+import nl.infomedics.xhtml2pdf.web.dto.BatchConversionItem;
+import nl.infomedics.xhtml2pdf.web.dto.BatchConversionRequest;
+import nl.infomedics.xhtml2pdf.web.dto.BatchConversionResponse;
+import nl.infomedics.xhtml2pdf.web.dto.BatchConversionResultItem;
+import nl.infomedics.xhtml2pdf.web.dto.HtmlToPdfRequest;
+import nl.infomedics.xhtml2pdf.web.dto.HtmlToPdfResponse;
+import nl.infomedics.xhtml2pdf.web.dto.HtmlToPdfWithModelRequest;
 
 /**
  * REST controller exposing HTML-to-PDF conversion endpoints.
@@ -68,6 +75,38 @@ public class HtmlToPdfController {
         String sanitised = request.includeSanitisedXhtml() ? result.sanitisedXhtml() : null;
         HtmlToPdfResponse response = new HtmlToPdfResponse(pdfBase64, sanitised, Instant.now());
         return ResponseEntity.ok(response);
+    }
+
+    @PostMapping(
+            path = "/convert-batch",
+            consumes = MediaType.APPLICATION_JSON_VALUE,
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    public ResponseEntity<BatchConversionResponse> convertBatch(@Valid @RequestBody BatchConversionRequest request) {
+        System.out.println(">>> Received batch conversion request with " + request.items().size() + " items");
+        
+        List<CompletableFuture<BatchConversionResultItem>> futures = request.items().stream()
+                .map(item -> CompletableFuture.supplyAsync(() -> convertSingleItem(item)))
+                .collect(Collectors.toList());
+        
+        List<BatchConversionResultItem> results = futures.stream()
+                .map(CompletableFuture::join)
+                .collect(Collectors.toList());
+        
+        BatchConversionResponse response = new BatchConversionResponse(results, Instant.now());
+        return ResponseEntity.ok(response);
+    }
+    
+    private BatchConversionResultItem convertSingleItem(BatchConversionItem item) {
+        try {
+            PdfConversionResult result = converterService.convertHtmlToPdf(item.html());
+            String pdfBase64 = Base64.getEncoder().encodeToString(result.pdfContent());
+            String sanitised = item.includeSanitisedXhtml() ? result.sanitisedXhtml() : null;
+            return BatchConversionResultItem.success(item.outputId(), pdfBase64, sanitised);
+        } catch (Exception e) {
+            System.err.println("Batch item " + item.outputId() + " failed: " + e.getMessage());
+            return BatchConversionResultItem.failure(item.outputId(), e.getMessage());
+        }
     }
 
     @ExceptionHandler(HtmlToPdfConversionException.class)

@@ -266,7 +266,9 @@ public class Html2PdfConverterService {
      * Exception raised when XHTML-to-PDF conversion fails.
      */
     public static class HtmlToPdfConversionException extends Exception {
-        public HtmlToPdfConversionException(String message) {
+        private static final long serialVersionUID = 7231358555978999078L;
+
+		public HtmlToPdfConversionException(String message) {
             super(message);
         }
 

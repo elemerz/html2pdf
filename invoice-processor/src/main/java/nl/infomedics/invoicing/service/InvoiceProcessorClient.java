@@ -1,12 +1,5 @@
 package nl.infomedics.invoicing.service;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import jakarta.annotation.PreDestroy;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
-
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -17,10 +10,18 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Base64;
 import java.util.Objects;
-import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+
+import jakarta.annotation.PreDestroy;
 
 /**
  * Thin HTTP client delegating HTML-to-PDF conversion to the invoice-processor service.
@@ -136,7 +137,9 @@ public class InvoiceProcessorClient {
     public record HtmlToPdfResponse(String pdfBase64, String sanitisedXhtml, Instant generatedAt) { }
 
     public static class PdfConversionException extends Exception {
-        public PdfConversionException(String message) {
+        private static final long serialVersionUID = 312139412231131757L;
+
+		public PdfConversionException(String message) {
             super(message);
         }
 

@@ -1,6 +1,8 @@
 package nl.infomedics.invoicing.service;
 
 import nl.infomedics.invoicing.config.AppProperties;
+import nl.infomedics.invoicing.model.MetaInfo;
+import nl.infomedics.invoicing.model.Practitioner;
 import jakarta.annotation.PreDestroy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -141,12 +143,13 @@ public class ZipIngestService {
 			Path out = jsonOutDir.resolve(stripZip(name) + ".json");
 			Files.writeString(out, jsonStr, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
 
-			// --- Generate PDF asynchronously with robust threading ---
+			// --- Generate PDFs for each debtor (one PDF per debtor) ---
 			Integer type = bundle.getMeta()!=null?bundle.getMeta().getInvoiceType():null;
-			if (type != null) {
-				submitPdfConversion(name, type, jsonStr);
+			if (type != null && bundle.getDebiteuren() != null && !bundle.getDebiteuren().isEmpty()) {
+				generatePdfsPerDebtor(name, type, metaInfo, practitioner, bundle.getDebiteuren());
 			} else {
-				log.warn("PDF generation skipped for {}: invoiceType is null", name);
+				log.warn("PDF generation skipped for {}: invoiceType={}, debtorCount={}", 
+					name, type, bundle.getDebiteuren()!=null?bundle.getDebiteuren().size():0);
 			}
 		} catch (Exception ex) {
 			try {
@@ -197,7 +200,44 @@ public class ZipIngestService {
 		}
 	}
 
-	private void submitPdfConversion(String zipName, Integer invoiceType, String jsonStr) {
+	private void generatePdfsPerDebtor(String zipName, Integer invoiceType, MetaInfo metaInfo, 
+	                                     Practitioner practitioner, List<nl.infomedics.invoicing.model.Debiteur> debiteuren) {
+		String stage = "load template";
+		try {
+			String templateName = "templates/for-pdf/factuur-" + invoiceType + ".html";
+			log.info("Loading template {} for {} with {} debtors", templateName, zipName, debiteuren.size());
+			String html = new String(Objects.requireNonNull(getClass().getClassLoader().getResourceAsStream(templateName))
+					.readAllBytes(), StandardCharsets.UTF_8);
+			
+			stage = "prepare batch items";
+			List<Xhtml2PdfClient.BatchItem> batchItems = new ArrayList<>();
+			for (nl.infomedics.invoicing.model.Debiteur debtor : debiteuren) {
+				try {
+					var singleInvoice = json.createSingleDebtorInvoice(metaInfo, practitioner, debtor);
+					String debtorJson = json.stringifySingleDebtor(singleInvoice, false);
+					String outputId = sanitizeFilename(debtor.getInvoiceNumber() != null ? 
+						debtor.getInvoiceNumber() : debtor.getInsuredId());
+					batchItems.add(new Xhtml2PdfClient.BatchItem(html, debtorJson, outputId));
+				} catch (Exception e) {
+					log.error("Failed to prepare batch item for debtor {} in {}: {}", 
+						debtor.getInvoiceNumber(), zipName, e.getMessage(), e);
+				}
+			}
+			
+			if (batchItems.isEmpty()) {
+				log.warn("No batch items prepared for {}", zipName);
+				return;
+			}
+			
+			stage = "submit batch conversion";
+			submitBatchPdfConversion(zipName, batchItems);
+			
+		} catch (Exception ex) {
+			log.error("PDF generation FAILED for {} at stage '{}': {}", zipName, stage, ex.getMessage(), ex);
+		}
+	}
+
+	private void submitBatchPdfConversion(String zipName, List<Xhtml2PdfClient.BatchItem> batchItems) {
 		try {
 			pdfConversionExecutor.submit(() -> {
 				boolean acquired = false;
@@ -208,12 +248,12 @@ public class ZipIngestService {
 						logPdfExecutorState();
 						return;
 					}
-					convertPdf(zipName, invoiceType, jsonStr);
+					convertBatchPdfs(zipName, batchItems);
 				} catch (InterruptedException e) {
 					Thread.currentThread().interrupt();
-					log.error("Interrupted while converting PDF for {}", zipName);
+					log.error("Interrupted while converting PDFs for {}", zipName);
 				} catch (Exception e) {
-					log.error("Unexpected error during PDF conversion for {}: {}", zipName, e.getMessage(), e);
+					log.error("Unexpected error during batch PDF conversion for {}: {}", zipName, e.getMessage(), e);
 				} finally {
 					if (acquired) {
 						pdfConversionPermits.release();
@@ -221,33 +261,37 @@ public class ZipIngestService {
 				}
 			});
 		} catch (RejectedExecutionException e) {
-			log.error("PDF conversion executor rejected task for {} (queue full or shutdown)", zipName);
+			log.error("PDF conversion executor rejected batch task for {} (queue full or shutdown)", zipName);
 			logPdfExecutorState();
 		}
 	}
 
-	private void convertPdf(String zipName, Integer invoiceType, String jsonStr) {
-		String stage = "load template";
+	private void convertBatchPdfs(String zipName, List<Xhtml2PdfClient.BatchItem> batchItems) {
 		try {
-			String templateName = "templates/for-pdf/factuur-" + invoiceType + ".html";
-			log.info("Loading template: {} for {}", templateName, zipName);
-			String html = new String(Objects.requireNonNull(getClass().getClassLoader().getResourceAsStream(templateName)).readAllBytes(), StandardCharsets.UTF_8);
+			log.info("Converting {} PDFs for {}", batchItems.size(), zipName);
+			Map<String, byte[]> results = pdfClient.convertBatch(batchItems);
 			
-			stage = "write html template";
-			Path htmlOut = jsonOutDir.resolve(stripZip(zipName) + ".html");
-			Files.writeString(htmlOut, html, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
-			log.info("HTML template written to {} for {}", htmlOut, zipName);
+			String baseFileName = stripZip(zipName);
+			int successCount = 0;
+			for (Map.Entry<String, byte[]> entry : results.entrySet()) {
+				try {
+					Path pdfOut = pdfOutDir.resolve(baseFileName + "_" + entry.getKey() + ".pdf");
+					Files.write(pdfOut, entry.getValue(), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+					successCount++;
+				} catch (Exception e) {
+					log.error("Failed to write PDF for debtor {} in {}: {}", entry.getKey(), zipName, e.getMessage(), e);
+				}
+			}
+			log.info("Successfully wrote {}/{} PDFs for {}", successCount, batchItems.size(), zipName);
 			
-			stage = "convert pdf";
-			byte[] pdf = pdfClient.convert(html, jsonStr);
-			
-			stage = "write pdf";
-			Path pdfOut = pdfOutDir.resolve(stripZip(zipName) + ".pdf");
-			Files.write(pdfOut, pdf, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
-			log.info("PDF written to {} for {}", pdfOut, zipName);
-		} catch (Exception pdfEx) {
-			log.error("PDF generation FAILED for {} at stage '{}': {}", zipName, stage, pdfEx.getMessage(), pdfEx);
+		} catch (Xhtml2PdfClient.ConversionException e) {
+			log.error("Batch PDF conversion FAILED for {}: {}", zipName, e.getMessage(), e);
 		}
+	}
+
+	private String sanitizeFilename(String name) {
+		if (name == null || name.isEmpty()) return "unknown";
+		return name.replaceAll("[^a-zA-Z0-9._-]", "_");
 	}
 
 	private void logPdfExecutorState() {

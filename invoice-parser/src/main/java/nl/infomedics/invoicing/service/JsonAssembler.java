@@ -31,4 +31,13 @@ public class JsonAssembler {
 		return pretty ? om.writerWithDefaultPrettyPrinter().writeValueAsString(bundle)
 		: om.writeValueAsString(bundle);
 	}
+
+	public SingleDebtorInvoice createSingleDebtorInvoice(MetaInfo meta, Practitioner practitioner, Debiteur debiteur) {
+		return new SingleDebtorInvoice(meta, practitioner, debiteur);
+	}
+
+	public String stringifySingleDebtor(SingleDebtorInvoice invoice, boolean pretty) throws JsonProcessingException {
+		return pretty ? om.writerWithDefaultPrettyPrinter().writeValueAsString(invoice)
+		: om.writeValueAsString(invoice);
+	}
 }

@@ -6,13 +6,16 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import javax.xml.stream.XMLInputFactory;
+import javax.xml.stream.XMLStreamConstants;
+import javax.xml.stream.XMLStreamReader;
 
 import org.springframework.stereotype.Service;
 
@@ -21,12 +24,8 @@ import com.univocity.parsers.csv.CsvParserSettings;
 
 import nl.infomedics.invoicing.model.Debiteur;
 import nl.infomedics.invoicing.model.MetaInfo;
-import nl.infomedics.invoicing.model.Specificatie;
 import nl.infomedics.invoicing.model.Practitioner;
-
-import javax.xml.stream.XMLInputFactory;
-import javax.xml.stream.XMLStreamConstants;
-import javax.xml.stream.XMLStreamReader;
+import nl.infomedics.invoicing.model.Specificatie;
 
 @Service
 public class ParseService {

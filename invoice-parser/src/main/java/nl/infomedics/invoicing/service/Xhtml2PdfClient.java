@@ -14,20 +14,25 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Base64;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 @Service
 public class Xhtml2PdfClient {
     private final HttpClient httpClient;
     private final ObjectMapper objectMapper;
     private final URI convertEndpoint;
+    private final URI batchConvertEndpoint;
     private final Duration requestTimeout;
 
     public Xhtml2PdfClient(
             @Value("${xhtml2pdf.base-url:http://localhost:8080}") String baseUrl,
             @Value("${xhtml2pdf.request-timeout:PT30S}") Duration requestTimeout,
             @Value("${xhtml2pdf.connect-timeout:PT5S}") Duration connectTimeout) {
-        this.convertEndpoint = buildEndpoint(baseUrl);
+        this.convertEndpoint = buildEndpoint(baseUrl, "/api/v1/pdf/convert-with-model");
+        this.batchConvertEndpoint = buildEndpoint(baseUrl, "/api/v1/pdf/convert-batch");
         this.requestTimeout = requestTimeout;
         this.httpClient = HttpClient.newBuilder()
                 .version(HttpClient.Version.HTTP_1_1)
@@ -61,14 +66,50 @@ public class Xhtml2PdfClient {
         }
     }
 
-    private URI buildEndpoint(String baseUrl) {
+    public Map<String, byte[]> convertBatch(List<BatchItem> items) throws ConversionException {
+        if (items == null || items.isEmpty()) throw new ConversionException("Items must not be empty");
+        try {
+            BatchRequest payload = new BatchRequest(items.stream()
+                .map(item -> new BatchRequestItem(item.html(), item.jsonModel(), item.outputId(), false))
+                .collect(Collectors.toList()));
+            String body = objectMapper.writeValueAsString(payload);
+            HttpRequest req = HttpRequest.newBuilder(batchConvertEndpoint)
+                    .timeout(requestTimeout.multipliedBy(Math.max(2, items.size() / 10)))
+                    .header("Content-Type", "application/json")
+                    .header("Accept", "application/json")
+                    .POST(HttpRequest.BodyPublishers.ofString(body, StandardCharsets.UTF_8))
+                    .build();
+            HttpResponse<String> resp = httpClient.send(req, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+            if (resp.statusCode() >= 400) throw new ConversionException("Remote error status=" + resp.statusCode());
+            BatchResponse r = objectMapper.readValue(resp.body(), BatchResponse.class);
+            return r.results().stream()
+                .filter(result -> result.pdfBase64() != null && result.error() == null)
+                .collect(Collectors.toMap(
+                    BatchResultItem::outputId,
+                    result -> Base64.getDecoder().decode(result.pdfBase64())
+                ));
+        } catch (IOException | InterruptedException e) {
+            if (e instanceof InterruptedException) Thread.currentThread().interrupt();
+            throw new ConversionException("Batch conversion failed: " + e.getMessage(), e);
+        }
+    }
+
+    private URI buildEndpoint(String baseUrl, String path) {
         String norm = Objects.requireNonNullElse(baseUrl, "").replaceAll("/+$", "");
         if (norm.isEmpty()) norm = "http://localhost:8080";
-        return URI.create(norm + "/api/v1/pdf/convert-with-model");
+        return URI.create(norm + path);
     }
 
     public record HtmlToPdfWithModelRequest(String html, String jsonModel, boolean includeSanitisedXhtml) {}
     public record HtmlToPdfResponse(String pdfBase64, String sanitisedXhtml, java.time.Instant generatedAt) {}
+    
+    public record BatchItem(String html, String jsonModel, String outputId) {}
+    public record BatchRequestItem(String html, String jsonModel, String outputId, boolean includeSanitisedXhtml) {}
+    public record BatchRequest(List<BatchRequestItem> items) {}
+    public record BatchResultItem(String outputId, String pdfBase64, String sanitisedXhtml, String error) {}
+    public record BatchResponse(List<BatchResultItem> results, java.time.Instant generatedAt) {}
+    
     public static class ConversionException extends Exception {
-        public ConversionException(String m){super(m);} public ConversionException(String m, Throwable c){super(m,c);} }
+        private static final long serialVersionUID = 8288132479461418327L;
+		public ConversionException(String m){super(m);} public ConversionException(String m, Throwable c){super(m,c);} }
 }
