@@ -1,0 +1,13 @@
+There are 12 folders with sample data in it. 10 folders contain "classic" models, 2 folders
+   contain "xml" models.
+   A "classic"-model folder contains 3 *.txt files, with the following meanings:
+   - *_Meta.txt: Metadata specifying from which invoiceType, how many invoices do we have to
+   generate. Eg: type 27 : 6 means: from invoicveType: 27, generate 6 pieces.
+   - *_Debiteuren.txt: Semicolon-separated info about the debtors (the first n-1 lines), and in
+   last line: info about the "practitioner" (the medical doctor / care-giver).
+   - *_Specificaties.txt: Info about the treatments.
+   An "xml"-model folder contains 1 *.txt file and 1 *.xml file, with the following meanings:
+      - *_Meta.txt: Metadata specifying from which invoiceType, how many invoices do we have to
+generate. Eg: type 27 : 6 means: from invoicveType: 27, generate 6 pieces.
+      - *_Notas.xml: merged info about invoices (notas), Practitioner/care-giver (Aanbieder),
+   Patients (Patienten), Treatments (Prestatie).

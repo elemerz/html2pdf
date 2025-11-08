@@ -17,14 +17,14 @@
 # type 17 : 0
 # type 18 : 0
 # type 19 : 0
-# type 20 : 0
+# type 20 : 1
 # type 21 : 0
 # type 22 : 0
 # type 23 : 0
 # type 24 : 0
 # type 25 : 0
 # type 26 : 0
-# type 27 : 6
+# type 27 : 0
 # type 28 : 0
 # type 29 : 0
 # type 30 : 0

@@ -106,10 +106,13 @@ public class ZipIngestService {
 					stage = "write pdf";
 					Path pdfOut = pdfOutDir.resolve(stripZip(name) + ".pdf");
 					Files.write(pdfOut, pdf, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+					log.info("PDF written to {}", pdfOut);
+				} else {
+					log.warn("PDF generation skipped for {}: invoiceType is null", name);
 				}
 			} catch (Exception pdfEx) {
-				log.warn("PDF generation skipped for {}: {} (stage={})", name, pdfEx.getMessage(), stage);
-			}	
+				log.error("PDF generation FAILED for {} at stage '{}': {}", name, stage, pdfEx.getMessage(), pdfEx);
+			}
 		} catch (Exception ex) {
 			try {
 				Path err = Paths.get(props.getErrorFolder()).resolve(zipPath.getFileName());
