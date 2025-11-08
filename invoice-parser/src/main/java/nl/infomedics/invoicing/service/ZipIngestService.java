@@ -1,6 +1,7 @@
 package nl.infomedics.invoicing.service;
 
 import nl.infomedics.invoicing.config.AppProperties;
+import jakarta.annotation.PreDestroy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -13,6 +14,11 @@ import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.util.*;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
@@ -26,9 +32,18 @@ public class ZipIngestService {
 	private final JsonAssembler json;
 	private final AppProperties props;
 
+	private final Path jsonOutDir;
+	private final Path pdfOutDir;
+	private final boolean jsonPretty;
+	private final Xhtml2PdfClient pdfClient;
+	private final ThreadPoolExecutor pdfConversionExecutor;
+	private final Semaphore pdfConversionPermits;
+	private final int maxConcurrentPdfConversions;
+
 	public ZipIngestService(ParseService parse, JsonAssembler json, AppProperties props, Xhtml2PdfClient pdfClient,
 			@Value("${json.output.folder}") String jsonOut, @Value("${json.pretty:false}") boolean pretty,
-			@Value("${pdf.output.folder:C:/invoice-data/_pdf}") String pdfOut)
+			@Value("${pdf.output.folder:C:/invoice-data/_pdf}") String pdfOut,
+			@Value("${pdf.max-concurrent-conversions:64}") int maxConcurrentPdfConversions)
 			throws IOException {
 		this.parse = parse;
 		this.json = json;
@@ -37,14 +52,46 @@ public class ZipIngestService {
 		this.jsonOutDir = Paths.get(jsonOut);
 		this.pdfOutDir = Paths.get(pdfOut);
 		this.jsonPretty = pretty;
+		this.maxConcurrentPdfConversions = Math.max(1, maxConcurrentPdfConversions);
+		this.pdfConversionPermits = new Semaphore(this.maxConcurrentPdfConversions);
+		
+		// Create thread pool for PDF conversions with bounded queue
+		int queueCapacity = this.maxConcurrentPdfConversions * 4;
+		this.pdfConversionExecutor = new ThreadPoolExecutor(
+				this.maxConcurrentPdfConversions,
+				this.maxConcurrentPdfConversions,
+				60L, TimeUnit.SECONDS,
+				new LinkedBlockingQueue<>(queueCapacity),
+				r -> {
+					Thread thread = new Thread(r);
+					thread.setName("pdf-conversion-worker-" + thread.getId());
+					thread.setDaemon(false);
+					return thread;
+				},
+				new ThreadPoolExecutor.CallerRunsPolicy()
+		);
+		
 		Files.createDirectories(this.jsonOutDir);
 		Files.createDirectories(this.pdfOutDir);
+		log.info("ZipIngestService initialized with max {} concurrent PDF conversions, queue capacity: {}", 
+				this.maxConcurrentPdfConversions, queueCapacity);
 	}
 
-	private final Path jsonOutDir;
-	private final Path pdfOutDir;
-	private final boolean jsonPretty;
-	private final Xhtml2PdfClient pdfClient;
+	@PreDestroy
+	public void shutdown() {
+		log.info("Shutting down ZipIngestService...");
+		pdfConversionExecutor.shutdown();
+		try {
+			if (!pdfConversionExecutor.awaitTermination(30, TimeUnit.SECONDS)) {
+				log.warn("Forcing shutdown of PDF conversion executor...");
+				pdfConversionExecutor.shutdownNow();
+			}
+		} catch (InterruptedException e) {
+			pdfConversionExecutor.shutdownNow();
+			Thread.currentThread().interrupt();
+		}
+		log.info("ZipIngestService shutdown complete");
+	}
 
 	public void processZip(Path zipPath) {
 		String name = zipPath.getFileName().toString();
@@ -94,29 +141,12 @@ public class ZipIngestService {
 			Path out = jsonOutDir.resolve(stripZip(name) + ".json");
 			Files.writeString(out, jsonStr, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
 
-			// --- Generate PDF based on meta.invoiceType ---
-			try {
-				Integer type = bundle.getMeta()!=null?bundle.getMeta().getInvoiceType():null;
-				if (type != null) {
-					stage = "load template";
-					String templateName = "templates/for-pdf/factuur-" + type + ".html";
-					log.info("Loading template: {}", templateName);
-					String html = new String(Objects.requireNonNull(getClass().getClassLoader().getResourceAsStream(templateName)).readAllBytes(), StandardCharsets.UTF_8);
-					stage = "write html template";
-					Path htmlOut = jsonOutDir.resolve(stripZip(name) + ".html");
-					Files.writeString(htmlOut, html, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
-					log.info("HTML template written to {}", htmlOut);
-					stage = "convert pdf";
-					byte[] pdf = pdfClient.convert(html, jsonStr);
-					stage = "write pdf";
-					Path pdfOut = pdfOutDir.resolve(stripZip(name) + ".pdf");
-					Files.write(pdfOut, pdf, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
-					log.info("PDF written to {}", pdfOut);
-				} else {
-					log.warn("PDF generation skipped for {}: invoiceType is null", name);
-				}
-			} catch (Exception pdfEx) {
-				log.error("PDF generation FAILED for {} at stage '{}': {}", name, stage, pdfEx.getMessage(), pdfEx);
+			// --- Generate PDF asynchronously with robust threading ---
+			Integer type = bundle.getMeta()!=null?bundle.getMeta().getInvoiceType():null;
+			if (type != null) {
+				submitPdfConversion(name, type, jsonStr);
+			} else {
+				log.warn("PDF generation skipped for {}: invoiceType is null", name);
 			}
 		} catch (Exception ex) {
 			try {
@@ -165,6 +195,72 @@ public class ZipIngestService {
 		try (Reader r = reader(zf, entry)) {
 			return parser.apply(r);
 		}
+	}
+
+	private void submitPdfConversion(String zipName, Integer invoiceType, String jsonStr) {
+		try {
+			pdfConversionExecutor.submit(() -> {
+				boolean acquired = false;
+				try {
+					acquired = pdfConversionPermits.tryAcquire(30, TimeUnit.SECONDS);
+					if (!acquired) {
+						log.error("Unable to acquire PDF conversion permit for {} after 30 seconds", zipName);
+						logPdfExecutorState();
+						return;
+					}
+					convertPdf(zipName, invoiceType, jsonStr);
+				} catch (InterruptedException e) {
+					Thread.currentThread().interrupt();
+					log.error("Interrupted while converting PDF for {}", zipName);
+				} catch (Exception e) {
+					log.error("Unexpected error during PDF conversion for {}: {}", zipName, e.getMessage(), e);
+				} finally {
+					if (acquired) {
+						pdfConversionPermits.release();
+					}
+				}
+			});
+		} catch (RejectedExecutionException e) {
+			log.error("PDF conversion executor rejected task for {} (queue full or shutdown)", zipName);
+			logPdfExecutorState();
+		}
+	}
+
+	private void convertPdf(String zipName, Integer invoiceType, String jsonStr) {
+		String stage = "load template";
+		try {
+			String templateName = "templates/for-pdf/factuur-" + invoiceType + ".html";
+			log.info("Loading template: {} for {}", templateName, zipName);
+			String html = new String(Objects.requireNonNull(getClass().getClassLoader().getResourceAsStream(templateName)).readAllBytes(), StandardCharsets.UTF_8);
+			
+			stage = "write html template";
+			Path htmlOut = jsonOutDir.resolve(stripZip(zipName) + ".html");
+			Files.writeString(htmlOut, html, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+			log.info("HTML template written to {} for {}", htmlOut, zipName);
+			
+			stage = "convert pdf";
+			byte[] pdf = pdfClient.convert(html, jsonStr);
+			
+			stage = "write pdf";
+			Path pdfOut = pdfOutDir.resolve(stripZip(zipName) + ".pdf");
+			Files.write(pdfOut, pdf, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+			log.info("PDF written to {} for {}", pdfOut, zipName);
+		} catch (Exception pdfEx) {
+			log.error("PDF generation FAILED for {} at stage '{}': {}", zipName, stage, pdfEx.getMessage(), pdfEx);
+		}
+	}
+
+	private void logPdfExecutorState() {
+		int availablePermits = pdfConversionPermits.availablePermits();
+		int queuedTasks = pdfConversionExecutor.getQueue().size();
+		int activeThreads = pdfConversionExecutor.getActiveCount();
+		long completedTasks = pdfConversionExecutor.getCompletedTaskCount();
+		
+		log.error("PDF EXECUTOR STATE:");
+		log.error("  Available permits: {}/{}", availablePermits, maxConcurrentPdfConversions);
+		log.error("  Active threads: {}/{}", activeThreads, maxConcurrentPdfConversions);
+		log.error("  Queued tasks: {}", queuedTasks);
+		log.error("  Completed tasks: {}", completedTasks);
 	}
 
 	@FunctionalInterface

@@ -16,6 +16,6 @@ public class AppProperties {
 	private String archiveFolder;
 	private String errorFolder;
 	private int concurrentWorkers = 64;
-	private int queueCapacity = 20000;
+	private int queueCapacity = 256;
 	private int pollFallbackSeconds = 30;
 }

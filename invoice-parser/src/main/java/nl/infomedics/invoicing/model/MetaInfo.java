@@ -1,7 +1,6 @@
 package nl.infomedics.invoicing.model;
 
 import java.math.BigDecimal;
-import java.util.Map;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
