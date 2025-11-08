@@ -80,8 +80,7 @@ public class FontRegistry {
             }
             final byte[] fontBytesCopy = fontBytes;
             String cacheKey = buildAliasCacheKey(fileName, fontBytesCopy);
-            Set<String> aliases = aliasCache.computeIfAbsent(cacheKey,
-                    key -> deriveFontAliases(fileName, fontBytesCopy));
+            Set<String> aliases = aliasCache.computeIfAbsent(cacheKey, _ -> deriveFontAliases(fileName, fontBytesCopy));
             if (aliases == null || aliases.isEmpty()) {
                 System.err.println("Skipping font " + fileName + " because no aliases could be derived.");
                 continue;

@@ -642,6 +642,10 @@ export class DesignerStateService {
       `  <body>\n${bodyContent}\n  </body>\n</html>`;
     // Ensure all <img> tags have explicit closing </img>
     xhtml = this.ensureImageTagsClosed(xhtml);
+    // Add alt attributes to images for PDF/A compliance
+    xhtml = this.addAltToImages(xhtml);
+    // Add title attributes to links for PDF/A compliance
+    xhtml = this.addTitleToLinks(xhtml);
     // Transform QR code <img> placeholders into <object type="application/qrcode"> for OpenHTMLtoPDF
     xhtml = this.transformQrImages(xhtml);
     return xhtml;
@@ -653,6 +657,37 @@ export class DesignerStateService {
   private ensureImageTagsClosed(html: string): string {
     // Replace <img ...> that do not self-close or already have </img>
     return html.replace(/<img\b([^>]*)>(?!\s*<\/img>)/gi, '<img$1></img>');
+  }
+
+  /**
+   * Adds alt attributes to <img> tags for PDF/A compliance.
+   * If an alt attribute is missing, adds an empty one.
+   */
+  private addAltToImages(html: string): string {
+    return html.replace(/<img\b([^>]*)>/gi, (match, attrs) => {
+      if (/\balt\s*=/i.test(attrs)) {
+        return match;
+      }
+      return `<img${attrs} alt="image">`;
+    });
+  }
+
+  /**
+   * Adds title attributes to <a> tags for PDF/A compliance.
+   * Uses the link text or href as the title if not already present.
+   */
+  private addTitleToLinks(html: string): string {
+    return html.replace(/<a\b([^>]*)>(.*?)<\/a>/gi, (match, attrs, content) => {
+      if (/\btitle\s*=/i.test(attrs)) {
+        return match;
+      }
+      const hrefMatch = /\bhref\s*=\s*["']([^"']+)["']/i.exec(attrs);
+      const href = hrefMatch ? hrefMatch[1] : '';
+      const textContent = content.replace(/<[^>]+>/g, '').trim();
+      const titleValue = textContent || href || 'Link';
+      const escapedTitle = this.escapeHtml(titleValue);
+      return `<a${attrs} title="${escapedTitle}">${content}</a>`;
+    });
   }
 
   /**

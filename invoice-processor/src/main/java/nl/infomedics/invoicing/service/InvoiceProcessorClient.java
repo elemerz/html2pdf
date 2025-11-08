@@ -44,7 +44,7 @@ public class InvoiceProcessorClient {
         this.requestTimeout = requestTimeout;
         this.httpExecutor = Executors.newFixedThreadPool(Math.max(1, maxConcurrentRequests), r -> {
             Thread thread = new Thread(r);
-            thread.setName("http-client-" + thread.getId());
+            thread.setName("http-client-" + thread.threadId());
             thread.setDaemon(false);
             return thread;
         });

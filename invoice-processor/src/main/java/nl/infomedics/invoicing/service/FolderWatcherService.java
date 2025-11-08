@@ -85,7 +85,7 @@ public class FolderWatcherService {
                 new LinkedBlockingQueue<>(queueCapacity),
                 r -> {
                     Thread thread = new Thread(r);
-                    thread.setName("conversion-worker-" + thread.getId());
+                    thread.setName("conversion-worker-" + thread.threadId());
                     thread.setDaemon(false);
                     return thread;
                 },

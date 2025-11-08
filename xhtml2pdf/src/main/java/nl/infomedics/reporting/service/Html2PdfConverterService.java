@@ -90,7 +90,7 @@ public class Html2PdfConverterService {
         if (htmlContent == null) {
             throw new HtmlToPdfConversionException("HTML content must not be null.");
         }
-        try (ConversionPermit ignored = acquireConversionPermit()) {
+        try (ConversionPermit _ = acquireConversionPermit()) {
             long startMillis = System.currentTimeMillis();
             noteConversionStarted();
             try {
@@ -156,7 +156,6 @@ public class Html2PdfConverterService {
 
     private PdfRendererBuilder configuredBuilder() {
         PdfRendererBuilder builder = new PdfRendererBuilder();
-        builder.useSlowMode();
         builder.useSVGDrawer(new BatikSVGDrawer());
         builder.useObjectDrawerFactory(objectFactory);
         builder.usePdfVersion(1.4f);

@@ -118,7 +118,6 @@ private static String get(com.univocity.parsers.common.record.Record r, int idx)
 				this.practitioner.setPracticeName(get(r,1));
 				this.practitioner.setPracticeStreet(get(r,2));
 				String house = get(r,3);
-				String addition = get(r,4); // may be postcode actually; adapt mapping carefully
 				this.practitioner.setPracticeHouseNr(house);
 				this.practitioner.setPracticePostcode(get(r,4));
 				this.practitioner.setPracticeCity(get(r,5));
