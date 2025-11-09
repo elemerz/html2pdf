@@ -1,0 +1,47 @@
+<div class="json-viewer">
+  <div class="json-viewer-toolbar">
+    <button class="btn-expand-all" (click)="expandAll()">Expand All</button>
+    <button class="btn-collapse-all" (click)="collapseAll()">Collapse All</button>
+  </div>
+  <div class="json-tree">
+    @for (node of nodes; track node.key) {
+      <ng-container [ngTemplateOutlet]="nodeTemplate" [ngTemplateOutletContext]="{ node: node, level: 0 }"></ng-container>
+    }
+  </div>
+</div>
+
+<ng-template #nodeTemplate let-node="node" let-level="level">
+  <div class="json-node" [style.margin-left.px]="level * 20">
+    <div class="node-header" (click)="toggleNode(node)">
+      @if (node.type === 'object' || node.type === 'array') {
+        <span class="toggle-icon" [class.expanded]="node.expanded">▶</span>
+      } @else {
+        <span class="toggle-icon spacer"></span>
+      }
+      
+      <span class="node-key">{{ node.key }}:</span>
+      
+      @if (node.type === 'object' || node.type === 'array') {
+        <span class="node-value-preview">{{ node.value }}</span>
+      } @else {
+        <span class="node-value" [class]="'type-' + node.type">
+          @if (node.type === 'string') {
+            "{{ node.value }}"
+          } @else if (node.type === 'null') {
+            null
+          } @else {
+            {{ node.value }}
+          }
+        </span>
+      }
+    </div>
+    
+    @if (node.expanded && node.children && node.children.length > 0) {
+      <div class="node-children">
+        @for (child of node.children; track child.key) {
+          <ng-container [ngTemplateOutlet]="nodeTemplate" [ngTemplateOutletContext]="{ node: child, level: level + 1 }"></ng-container>
+        }
+      </div>
+    }
+  </div>
+</ng-template>

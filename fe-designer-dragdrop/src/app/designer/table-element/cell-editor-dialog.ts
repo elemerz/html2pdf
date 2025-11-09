@@ -1,9 +1,10 @@
-import {Component, Input, Output, EventEmitter, OnInit, ElementRef, ViewChild, HostListener, OnDestroy} from '@angular/core';
+import {Component, Input, Output, EventEmitter, OnInit, ElementRef, ViewChild, HostListener, OnDestroy, inject} from '@angular/core';
 import Quill from 'quill';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { QuillModule } from 'ngx-quill';
 import QRCode from 'qrcode-svg';
+import { ReportDataService } from '../../core/services/report-data.service';
 
 const SYMBOL_CODE_RANGES: Array<[number, number]> = [
   [0x00A1, 0x00FF],
@@ -153,6 +154,8 @@ export class CellEditorDialogComponent implements OnInit, OnDestroy {
   @Output() closed = new EventEmitter<void>();
   @Output() saved = new EventEmitter<string>();
 
+  private reportDataService = inject(ReportDataService);
+
   quill!: Quill;
   currentFontSize: number = 12; // pt default
   @ViewChild('dialogRoot') dialogRoot!: ElementRef<HTMLDivElement>;
@@ -164,6 +167,14 @@ export class CellEditorDialogComponent implements OnInit, OnDestroy {
   private dragAccumX = 0; // accumulated transform translation
   private dragAccumY = 0;
   contentValue = '';
+
+  private intellisenseDropdownEl: HTMLDivElement | null = null;
+  private intellisenseVisible = false;
+  private intellisenseItems: string[] = [];
+  private intellisenseSelectedIndex = 0;
+  private intellisenseCurrentPath = '';
+  private intellisenseInsertIndex = 0;
+  private boundQuillKeydown = (event: KeyboardEvent) => this.handleQuillKeydown(event);
 
   quillModules = {
     toolbar: {
@@ -205,6 +216,23 @@ export class CellEditorDialogComponent implements OnInit, OnDestroy {
     this.quill = q;
     // Autofocus editor so user can type immediately (ensure contenteditable root gets focus)
     setTimeout(() => { try { this.quill.focus(); (this.quill.root as HTMLElement).focus(); } catch {} }, 0);
+    
+    // Attach keydown listener for intellisense in CAPTURE phase to intercept before Quill
+    (this.quill.root as HTMLElement).addEventListener('keydown', this.boundQuillKeydown, true);
+    
+    // Also add Quill keyboard bindings to handle Enter when intellisense is visible
+    const keyboard = this.quill.getModule('keyboard') as any;
+    if (keyboard) {
+      keyboard.addBinding({
+        key: 'Enter'
+      }, (range: any, context: any) => {
+        if (this.intellisenseVisible) {
+          return false; // Prevent Quill from handling Enter
+        }
+        return true; // Allow Quill to handle Enter normally
+      });
+    }
+    
     // Track selection to update spinner
     // Inject custom font size spinner into toolbar after font picker
     try {
@@ -269,6 +297,7 @@ export class CellEditorDialogComponent implements OnInit, OnDestroy {
       const range = this.quill.getSelection();
       if (!range) {
         this.hideSymbolPalette();
+        this.hideIntellisense();
         return;
       }
       const format = this.quill.getFormat(range);
@@ -541,6 +570,294 @@ export class CellEditorDialogComponent implements OnInit, OnDestroy {
     this.symbolButtonEl = null;
   }
 
+  private handleQuillKeydown(event: KeyboardEvent): void {
+    // Ctrl+Space to trigger intellisense
+    if (event.ctrlKey && event.key === ' ') {
+      event.preventDefault();
+      this.showIntellisense();
+      return;
+    }
+
+    // Escape key - hide intellisense if visible
+    if (event.key === 'Escape') {
+      if (this.intellisenseVisible) {
+        event.preventDefault();
+        this.hideIntellisense();
+        return;
+      }
+    }
+
+    // Handle intellisense dropdown navigation
+    if (this.intellisenseVisible) {
+      if (event.key === 'ArrowDown') {
+        event.preventDefault();
+        event.stopPropagation();
+        this.intellisenseSelectedIndex = Math.min(this.intellisenseSelectedIndex + 1, this.intellisenseItems.length - 1);
+        this.updateIntellisenseSelection();
+        return;
+      } else if (event.key === 'ArrowUp') {
+        event.preventDefault();
+        event.stopPropagation();
+        this.intellisenseSelectedIndex = Math.max(this.intellisenseSelectedIndex - 1, 0);
+        this.updateIntellisenseSelection();
+        return;
+      } else if (event.key === 'Enter' || event.key === 'Tab') {
+        event.preventDefault();
+        event.stopPropagation();
+        event.stopImmediatePropagation();
+        this.insertIntellisenseSelection();
+        return;
+      }
+    }
+
+    // Auto-trigger intellisense on dot character
+    if (event.key === '.' && !event.ctrlKey && !event.altKey && !event.metaKey) {
+      setTimeout(() => this.showIntellisense(), 50);
+    }
+  }
+
+  private showIntellisense(): void {
+    if (!this.quill) return;
+
+    const range = this.quill.getSelection();
+    if (!range) return;
+
+    const textBeforeCursor = this.quill.getText(0, range.index);
+    const textAfterCursor = this.quill.getText(range.index, this.quill.getLength());
+    
+    // Check if we're editing inside an existing ${} expression
+    const insideExpression = this.detectExpressionContext(textBeforeCursor, textAfterCursor);
+    
+    const currentPath = this.extractPathBeforeCursor(textBeforeCursor, insideExpression);
+    
+    const fields = this.reportDataService.getFieldsAtPath(currentPath);
+    
+    console.log('[Intellisense] Path detection:', {
+      textBeforeCursor: textBeforeCursor.slice(-30),
+      textAfterCursor: textAfterCursor.slice(0, 30),
+      insideExpression,
+      currentPath,
+      fieldsCount: fields.length,
+      fields: fields.slice(0, 5)
+    });
+    
+    if (fields.length === 0) {
+      this.hideIntellisense();
+      return;
+    }
+
+    this.intellisenseItems = fields;
+    this.intellisenseCurrentPath = currentPath;
+    this.intellisenseInsertIndex = range.index;
+    this.intellisenseSelectedIndex = 0;
+
+    if (!this.intellisenseDropdownEl) {
+      this.intellisenseDropdownEl = this.buildIntellisenseDropdown();
+      document.body.appendChild(this.intellisenseDropdownEl);
+    }
+
+    this.updateIntellisenseContent();
+    this.positionIntellisenseDropdown();
+    this.intellisenseDropdownEl.style.display = 'block';
+    this.intellisenseDropdownEl.classList.add('show');
+    this.intellisenseVisible = true;
+  }
+
+  private hideIntellisense(): void {
+    if (!this.intellisenseVisible) return;
+    
+    if (this.intellisenseDropdownEl) {
+      this.intellisenseDropdownEl.classList.remove('show');
+      this.intellisenseDropdownEl.style.display = 'none';
+    }
+    this.intellisenseVisible = false;
+  }
+
+  private buildIntellisenseDropdown(): HTMLDivElement {
+    const dropdown = document.createElement('div');
+    dropdown.className = 'intellisense-dropdown';
+    dropdown.style.cssText = 'position:fixed;z-index:10000;background:#fff;border:1px solid #ccc;border-radius:4px;box-shadow:0 2px 8px rgba(0,0,0,0.15);max-height:200px;overflow-y:auto;min-width:150px;display:none;';
+    return dropdown;
+  }
+
+  private updateIntellisenseContent(): void {
+    if (!this.intellisenseDropdownEl) return;
+
+    this.intellisenseDropdownEl.innerHTML = '';
+    
+    this.intellisenseItems.forEach((item, index) => {
+      const itemEl = document.createElement('div');
+      itemEl.className = 'intellisense-item';
+      itemEl.textContent = item;
+      itemEl.style.cssText = 'padding:4px 8px;cursor:pointer;font-size:12px;';
+      
+      if (index === this.intellisenseSelectedIndex) {
+        itemEl.style.backgroundColor = '#0078d4';
+        itemEl.style.color = '#fff';
+      }
+
+      itemEl.addEventListener('mouseenter', () => {
+        this.intellisenseSelectedIndex = index;
+        this.updateIntellisenseSelection();
+      });
+
+      itemEl.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        this.insertIntellisenseSelection();
+      });
+
+      itemEl.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+      });
+
+      this.intellisenseDropdownEl!.appendChild(itemEl);
+    });
+  }
+
+  private updateIntellisenseSelection(): void {
+    if (!this.intellisenseDropdownEl) return;
+
+    const items = this.intellisenseDropdownEl.querySelectorAll('.intellisense-item') as NodeListOf<HTMLElement>;
+    items.forEach((item, index) => {
+      if (index === this.intellisenseSelectedIndex) {
+        item.style.backgroundColor = '#0078d4';
+        item.style.color = '#fff';
+        item.scrollIntoView({ block: 'nearest' });
+      } else {
+        item.style.backgroundColor = '';
+        item.style.color = '';
+      }
+    });
+  }
+
+  private insertIntellisenseSelection(): void {
+    if (!this.quill || this.intellisenseItems.length === 0) return;
+
+    const selectedField = this.intellisenseItems[this.intellisenseSelectedIndex];
+    const range = this.quill.getSelection();
+    if (!range) return;
+
+    const textBeforeCursor = this.quill.getText(0, range.index);
+    const textAfterCursor = this.quill.getText(range.index, this.quill.getLength());
+    
+    // Detect if we're inside an existing ${} expression
+    const insideExpression = this.detectExpressionContext(textBeforeCursor, textAfterCursor);
+    
+    // Hide dropdown immediately
+    this.hideIntellisense();
+    
+    // Small delay to ensure Quill is ready
+    setTimeout(() => {
+      if (!this.quill) return;
+      
+      if (insideExpression.isInside) {
+        // We're editing inside an existing expression
+        // Just insert the field name at current position
+        const fullPath = this.intellisenseCurrentPath ? `${this.intellisenseCurrentPath}.${selectedField}` : selectedField;
+        
+        // Delete the partial path we've typed and insert the complete field
+        const deleteStart = insideExpression.pathStart!;
+        const deleteLength = range.index - deleteStart;
+        
+        this.quill.deleteText(deleteStart, deleteLength, 'user');
+        this.quill.insertText(deleteStart, fullPath, 'user');
+        this.quill.setSelection(deleteStart + fullPath.length, 0, 'user');
+      } else {
+        // New expression - wrap in ${}
+        const fullPath = this.intellisenseCurrentPath ? `${this.intellisenseCurrentPath}.${selectedField}` : selectedField;
+        const wrappedText = `\${${fullPath}}`;
+        
+        // Find and delete any partial path before cursor
+        const partialMatch = /[\w.]*$/.exec(textBeforeCursor);
+        if (partialMatch && partialMatch[0].length > 0) {
+          const deleteStart = range.index - partialMatch[0].length;
+          this.quill.deleteText(deleteStart, partialMatch[0].length, 'user');
+          this.quill.insertText(deleteStart, wrappedText, 'user');
+          this.quill.setSelection(deleteStart + wrappedText.length, 0, 'user');
+        } else {
+          this.quill.insertText(range.index, wrappedText, 'user');
+          this.quill.setSelection(range.index + wrappedText.length, 0, 'user');
+        }
+      }
+      
+      this.quill.focus();
+    }, 10);
+  }
+
+  private positionIntellisenseDropdown(): void {
+    if (!this.quill || !this.intellisenseDropdownEl) return;
+
+    const range = this.quill.getSelection();
+    if (!range) return;
+
+    const bounds = this.quill.getBounds(range.index);
+    if (!bounds) return;
+    
+    const editorRect = this.quill.root.getBoundingClientRect();
+
+    this.intellisenseDropdownEl.style.left = `${editorRect.left + bounds.left}px`;
+    this.intellisenseDropdownEl.style.top = `${editorRect.top + bounds.bottom + 2}px`;
+  }
+
+  private extractPathBeforeCursor(text: string, insideExpression: { isInside: boolean; pathStart?: number; openBrace?: number }): string {
+    // If we're inside a ${} expression, extract the path from after ${
+    if (insideExpression.isInside && insideExpression.openBrace !== undefined) {
+      const expressionContent = text.substring(insideExpression.openBrace + 2); // +2 to skip ${
+      
+      // If expression content ends with a dot, return everything before the dot as the path
+      if (expressionContent.endsWith('.')) {
+        return expressionContent.slice(0, -1);
+      }
+      
+      // Otherwise, find the last dot and return everything before it
+      const lastDotIndex = expressionContent.lastIndexOf('.');
+      if (lastDotIndex === -1) {
+        // No dot found, so we're at root level inside ${}
+        return '';
+      }
+      
+      return expressionContent.slice(0, lastDotIndex);
+    }
+    
+    // Not inside expression - look for partial path at cursor
+    const match = /[\w.]+$/.exec(text);
+    if (!match) return '';
+
+    const fullMatch = match[0];
+    if (fullMatch.endsWith('.')) {
+      return fullMatch.slice(0, -1);
+    }
+
+    const lastDotIndex = fullMatch.lastIndexOf('.');
+    if (lastDotIndex === -1) {
+      return '';
+    }
+
+    return fullMatch.slice(0, lastDotIndex);
+  }
+
+  private detectExpressionContext(textBefore: string, textAfter: string): { isInside: boolean; pathStart?: number; openBrace?: number } {
+    // Look backwards for ${ and forwards for }
+    const lastOpenBrace = textBefore.lastIndexOf('${');
+    const lastCloseBrace = textBefore.lastIndexOf('}');
+    
+    // Check if there's an unclosed ${ before cursor
+    if (lastOpenBrace !== -1 && (lastCloseBrace === -1 || lastOpenBrace > lastCloseBrace)) {
+      // Check if there's a } after cursor
+      const nextCloseBrace = textAfter.indexOf('}');
+      if (nextCloseBrace !== -1) {
+        // We're inside a ${} expression
+        // Find where the path starts (after ${)
+        const pathStart = lastOpenBrace + 2;
+        return { isInside: true, pathStart, openBrace: lastOpenBrace };
+      }
+    }
+    
+    return { isInside: false };
+  }
+
   /**
    * Normalizes Quill output to XHTML-friendly markup.
    */
@@ -810,6 +1127,15 @@ export class CellEditorDialogComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.teardownSymbolPalette();
     this.qrEditImg = null;
+    
+    if (this.quill && this.quill.root) {
+      (this.quill.root as HTMLElement).removeEventListener('keydown', this.boundQuillKeydown, true);
+    }
+    
+    if (this.intellisenseDropdownEl) {
+      this.intellisenseDropdownEl.remove();
+      this.intellisenseDropdownEl = null;
+    }
   }
 
   /**

@@ -22,11 +22,84 @@
                   [attr.data-testid]="'element-' + element.type">
                   <div class="element-preview">
                     @switch (element.type) {
-                      @case ('text') { <p>Rich Text</p> }
                       @case ('div') { <div class="container-preview">Div</div> }
                       @case ('table') { <div class="container-preview">Define Layout</div> }
                     }
                   </div>
+                </div>
+              }
+            </div>
+          } @else if (category.id === 'report-data-model') {
+            <button class="json-import-btn" (click)="onImportJson()">
+              📁 Import JSON
+            </button>
+            <div class="json-viewer">
+              @for (node of jsonTree(); track node.path) {
+                <div class="json-node" [style.padding-left.px]="0">
+                  @if (node.type === 'object' || node.type === 'array') {
+                    <div class="json-line json-expandable" (click)="toggleJsonNode(node)">
+                      <span class="json-chevron" [class.expanded]="node.expanded">▶</span>
+                      <span class="json-key">{{ node.key }}:</span>
+                      <span class="json-value">{{ getValuePreview(node) }}</span>
+                    </div>
+                    @if (node.expanded && node.children) {
+                      <div class="json-children">
+                        @for (child of node.children; track child.path) {
+                          <div class="json-node" [style.padding-left.px]="12">
+                            @if (child.type === 'object' || child.type === 'array') {
+                              <div class="json-line json-expandable" (click)="toggleJsonNode(child)">
+                                <span class="json-chevron" [class.expanded]="child.expanded">▶</span>
+                                <span class="json-key">{{ child.key }}:</span>
+                                <span class="json-value">{{ getValuePreview(child) }}</span>
+                              </div>
+                              @if (child.expanded && child.children) {
+                                <div class="json-children">
+                                  @for (grandchild of child.children; track grandchild.path) {
+                                    <div class="json-node" [style.padding-left.px]="24">
+                                      @if (grandchild.type === 'object' || grandchild.type === 'array') {
+                                        <div class="json-line json-expandable" (click)="toggleJsonNode(grandchild)">
+                                          <span class="json-chevron" [class.expanded]="grandchild.expanded">▶</span>
+                                          <span class="json-key">{{ grandchild.key }}:</span>
+                                          <span class="json-value">{{ getValuePreview(grandchild) }}</span>
+                                        </div>
+                                        @if (grandchild.expanded && grandchild.children) {
+                                          <div class="json-children">
+                                            @for (leaf of grandchild.children; track leaf.path) {
+                                              <div class="json-node" [style.padding-left.px]="36">
+                                                <div class="json-line">
+                                                  <span class="json-key">{{ leaf.key }}:</span>
+                                                  <span class="json-value" [ngClass]="getValueClass(leaf.value)">{{ getValuePreview(leaf) }}</span>
+                                                </div>
+                                              </div>
+                                            }
+                                          </div>
+                                        }
+                                      } @else {
+                                        <div class="json-line">
+                                          <span class="json-key">{{ grandchild.key }}:</span>
+                                          <span class="json-value" [ngClass]="getValueClass(grandchild.value)">{{ getValuePreview(grandchild) }}</span>
+                                        </div>
+                                      }
+                                    </div>
+                                  }
+                                </div>
+                              }
+                            } @else {
+                              <div class="json-line">
+                                <span class="json-key">{{ child.key }}:</span>
+                                <span class="json-value" [ngClass]="getValueClass(child.value)">{{ getValuePreview(child) }}</span>
+                              </div>
+                            }
+                          </div>
+                        }
+                      </div>
+                    }
+                  } @else {
+                    <div class="json-line">
+                      <span class="json-key">{{ node.key }}:</span>
+                      <span class="json-value" [ngClass]="getValueClass(node.value)">{{ getValuePreview(node) }}</span>
+                    </div>
+                  }
                 </div>
               }
             </div>
