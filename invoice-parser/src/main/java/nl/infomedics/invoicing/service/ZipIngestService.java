@@ -103,6 +103,20 @@ public class ZipIngestService {
 		log.info("ZipIngestService shutdown complete");
 	}
 
+	private boolean attemptMoveWithRetry(Path source, Path target, int attempts, long sleepMs) {
+		for (int i = 0; i < attempts; i++) {
+			try {
+				Files.move(source, target, StandardCopyOption.REPLACE_EXISTING);
+				return true;
+			} catch (IOException ex) {
+				if (i == attempts - 1) {
+					return false;
+				}
+				try { Thread.sleep(sleepMs); } catch (InterruptedException ie) { Thread.currentThread().interrupt(); return false; }
+			}
+		}
+		return false;
+	}
 	public void processZip(Path zipPath) {
 		String name = zipPath.getFileName().toString();
 		String stage = "open zip";
@@ -173,8 +187,14 @@ public class ZipIngestService {
 		stage = "archive zip";
 		try {
 			Path archive = Paths.get(props.getArchiveFolder()).resolve(name);
-			Files.move(zipPath, archive, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
-			log.info("OK {} → {} ({} debiteuren, {} specificaties)", name, archive.getFileName(), debiSize, specSize);
+			if (attemptMoveWithRetry(zipPath, archive, 10, 250)) {
+				log.info("OK {} → {} ({} debiteuren, {} specificaties)", name, archive.getFileName(), debiSize, specSize);
+			} else {
+				log.error("FAIL {} during {} after retries: still locked", name, stage);
+				Path err = Paths.get(props.getErrorFolder()).resolve(zipPath.getFileName());
+				attemptMoveWithRetry(zipPath, err, 5, 500);
+				log.warn("Moved {} to error folder after archive failure", name);
+			}
 		} catch (Exception ex) {
 			log.error("FAIL {} during {}: {}", name, stage, ex.getMessage(), ex);
 			try {
