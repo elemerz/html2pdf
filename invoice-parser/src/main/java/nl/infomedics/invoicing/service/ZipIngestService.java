@@ -111,8 +111,7 @@ public class ZipIngestService {
 			boolean xmlType = notas != null;
 			if (!xmlType && (debi == null || spec == null))
 				throw new IllegalStateException("Missing expected classic entries in " + name);
-			log.debug("Entries resolved for {} → meta={}, debiteuren={}, specificaties={}, notasXml={}", name,
-					meta.getName(), debi!=null?debi.getName():"-", spec!=null?spec.getName():"-", notas!=null?notas.getName():"-");
+			// debug: entries resolved (suppressed for performance)
 
 			stage = "parse meta";
 			var metaInfo = parseWithReader(zf, meta, parse::parseMeta);
@@ -205,7 +204,7 @@ public class ZipIngestService {
 		String stage = "load template";
 		try {
 			String templateHtml = loadTemplateHtml(invoiceType);
-			log.info("Loaded template for type {} ({} bytes) for {} with {} debtors", invoiceType, templateHtml.length(), zipName, debiteuren.size());
+			log.debug("Template type {} size {} bytes debtors {}", invoiceType, templateHtml.length(), debiteuren.size());
 			
 			stage = "prepare batch items";
 			List<Xhtml2PdfClient.BatchItem> batchItems = new ArrayList<>();
@@ -265,7 +264,7 @@ public class ZipIngestService {
 
 	private void convertBatchPdfs(String zipName, TemplateBatch batch) {
 		try {
-			log.info("Converting {} PDFs for {}", batch.items().size(), zipName);
+			log.debug("Converting {} PDFs for {}", batch.items().size(), zipName);
 			Map<String, byte[]> results = pdfClient.convertBatch(batch.html(), false, batch.items());
 			
 			String baseFileName = stripZip(zipName);
@@ -279,7 +278,7 @@ public class ZipIngestService {
 					log.error("Failed to write PDF for debtor {} in {}: {}", entry.getKey(), zipName, e.getMessage(), e);
 				}
 			}
-			log.info("Successfully wrote {}/{} PDFs for {}", successCount, batch.items().size(), zipName);
+			log.debug("Wrote {}/{} PDFs for {}", successCount, batch.items().size(), zipName);
 			
 		} catch (Xhtml2PdfClient.ConversionException e) {
 			log.error("Batch PDF conversion FAILED for {}: {}", zipName, e.getMessage(), e);

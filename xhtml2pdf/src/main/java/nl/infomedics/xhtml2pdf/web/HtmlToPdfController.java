@@ -52,7 +52,9 @@ public class HtmlToPdfController {
     public ResponseEntity<HtmlToPdfResponse> convertHtmlToPdf(@Valid @RequestBody HtmlToPdfRequest request)
             throws HtmlToPdfConversionException {
         int requestSize = request.html() != null ? request.html().length() : 0;
-        System.out.println(">>> Received conversion request - HTML size: " + requestSize + " bytes (" + (requestSize/1024) + " KB)");
+        // debug: received single conversion request size
+        if (requestSize > 0 && requestSize < 200) { /* small; omit */ }
+        
         PdfConversionResult result = converterService.convertHtmlToPdf(request.html());
         String pdfBase64 = Base64.getEncoder().encodeToString(result.pdfContent());
         String sanitised = request.includeSanitisedXhtml() ? result.sanitisedXhtml() : null;
@@ -68,8 +70,7 @@ public class HtmlToPdfController {
     public ResponseEntity<HtmlToPdfResponse> convertHtmlToPdfWithModel(@Valid @RequestBody HtmlToPdfWithModelRequest request)
             throws HtmlToPdfConversionException {
         int requestSize = request.html() != null ? request.html().length() : 0;
-        System.out.println(">>> Received conversion-with-model request - HTML size: " + requestSize + " bytes (" + (requestSize/1024) + " KB)" +
-                ", JSON size: " + (request.jsonModel()!=null?request.jsonModel().length():0));
+        // debug: received conversion-with-model (sizes suppressed for perf)
         PdfConversionResult result = converterService.convertHtmlToPdf(request.html()); // jsonModel currently unused
         String pdfBase64 = Base64.getEncoder().encodeToString(result.pdfContent());
         String sanitised = request.includeSanitisedXhtml() ? result.sanitisedXhtml() : null;
@@ -83,7 +84,7 @@ public class HtmlToPdfController {
             produces = MediaType.APPLICATION_JSON_VALUE
     )
     public ResponseEntity<BatchConversionResponse> convertBatch(@Valid @RequestBody BatchConversionRequest request) {
-        System.out.println(">>> Received batch conversion request with " + request.items().size() + " items, shared HTML size=" + (request.html()!=null?request.html().length():0));
+        // debug: batch conversion items=" + request.items().size()
         
         List<CompletableFuture<BatchConversionResultItem>> futures = request.items().stream()
                 .map(item -> CompletableFuture.supplyAsync(() -> convertSingleItem(request.html(), request.includeSanitisedXhtml(), item)))
