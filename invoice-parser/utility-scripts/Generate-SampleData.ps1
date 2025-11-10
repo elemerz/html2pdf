@@ -36,8 +36,8 @@ param(
     [string]$ModelType = "classic",
     
     [Parameter(Mandatory=$false)]
-    [ValidateRange(1, 100)]
-    [int]$SampleCount = 1
+    [ValidateRange(1, 1000)]
+    [int]$SampleCount = 100
 )
 
 # Sample data templates

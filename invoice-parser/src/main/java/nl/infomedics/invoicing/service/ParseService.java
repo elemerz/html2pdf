@@ -60,7 +60,6 @@ private static String get(com.univocity.parsers.common.record.Record r, int idx)
 		Pattern typePat = Pattern.compile("#\\s*type\\s*(\\d+)\\s*:\\s*(\\d+)");
 		Pattern amountPat = Pattern.compile("#\\s*bedrag\\s*:\\s*([0-9]+,[0-9]{2})");
 		Integer invoiceType = null;
-		Integer invoiceCount = null;
 		BigDecimal bedrag = null;
 		try (Scanner sc = new Scanner(reader)) {
 			while (sc.hasNextLine()) {
@@ -69,17 +68,15 @@ private static String get(com.univocity.parsers.common.record.Record r, int idx)
 				if (m.matches()) {
 					Integer type = Integer.parseInt(m.group(1));
 					Integer count = Integer.parseInt(m.group(2));
-					// Capture the single relevant line where count > 0 (spec guarantees only one)
 					if (count != null && count > 0 && invoiceType == null) {
-						invoiceType = type;
-						invoiceCount = count;
+						invoiceType = type; // count ignored (removed)
 					}
 				}
 				Matcher a = amountPat.matcher(line);
 				if (a.matches()) bedrag = new BigDecimal(a.group(1).replace(',', '.'));
 			}
 		}
-		return new MetaInfo(invoiceType, invoiceCount, bedrag);
+		return new MetaInfo(invoiceType, bedrag);
 	}
 
 	private Practitioner practitioner; // captured from last line

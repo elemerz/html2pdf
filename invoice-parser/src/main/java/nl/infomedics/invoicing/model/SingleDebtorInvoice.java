@@ -7,7 +7,5 @@ import lombok.Setter;
 
 @NoArgsConstructor @AllArgsConstructor @Getter @Setter
 public class SingleDebtorInvoice {
-    private MetaInfo meta;
-    private Practitioner practitioner;
-    private Debiteur debiteur;
+    private DebiteurWithPractitioner debiteur; // flattened self-contained invoice
 }

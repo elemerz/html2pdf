@@ -83,10 +83,10 @@ public class HtmlToPdfController {
             produces = MediaType.APPLICATION_JSON_VALUE
     )
     public ResponseEntity<BatchConversionResponse> convertBatch(@Valid @RequestBody BatchConversionRequest request) {
-        System.out.println(">>> Received batch conversion request with " + request.items().size() + " items");
+        System.out.println(">>> Received batch conversion request with " + request.items().size() + " items, shared HTML size=" + (request.html()!=null?request.html().length():0));
         
         List<CompletableFuture<BatchConversionResultItem>> futures = request.items().stream()
-                .map(item -> CompletableFuture.supplyAsync(() -> convertSingleItem(item)))
+                .map(item -> CompletableFuture.supplyAsync(() -> convertSingleItem(request.html(), request.includeSanitisedXhtml(), item)))
                 .collect(Collectors.toList());
         
         List<BatchConversionResultItem> results = futures.stream()
@@ -97,11 +97,11 @@ public class HtmlToPdfController {
         return ResponseEntity.ok(response);
     }
     
-    private BatchConversionResultItem convertSingleItem(BatchConversionItem item) {
+    private BatchConversionResultItem convertSingleItem(String sharedHtml, boolean includeSanitised, BatchConversionItem item) {
         try {
-            PdfConversionResult result = converterService.convertHtmlToPdf(item.html());
+            PdfConversionResult result = converterService.convertHtmlToPdf(sharedHtml);
             String pdfBase64 = Base64.getEncoder().encodeToString(result.pdfContent());
-            String sanitised = item.includeSanitisedXhtml() ? result.sanitisedXhtml() : null;
+            String sanitised = includeSanitised ? result.sanitisedXhtml() : null;
             return BatchConversionResultItem.success(item.outputId(), pdfBase64, sanitised);
         } catch (Exception e) {
             System.err.println("Batch item " + item.outputId() + " failed: " + e.getMessage());

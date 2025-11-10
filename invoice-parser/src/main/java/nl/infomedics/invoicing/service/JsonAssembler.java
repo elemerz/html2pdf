@@ -21,9 +21,38 @@ public class JsonAssembler {
 
 
 	public InvoiceBundle assemble(MetaInfo meta, Practitioner practitioner, Map<String, Debiteur> debi, Map<String, List<Specificatie>> specs) {
-		// join on insuredId
 		debi.forEach((id, d) -> d.setTreatments(specs.getOrDefault(id, List.of())));
-		return new InvoiceBundle(meta, practitioner, new ArrayList<>(debi.values()));
+		List<DebiteurWithPractitioner> list = new ArrayList<>();
+		for (Debiteur d : debi.values()) {
+			DebiteurWithPractitioner w = new DebiteurWithPractitioner();
+			w.setInvoiceNumber(d.getInvoiceNumber());
+			w.setPracticeName(d.getPracticeName());
+			w.setPracticeCity(d.getPracticeCity());
+			w.setInsuredId(d.getInsuredId());
+			w.setPatientName(d.getPatientName());
+			w.setPatientDob(d.getPatientDob());
+			w.setInsurer(d.getInsurer());
+			w.setPeriodFrom(d.getPeriodFrom());
+			w.setPeriodTo(d.getPeriodTo());
+			w.setInvoiceType(d.getInvoiceType());
+			w.setTotals(d.getTotals());
+			w.setImageUrl(d.getImageUrl());
+			w.setTreatments(d.getTreatments());
+			if (practitioner != null) {
+				w.setPractitionerName(practitioner.getPracticeName());
+				w.setPractitionerAgbCode(practitioner.getAgbCode());
+				w.setPractitionerPracticeCode(practitioner.getPracticeCode());
+				w.setPractitionerLogoNr(practitioner.getLogoNr());
+				w.setPractitionerCountry(practitioner.getPracticeCountry());
+				w.setPractitionerPostcode(practitioner.getPracticePostcode());
+				w.setPractitionerStreet(practitioner.getPracticeStreet());
+				w.setPractitionerHouseNr(practitioner.getPracticeHouseNr());
+				w.setPractitionerPhone(practitioner.getPracticePhone());
+			}
+			w.setTotaalBedrag(meta!=null?meta.getTotaalBedrag():null);
+			list.add(w);
+		}
+		return new InvoiceBundle(list);
 	}
 
 
@@ -33,7 +62,33 @@ public class JsonAssembler {
 	}
 
 	public SingleDebtorInvoice createSingleDebtorInvoice(MetaInfo meta, Practitioner practitioner, Debiteur debiteur) {
-		return new SingleDebtorInvoice(meta, practitioner, debiteur);
+		DebiteurWithPractitioner w = new DebiteurWithPractitioner();
+		w.setInvoiceNumber(debiteur.getInvoiceNumber());
+		w.setPracticeName(debiteur.getPracticeName());
+		w.setPracticeCity(debiteur.getPracticeCity());
+		w.setInsuredId(debiteur.getInsuredId());
+		w.setPatientName(debiteur.getPatientName());
+		w.setPatientDob(debiteur.getPatientDob());
+		w.setInsurer(debiteur.getInsurer());
+		w.setPeriodFrom(debiteur.getPeriodFrom());
+		w.setPeriodTo(debiteur.getPeriodTo());
+		w.setInvoiceType(debiteur.getInvoiceType());
+		w.setTotals(debiteur.getTotals());
+		w.setImageUrl(debiteur.getImageUrl());
+		w.setTreatments(debiteur.getTreatments());
+		if (practitioner != null) {
+			w.setPractitionerName(practitioner.getPracticeName());
+			w.setPractitionerAgbCode(practitioner.getAgbCode());
+			w.setPractitionerPracticeCode(practitioner.getPracticeCode());
+			w.setPractitionerLogoNr(practitioner.getLogoNr());
+			w.setPractitionerCountry(practitioner.getPracticeCountry());
+			w.setPractitionerPostcode(practitioner.getPracticePostcode());
+			w.setPractitionerStreet(practitioner.getPracticeStreet());
+			w.setPractitionerHouseNr(practitioner.getPracticeHouseNr());
+			w.setPractitionerPhone(practitioner.getPracticePhone());
+		}
+		w.setTotaalBedrag(meta!=null?meta.getTotaalBedrag():null);
+		return new SingleDebtorInvoice(w);
 	}
 
 	public String stringifySingleDebtor(SingleDebtorInvoice invoice, boolean pretty) throws JsonProcessingException {

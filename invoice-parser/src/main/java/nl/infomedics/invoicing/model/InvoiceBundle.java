@@ -9,7 +9,5 @@ import lombok.Setter;
 
 @NoArgsConstructor @AllArgsConstructor @Getter @Setter
 public class InvoiceBundle {
-	private MetaInfo meta;
-	private Practitioner practitioner; // separated last line from debiteuren source file
-	private List<Debiteur> debiteuren;
+	private List<DebiteurWithPractitioner> debiteuren; // self-contained invoices
 }

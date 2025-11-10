@@ -66,11 +66,12 @@ public class Xhtml2PdfClient {
         }
     }
 
-    public Map<String, byte[]> convertBatch(List<BatchItem> items) throws ConversionException {
+    public Map<String, byte[]> convertBatch(String html, boolean includeSanitisedXhtml, List<BatchItem> items) throws ConversionException {
+        if (html == null || html.isBlank()) throw new ConversionException("HTML must not be blank");
         if (items == null || items.isEmpty()) throw new ConversionException("Items must not be empty");
         try {
-            BatchRequest payload = new BatchRequest(items.stream()
-                .map(item -> new BatchRequestItem(item.html(), item.jsonModel(), item.outputId(), false))
+            BatchRequest payload = new BatchRequest(html, includeSanitisedXhtml, items.stream()
+                .map(i -> new BatchRequestItem(i.jsonModel(), i.outputId()))
                 .collect(Collectors.toList()));
             String body = objectMapper.writeValueAsString(payload);
             HttpRequest req = HttpRequest.newBuilder(batchConvertEndpoint)
@@ -103,9 +104,9 @@ public class Xhtml2PdfClient {
     public record HtmlToPdfWithModelRequest(String html, String jsonModel, boolean includeSanitisedXhtml) {}
     public record HtmlToPdfResponse(String pdfBase64, String sanitisedXhtml, java.time.Instant generatedAt) {}
     
-    public record BatchItem(String html, String jsonModel, String outputId) {}
-    public record BatchRequestItem(String html, String jsonModel, String outputId, boolean includeSanitisedXhtml) {}
-    public record BatchRequest(List<BatchRequestItem> items) {}
+    public record BatchItem(String jsonModel, String outputId) {}
+    public record BatchRequestItem(String jsonModel, String outputId) {}
+    public record BatchRequest(String html, boolean includeSanitisedXhtml, List<BatchRequestItem> items) {}
     public record BatchResultItem(String outputId, String pdfBase64, String sanitisedXhtml, String error) {}
     public record BatchResponse(List<BatchResultItem> results, java.time.Instant generatedAt) {}
     

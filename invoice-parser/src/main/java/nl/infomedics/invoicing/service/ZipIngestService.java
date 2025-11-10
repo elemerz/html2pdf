@@ -144,7 +144,7 @@ public class ZipIngestService {
 			Files.writeString(out, jsonStr, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
 
 			// --- Generate PDFs for each debtor (one PDF per debtor) ---
-			Integer type = bundle.getMeta()!=null?bundle.getMeta().getInvoiceType():null;
+			Integer type = metaInfo!=null?metaInfo.getInvoiceType():null;
 			if (type != null && bundle.getDebiteuren() != null && !bundle.getDebiteuren().isEmpty()) {
 				generatePdfsPerDebtor(name, type, metaInfo, practitioner, bundle.getDebiteuren());
 			} else {
@@ -201,23 +201,20 @@ public class ZipIngestService {
 	}
 
 	private void generatePdfsPerDebtor(String zipName, Integer invoiceType, MetaInfo metaInfo, 
-	                                     Practitioner practitioner, List<nl.infomedics.invoicing.model.Debiteur> debiteuren) {
+	                                     Practitioner practitioner, List<nl.infomedics.invoicing.model.DebiteurWithPractitioner> debiteuren) {
 		String stage = "load template";
 		try {
-			String templateName = "templates/for-pdf/factuur-" + invoiceType + ".html";
-			log.info("Loading template {} for {} with {} debtors", templateName, zipName, debiteuren.size());
-			String html = new String(Objects.requireNonNull(getClass().getClassLoader().getResourceAsStream(templateName))
-					.readAllBytes(), StandardCharsets.UTF_8);
+			String templateHtml = loadTemplateHtml(invoiceType);
+			log.info("Loaded template for type {} ({} bytes) for {} with {} debtors", invoiceType, templateHtml.length(), zipName, debiteuren.size());
 			
 			stage = "prepare batch items";
 			List<Xhtml2PdfClient.BatchItem> batchItems = new ArrayList<>();
-			for (nl.infomedics.invoicing.model.Debiteur debtor : debiteuren) {
+			for (nl.infomedics.invoicing.model.DebiteurWithPractitioner debtor : debiteuren) {
 				try {
-					var singleInvoice = json.createSingleDebtorInvoice(metaInfo, practitioner, debtor);
-					String debtorJson = json.stringifySingleDebtor(singleInvoice, false);
+					String debtorJson = json.stringifySingleDebtor(new nl.infomedics.invoicing.model.SingleDebtorInvoice(debtor), false);
 					String outputId = sanitizeFilename(debtor.getInvoiceNumber() != null ? 
 						debtor.getInvoiceNumber() : debtor.getInsuredId());
-					batchItems.add(new Xhtml2PdfClient.BatchItem(html, debtorJson, outputId));
+					batchItems.add(new Xhtml2PdfClient.BatchItem(debtorJson, outputId));
 				} catch (Exception e) {
 					log.error("Failed to prepare batch item for debtor {} in {}: {}", 
 						debtor.getInvoiceNumber(), zipName, e.getMessage(), e);
@@ -230,14 +227,14 @@ public class ZipIngestService {
 			}
 			
 			stage = "submit batch conversion";
-			submitBatchPdfConversion(zipName, batchItems);
+			submitBatchPdfConversion(zipName, batchItems, templateHtml);
 			
 		} catch (Exception ex) {
 			log.error("PDF generation FAILED for {} at stage '{}': {}", zipName, stage, ex.getMessage(), ex);
 		}
 	}
 
-	private void submitBatchPdfConversion(String zipName, List<Xhtml2PdfClient.BatchItem> batchItems) {
+	private void submitBatchPdfConversion(String zipName, List<Xhtml2PdfClient.BatchItem> batchItems, String templateHtml) { // templateHtml propagated
 		try {
 			pdfConversionExecutor.submit(() -> {
 				boolean acquired = false;
@@ -248,7 +245,7 @@ public class ZipIngestService {
 						logPdfExecutorState();
 						return;
 					}
-					convertBatchPdfs(zipName, batchItems);
+					convertBatchPdfs(zipName, new TemplateBatch(templateHtml, batchItems)); // use loaded templateHtml
 				} catch (InterruptedException e) {
 					Thread.currentThread().interrupt();
 					log.error("Interrupted while converting PDFs for {}", zipName);
@@ -266,10 +263,10 @@ public class ZipIngestService {
 		}
 	}
 
-	private void convertBatchPdfs(String zipName, List<Xhtml2PdfClient.BatchItem> batchItems) {
+	private void convertBatchPdfs(String zipName, TemplateBatch batch) {
 		try {
-			log.info("Converting {} PDFs for {}", batchItems.size(), zipName);
-			Map<String, byte[]> results = pdfClient.convertBatch(batchItems);
+			log.info("Converting {} PDFs for {}", batch.items().size(), zipName);
+			Map<String, byte[]> results = pdfClient.convertBatch(batch.html(), false, batch.items());
 			
 			String baseFileName = stripZip(zipName);
 			int successCount = 0;
@@ -282,7 +279,7 @@ public class ZipIngestService {
 					log.error("Failed to write PDF for debtor {} in {}: {}", entry.getKey(), zipName, e.getMessage(), e);
 				}
 			}
-			log.info("Successfully wrote {}/{} PDFs for {}", successCount, batchItems.size(), zipName);
+			log.info("Successfully wrote {}/{} PDFs for {}", successCount, batch.items().size(), zipName);
 			
 		} catch (Xhtml2PdfClient.ConversionException e) {
 			log.error("Batch PDF conversion FAILED for {}: {}", zipName, e.getMessage(), e);
@@ -314,5 +311,11 @@ public class ZipIngestService {
 
 	private static String stripZip(String s) {
 		return s.endsWith(".zip") ? s.substring(0, s.length() - 4) : s;
+	}
+
+	private String loadTemplateHtml(Integer invoiceType) throws IOException {
+		String templateName = "templates/for-pdf/factuur-" + invoiceType + ".html";
+		return new String(Objects.requireNonNull(getClass().getClassLoader().getResourceAsStream(templateName))
+				.readAllBytes(), StandardCharsets.UTF_8);
 	}
 }
