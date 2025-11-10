@@ -30,9 +30,14 @@
               }
             </div>
           } @else if (category.id === 'report-data-model') {
-            <button class="json-import-btn" (click)="onImportJson()">
-              📁 Import JSON
-            </button>
+            <select class="json-import-select" [value]="selectedModel()" (change)="onSelectModel($event)">
+              @if (dataModelOptions.length > 1) {
+                <option value="">{{ selectPlaceholder }}</option>
+              }
+              @for (model of dataModelOptions; track model) {
+                <option [value]="model">{{ model }}</option>
+              }
+            </select>
             <div class="json-viewer">
               @for (node of jsonTree(); track node.path) {
                 <div class="json-node" [style.padding-left.px]="0">

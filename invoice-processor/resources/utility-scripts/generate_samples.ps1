@@ -1,17 +1,17 @@
 Param(
-    [string]$Prefix = 'fin-sample',
+    [string]$Prefix = 'factuur',
     [int]$startIndex = 1,
-    [int]$Digits = 4,
+    [int]$Digits = 2,
     [string]$OutputDir = '.',
     [int]$LevelCount = 0,
     [int]$FoldersPerLevel = 0,
-    [int]$FilesPerFolder = 5000,
-    [int]$MinPages = 1,
+    [int]$FilesPerFolder = 68,
+    [int]$MinPages = 2,
     [int]$MaxPages = 6,
-    [int]$MinCols = 3,
+    [int]$MinCols = 4,
     [int]$MaxCols = 6,
     [int]$MinRows = 4,
-    [int]$MaxRows = 24
+    [int]$MaxRows = 30
 )
 
 function Swap-IfNeeded {
@@ -316,7 +316,7 @@ function New-Sample {
     [void]$builder.AppendLine([string]::Format('<img src="data:image/png;base64,{0}" alt="{1} logo" />', $companyLogoData, (Escape-HtmlText $companyName)))
     [void]$builder.AppendLine([string]::Format('<div class="meta"><strong>{0}</strong><br />{1}<br />Report date: {2}</div>', (Escape-HtmlText $companyName), (Escape-HtmlText $reportTitle), (Escape-HtmlText $reportDate)))
     [void]$builder.AppendLine('</div>')
-    [void]$builder.AppendLine([string]::Format('<h1>{0}</h1>', (Escape-HtmlText $reportTitle)))
+    [void]$builder.AppendLine([string]::Format('<div class="ql-code-block" data-language="plain" style="color:red;font-size:22pt; font-weight:bold">Faktuurtype {0}: ${{practitioner.practiceName}}</div>', $idText))
     [void]$builder.AppendLine([string]::Format('<p>{0}</p>', (Escape-HtmlText $intro)))
 
     for ($page = 1; $page -le $pageCount; $page++) {

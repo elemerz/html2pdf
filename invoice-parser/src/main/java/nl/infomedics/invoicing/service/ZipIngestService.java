@@ -1,21 +1,20 @@
 package nl.infomedics.invoicing.service;
 
-import nl.infomedics.invoicing.config.AppProperties;
-import nl.infomedics.invoicing.model.MetaInfo;
-import nl.infomedics.invoicing.model.Practitioner;
-import jakarta.annotation.PreDestroy;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
-
-import lombok.Getter;
-import lombok.Setter;
-
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.Reader;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.*;
-import java.util.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
+import java.util.Enumeration;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.Semaphore;
@@ -24,12 +23,19 @@ import java.util.concurrent.TimeUnit;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
-import java.util.Objects;
-@Getter @Setter
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+
+import jakarta.annotation.PreDestroy;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
+import nl.infomedics.invoicing.config.AppProperties;
+import nl.infomedics.invoicing.model.MetaInfo;
+import nl.infomedics.invoicing.model.Practitioner;
+@Getter @Setter @Slf4j
 @Service
 public class ZipIngestService {
-	private static final Logger log = LoggerFactory.getLogger(ZipIngestService.class);
-
 	private final ParseService parse;
 	private final JsonAssembler json;
 	private final AppProperties props;
@@ -41,8 +47,9 @@ public class ZipIngestService {
 	private final ThreadPoolExecutor pdfConversionExecutor;
 	private final Semaphore pdfConversionPermits;
 	private final int maxConcurrentPdfConversions;
+	private final Map<Integer,String> templateHtmlMap;
 
-	public ZipIngestService(ParseService parse, JsonAssembler json, AppProperties props, Xhtml2PdfClient pdfClient,
+	public ZipIngestService(ParseService parse, JsonAssembler json, AppProperties props, Xhtml2PdfClient pdfClient, Map<Integer,String> templateHtmlMap,
 			@Value("${json.output.folder}") String jsonOut, @Value("${json.pretty:false}") boolean pretty,
 			@Value("${pdf.output.folder:C:/invoice-data/_pdf}") String pdfOut,
 			@Value("${pdf.max-concurrent-conversions:64}") int maxConcurrentPdfConversions)
@@ -56,6 +63,7 @@ public class ZipIngestService {
 		this.jsonPretty = pretty;
 		this.maxConcurrentPdfConversions = Math.max(1, maxConcurrentPdfConversions);
 		this.pdfConversionPermits = new Semaphore(this.maxConcurrentPdfConversions);
+		this.templateHtmlMap = templateHtmlMap;
 		
 		// Create thread pool for PDF conversions with bounded queue
 		int queueCapacity = this.maxConcurrentPdfConversions * 4;
@@ -312,9 +320,9 @@ public class ZipIngestService {
 		return s.endsWith(".zip") ? s.substring(0, s.length() - 4) : s;
 	}
 
-	private String loadTemplateHtml(Integer invoiceType) throws IOException {
-		String templateName = "templates/for-pdf/factuur-" + invoiceType + ".html";
-		return new String(Objects.requireNonNull(getClass().getClassLoader().getResourceAsStream(templateName))
-				.readAllBytes(), StandardCharsets.UTF_8);
+	private String loadTemplateHtml(Integer invoiceType) {
+		String html = templateHtmlMap.get(invoiceType);
+		if (html == null) throw new IllegalStateException("Missing template HTML for invoiceType=" + invoiceType);
+		return html;
 	}
 }

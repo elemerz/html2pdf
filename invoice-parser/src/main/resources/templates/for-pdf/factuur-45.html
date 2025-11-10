@@ -1,80 +1,520 @@
-<html xmlns="http://www.w3.org/1999/xhtml">
-  <head>
-    <title>factuur-45</title>
-    <style type="text/css" media="all">
-
-html, body {
-  width: 210mm;
-  height: 297mm;
-}
-
-/*** Page-level definitions ***/
-@page {
-  size: A4 portrait;
-  /* MARGINS: 10mm 10mm 10mm 10mm */
-  margin: 0 0 0 0;
-}
-.page { position: relative; min-height: 276.7mm; }
-.page + .page { page-break-before: always; }
-
-.pagebreak {page-break-before: always;}
-/*Use this to force pagebreak
-<br style="-fs-page-break-min-height: 10cm;clear:both;"/>
-*/
-
-/*** Custom font Definitions ***/
-@font-face {
-  font-family: 'Roboto';
-  font-weight: normal;
-  font-style: normal;
-  -fs-pdf-font-embed: embed;
-  -fs-pdf-font-encoding: Identity-H;
-}
-@font-face {
-  font-family: 'Bariol';
-  font-weight: normal;
-  font-style: normal;
-  -fs-pdf-font-embed: embed;
-  -fs-pdf-font-encoding: Identity-H;
-}
-@font-face {
-  font-family: 'KIX Barcode';
-  font-weight: normal;
-  font-style: normal;
-  -fs-pdf-font-embed: embed;
-  -fs-pdf-font-encoding: Identity-H;
-}
-
-/*** standard element commons ***/
-html, html * {
-  box-sizing: border-box;
-  margin: 0;
-}
-html,body {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  margin: 0;
-  padding:0;
-  border:0 none;
-  font-family: 'Roboto';
-  font-size: 9pt;
-}
-table {
-  border-collapse: collapse;
-}
-
-    </style>
-  </head>
-  <body>
-    <div class="report-body">
-      <table class="element element-table" style="margin-top:10mm;margin-left:10mm;width:190mm;height:40mm;">
-    <tbody>
-      <tr style="height:40mm;">
-        <td style="width:190mm;height:40mm;padding:0mm 0mm 0mm 0mm;text-align:left;vertical-align:top;border-top:none;border-right:none;border-bottom:none;border-left:none;font-style:normal;font-weight:normal;font-size:9pt;line-height:1;font-family:Roboto, sans-serif;text-decoration:none;"><div class="ql-code-block-container" spellcheck="false"><div class="ql-code-block" data-language="plain">Faktuurtype 45: ${practitioner.practiceName}</div></div></td>
-      </tr>
-    </tbody>
-  </table>
-    </div>
-  </body>
+﻿<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+<head>
+<meta http-equiv="Content-Type" content="application/xhtml+xml; charset=UTF-8" />
+<title>Nova Spectrum Group Consolidated Growth Tracker 45</title>
+<style type="text/css">
+@page { size: A4 portrait; margin: 10mm 10mm 10mm 15mm; }
+body { font-family: "Roboto", sans-serif; font-size: 11pt; margin: 0; padding: 15mm; color: #1f1f1f; }
+h1, h2 { color: #123c69; }
+p { line-height: 1.5; }
+table { width: 100%; border-collapse: collapse; margin: 12pt 0 18pt 0; }
+th, td { border-bottom: 1px solid #b0b8c1; padding: 6px 10px; text-align: right; }
+th { background: #e8eff7; text-align: left; }
+.pagebreak { page-break-after: always; }
+.logo { margin-bottom: 12pt; font-size: 0;}
+.logo > * {display: inline-block; vertical-align: middle; font-size: 12pt;}
+.logo > * + * {margin-left: 10px;}
+.logo img { width: 20mm; height: 20mm; }
+.meta { font-size: 10pt; color: #5a6472; }
+footer { font-size: 9pt; text-align: center; margin-top: 24pt; color: #6d7885; }
+</style>
+</head>
+<body>
+<div class="logo">
+<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAMAAABEpIrGAAABR1BMVEVHcEwAAAAHExMMHhwJDg4AAAAMExUAAAAUKyoAAAAAAAAAAAAABAQ3VW0AAAABAgIaHRwODw8HCwsULS4nO0sAAAAAAAADCgkGBwgAAAAaODoaJzIfSkULNjEGCQt4//F6//Rr5NaGzf9t6NkmOTtv8eEiP06UjYvIvLkrVVJbi7F0+Oh3/e3///9gz8FKS0tUtqpBk4kuYls0cWr16OR8dnQVHhy+s7BDQUJk2cswSU1hl8A7hn2JgYBCYnxiX101Tl8qMDA7wrJLpZpbw7axrKpLcpBzu/Lh1NFoZmbw8PDWzcpWV1Zx9ORzs+Q+SVFlncgxsqMrJSZGm5ExenLMwsBopdSlm5h0//Js/u5DHybgSWNPq6Dw499Rg6pQepvX1tVF0cF+v/K7urqBxfm1NUubKz6ZlJOgn545a5N0KDX8U3BrJjJBuoRSAAAAH3RSTlMASM3GsgbHFdYONViX/iWN8t64++9oeqWfG+zi8OnwdQqZwAAAAmRJREFUOMttkldz2kAUhSUQoolqcMF2dlFFxUIFBIhuisGmVwPG3U79/88RZCaTCToze/Vwvt29umcR5B95/UQUdzjwaAh1ITY6O+GnSlOWm4p6QXhtgFBJhBCKklUY7fjQ9zoLAEgNnlcAgNfY4SVuTxKAJisIrAzAi9NlewIsVZ6EwBTanuDCZKZUZ4sCTav98YlNk9iU787L+TyXqmol4tBHI0b5rnXX6Vgla0R8By3gXD7VzVe3nV4+m0uXD5rYA6lOaru1ih2AoNHwfJvjslkutc2FMZ/NpLByz5ypqm5Ws6e2YRwbDQZACJip4bfzkaBHhsASVHC3LYD4j5Q+AEwjjNr7Xn84zeu6mY6g/6XtDvqCvjjhTNDz3HKZytUTTsLv+wsFQ55Y7PzLUaPAaNlMJrOt6n25oV84Q39+1X/eXry+D4SazsCHSS6TWRpNCCAQC+plfDefxKhi1gJmrRjQReqovuQmtAjEkqZK9y+XPuQMHxXTz2+tZ65ywz7AWbrazatQKkw+60lpNTtG4gFS6F5ZagXIR15q9m5v0wWpRK83a7q0GmMIJpCL4a0FlNvkgE2K/LylSX36Y/Nz82muxlHEMSLfa29X1r4FecPKUM12H6DIr39sfq211RhH8CJJVr597d0NB3ugUKcpAChl8jFRqPtrB0I8WQA3pDkLWLAUkLTZLg6Gr2si2AFo7JWsVGtPveEN+V23rCQF9gRlpbIDXKdtUjACRaNGjmiFSiYpa+20+1BjhzVoZ3tgPg5YoZiIeA60e/3B01i7OHoM4H73ofaBuVACd2DxM9sn8BuR+XN8yditeQAAAABJRU5ErkJggg==" alt="Nova Spectrum Group logo" />
+<div class="meta"><strong>Nova Spectrum Group</strong><br />Consolidated Growth Tracker<br />Report date: August 26, 2025</div>
+</div>
+<div class="ql-code-block" data-language="plain" style="color:red;font-size:22pt; font-weight:bold">Faktuurtype 45: ${practitioner.practiceName}</div>
+<p>The leadership team monitors these indicators weekly to ensure we maintain compliance, service excellence, and shareholder value.</p>
+<section>
+<h2>Operational Excellence - Page 1 of 3</h2>
+<p>Employee engagement surveys recorded record participation rates, informing refreshed well-being programmes launching next period.</p>
+<p>Customer lifetime value is trending upward as cross-sell programmes gain traction in the enterprise and public sector verticals.</p>
+<p>Scenario modelling highlights resilience under tightened capital expenditure environments, maintaining service continuity.</p>
+<ul>
+<li>Align marketing narratives with refreshed value propositions</li>
+<li>Accelerate invoicing automation in low-margin streams</li>
+<li>Update service catalogues to reflect refreshed SLAs</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Run Rate (EUR M)</th>
+<th>Variance (EUR M)</th>
+<th>Pipeline (EUR M)</th>
+<th>Forecast (EUR M)</th>
+<th>Contribution Margin %</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Platform Stability</td>
+<td>203.50</td>
+<td>232.62</td>
+<td>171.62</td>
+<td>706.12</td>
+<td>292.22</td>
+</tr>
+<tr>
+<td>SMB Momentum</td>
+<td>990.80</td>
+<td>165.78</td>
+<td>425.84</td>
+<td>810.78</td>
+<td>161.43</td>
+</tr>
+<tr>
+<td>Operations Utilisation</td>
+<td>251.06</td>
+<td>82.06</td>
+<td>316.63</td>
+<td>763.32</td>
+<td>107.71</td>
+</tr>
+<tr>
+<td>Innovation Readiness</td>
+<td>550.99</td>
+<td>94.36</td>
+<td>805.08</td>
+<td>933.47</td>
+<td>259.42</td>
+</tr>
+<tr>
+<td>Innovation Integrity</td>
+<td>49.48</td>
+<td>664.89</td>
+<td>732.51</td>
+<td>966.41</td>
+<td>641.50</td>
+</tr>
+<tr>
+<td>Channel Velocity</td>
+<td>385.99</td>
+<td>186.64</td>
+<td>286.47</td>
+<td>272.75</td>
+<td>986.99</td>
+</tr>
+<tr>
+<td>Public Sector Performance</td>
+<td>769.55</td>
+<td>831.22</td>
+<td>474.93</td>
+<td>57.92</td>
+<td>577.80</td>
+</tr>
+<tr>
+<td>Customer Care Expansion</td>
+<td>493.27</td>
+<td>696.64</td>
+<td>78.43</td>
+<td>721.82</td>
+<td>333.57</td>
+</tr>
+<tr>
+<td>Innovation Readiness</td>
+<td>422.62</td>
+<td>835.40</td>
+<td>439.36</td>
+<td>518.58</td>
+<td>189.71</td>
+</tr>
+<tr>
+<td>Innovation Readiness</td>
+<td>696.40</td>
+<td>584.59</td>
+<td>980.19</td>
+<td>810.80</td>
+<td>512.10</td>
+</tr>
+<tr>
+<td>Enterprise Integrity</td>
+<td>921.77</td>
+<td>749.71</td>
+<td>405.00</td>
+<td>421.33</td>
+<td>463.03</td>
+</tr>
+<tr>
+<td>Logistics Stability</td>
+<td>538.61</td>
+<td>500.12</td>
+<td>205.20</td>
+<td>104.62</td>
+<td>906.22</td>
+</tr>
+<tr>
+<td>Customer Care Expansion</td>
+<td>844.16</td>
+<td>879.31</td>
+<td>193.09</td>
+<td>823.79</td>
+<td>391.88</td>
+</tr>
+</tbody>
+</table>
+<p><em>Insight:</em> Scenario modelling highlights resilience under tightened capital expenditure environments, maintaining service continuity.</p>
+</section>
+<div class="pagebreak"></div>
+<section>
+<h2>Customer Intelligence - Page 2 of 3</h2>
+<p>Compliance reviews confirmed adherence to ISO frameworks, with remediation actions completed ahead of the upcoming surveillance audit.</p>
+<p>Cost-to-serve metrics benefited from renegotiated logistics contracts, partially offsetting energy price pressure experienced in the quarter.</p>
+<p>Regional demand profiles indicate emerging opportunities in EMEA, balancing softer sentiment in APAC.</p>
+<ul>
+<li>Deepen scenario planning for supply-side constraints</li>
+<li>Expand partner enablement for priority solution bundles</li>
+<li>Enhance risk dashboards with real-time leading indicators</li>
+<li>Update service catalogues to reflect refreshed SLAs</li>
+<li>Conduct quarterly talent calibration for analytics teams</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Bookings (EUR M)</th>
+<th>Renewals %</th>
+<th>Backlog (EUR M)</th>
+<th>Forecast (EUR M)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Operations Utilisation</td>
+<td>794.67</td>
+<td>236.36</td>
+<td>657.76</td>
+<td>905.84</td>
+</tr>
+<tr>
+<td>Enterprise Momentum</td>
+<td>666.44</td>
+<td>765.10</td>
+<td>584.52</td>
+<td>288.95</td>
+</tr>
+<tr>
+<td>Operations Momentum</td>
+<td>313.08</td>
+<td>286.19</td>
+<td>388.50</td>
+<td>159.52</td>
+</tr>
+<tr>
+<td>Logistics Momentum</td>
+<td>144.82</td>
+<td>677.71</td>
+<td>443.64</td>
+<td>432.44</td>
+</tr>
+<tr>
+<td>Platform Velocity</td>
+<td>758.57</td>
+<td>372.04</td>
+<td>953.61</td>
+<td>553.52</td>
+</tr>
+<tr>
+<td>Platform Utilisation</td>
+<td>703.81</td>
+<td>186.33</td>
+<td>621.28</td>
+<td>362.91</td>
+</tr>
+<tr>
+<td>Operations Velocity</td>
+<td>82.13</td>
+<td>307.67</td>
+<td>190.48</td>
+<td>333.50</td>
+</tr>
+<tr>
+<td>Innovation Productivity</td>
+<td>531.77</td>
+<td>649.96</td>
+<td>127.23</td>
+<td>86.83</td>
+</tr>
+<tr>
+<td>SMB Utilisation</td>
+<td>855.84</td>
+<td>515.53</td>
+<td>411.78</td>
+<td>279.32</td>
+</tr>
+<tr>
+<td>SMB Stability</td>
+<td>142.89</td>
+<td>199.38</td>
+<td>393.40</td>
+<td>701.13</td>
+</tr>
+</tbody>
+</table>
+<p><em>Insight:</em> Regional demand profiles indicate emerging opportunities in EMEA, balancing softer sentiment in APAC.</p>
+</section>
+<div class="pagebreak"></div>
+<section>
+<h2>Operational Excellence - Page 3 of 3</h2>
+<p>Customer lifetime value is trending upward as cross-sell programmes gain traction in the enterprise and public sector verticals.</p>
+<p>Employee engagement surveys recorded record participation rates, informing refreshed well-being programmes launching next period.</p>
+<p>Scenario modelling highlights resilience under tightened capital expenditure environments, maintaining service continuity.</p>
+<ul>
+<li>Enhance risk dashboards with real-time leading indicators</li>
+<li>Align marketing narratives with refreshed value propositions</li>
+<li>Expand partner enablement for priority solution bundles</li>
+<li>Conduct quarterly talent calibration for analytics teams</li>
+<li>Update service catalogues to reflect refreshed SLAs</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Cash Position (EUR M)</th>
+<th>Backlog (EUR M)</th>
+<th>Operating Expense (EUR M)</th>
+<th>Contribution Margin %</th>
+<th>Variance (EUR M)</th>
+<th>Renewals %</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Digital Productivity</td>
+<td>264.20</td>
+<td>268.11</td>
+<td>740.77</td>
+<td>154.87</td>
+<td>675.87</td>
+<td>801.88</td>
+</tr>
+<tr>
+<td>Channel Utilisation</td>
+<td>275.85</td>
+<td>97.19</td>
+<td>515.27</td>
+<td>870.15</td>
+<td>866.37</td>
+<td>111.10</td>
+</tr>
+<tr>
+<td>Customer Care Allocation</td>
+<td>983.58</td>
+<td>735.84</td>
+<td>542.48</td>
+<td>540.09</td>
+<td>521.50</td>
+<td>303.51</td>
+</tr>
+<tr>
+<td>Channel Stability</td>
+<td>984.01</td>
+<td>205.98</td>
+<td>826.39</td>
+<td>809.10</td>
+<td>317.23</td>
+<td>326.29</td>
+</tr>
+<tr>
+<td>Customer Care Stability</td>
+<td>378.71</td>
+<td>637.23</td>
+<td>515.42</td>
+<td>832.99</td>
+<td>298.49</td>
+<td>321.59</td>
+</tr>
+<tr>
+<td>Public Sector Stability</td>
+<td>535.16</td>
+<td>516.56</td>
+<td>706.79</td>
+<td>788.80</td>
+<td>669.25</td>
+<td>535.34</td>
+</tr>
+<tr>
+<td>Logistics Integrity</td>
+<td>923.47</td>
+<td>693.18</td>
+<td>659.81</td>
+<td>232.75</td>
+<td>850.65</td>
+<td>200.86</td>
+</tr>
+<tr>
+<td>Channel Momentum</td>
+<td>113.50</td>
+<td>272.84</td>
+<td>721.64</td>
+<td>770.17</td>
+<td>607.03</td>
+<td>385.64</td>
+</tr>
+<tr>
+<td>Digital Expansion</td>
+<td>43.30</td>
+<td>435.26</td>
+<td>478.81</td>
+<td>994.29</td>
+<td>832.00</td>
+<td>397.80</td>
+</tr>
+<tr>
+<td>Analytics Performance</td>
+<td>704.92</td>
+<td>455.10</td>
+<td>950.88</td>
+<td>454.48</td>
+<td>776.16</td>
+<td>78.65</td>
+</tr>
+<tr>
+<td>Public Sector Productivity</td>
+<td>326.46</td>
+<td>442.86</td>
+<td>798.71</td>
+<td>233.68</td>
+<td>374.99</td>
+<td>389.81</td>
+</tr>
+<tr>
+<td>Digital Performance</td>
+<td>404.32</td>
+<td>234.79</td>
+<td>106.58</td>
+<td>47.15</td>
+<td>616.62</td>
+<td>828.33</td>
+</tr>
+<tr>
+<td>Channel Utilisation</td>
+<td>643.71</td>
+<td>791.26</td>
+<td>355.33</td>
+<td>665.52</td>
+<td>735.60</td>
+<td>84.40</td>
+</tr>
+<tr>
+<td>Channel Performance</td>
+<td>604.65</td>
+<td>608.54</td>
+<td>70.19</td>
+<td>169.77</td>
+<td>829.68</td>
+<td>863.23</td>
+</tr>
+<tr>
+<td>Channel Readiness</td>
+<td>842.78</td>
+<td>540.87</td>
+<td>684.56</td>
+<td>348.99</td>
+<td>123.88</td>
+<td>254.15</td>
+</tr>
+<tr>
+<td>Services Satisfaction</td>
+<td>584.46</td>
+<td>508.99</td>
+<td>917.02</td>
+<td>621.16</td>
+<td>906.29</td>
+<td>447.79</td>
+</tr>
+<tr>
+<td>Services Stability</td>
+<td>402.15</td>
+<td>879.82</td>
+<td>897.84</td>
+<td>371.83</td>
+<td>405.85</td>
+<td>412.25</td>
+</tr>
+<tr>
+<td>Platform Momentum</td>
+<td>319.06</td>
+<td>996.16</td>
+<td>818.64</td>
+<td>650.49</td>
+<td>390.59</td>
+<td>80.74</td>
+</tr>
+<tr>
+<td>Public Sector Productivity</td>
+<td>82.47</td>
+<td>79.39</td>
+<td>719.50</td>
+<td>906.48</td>
+<td>849.82</td>
+<td>207.62</td>
+</tr>
+<tr>
+<td>SMB Productivity</td>
+<td>48.45</td>
+<td>196.69</td>
+<td>613.18</td>
+<td>935.48</td>
+<td>390.91</td>
+<td>834.13</td>
+</tr>
+<tr>
+<td>Analytics Productivity</td>
+<td>705.25</td>
+<td>95.33</td>
+<td>150.91</td>
+<td>852.43</td>
+<td>462.69</td>
+<td>147.62</td>
+</tr>
+<tr>
+<td>SMB Velocity</td>
+<td>911.31</td>
+<td>62.55</td>
+<td>884.97</td>
+<td>907.54</td>
+<td>303.37</td>
+<td>855.78</td>
+</tr>
+<tr>
+<td>Platform Integrity</td>
+<td>186.55</td>
+<td>272.82</td>
+<td>242.69</td>
+<td>657.95</td>
+<td>850.71</td>
+<td>833.53</td>
+</tr>
+<tr>
+<td>Channel Utilisation</td>
+<td>84.58</td>
+<td>232.29</td>
+<td>190.28</td>
+<td>643.82</td>
+<td>306.52</td>
+<td>84.49</td>
+</tr>
+<tr>
+<td>Logistics Velocity</td>
+<td>534.64</td>
+<td>677.98</td>
+<td>659.17</td>
+<td>749.40</td>
+<td>612.71</td>
+<td>749.61</td>
+</tr>
+</tbody>
+</table>
+<p><em>Insight:</em> Scenario modelling highlights resilience under tightened capital expenditure environments, maintaining service continuity.</p>
+</section>
+<footer>
+<p><strong>Nova Spectrum Group</strong> | <a href="https://nova-spectrum-group.com">https://nova-spectrum-group.com</a> | +31 (0)20 555 0101</p>
+<p>Opening hours: Global support desk available 24/5</p>
+<p>Continued vigilance on cost discipline and talent retention will anchor execution priorities into the next quarter.</p>
+<p><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAMAAABEpIrGAAAAz1BMVEVHcEwAAAAAAAADDA8FGiBRuNQJHiMAAAAAAAAGDQ8KKTAATV0AAAAAAAAAAAAAAQIAAQEAAABLqMApW2gAAADzcoJj4P9h2/wlVWIbNDwE0vzdaHbpbn00dIVEIyfIXmpAHiJ3OD9f1vY3ICWNQkorY3Lvb3/vXHBFn7cgSVNiLjSyVmJVwN29WGPQY3BOJSlLrMc72f6qR1RZyugLcYfiUmXla3oFttwj1v0+kaY9ip6NMT0rJSsgEBIAWm0AYXUAgZsDv+ZClKrDR1gBocIT0rrUAAAAFXRSTlMAGYrD3f77NgH86/7aKW2umUE7uiA8qHmwAAACCklEQVQ4y4VT2ZLaMBA04IMbNonlQ7JkWb7lA8wNe2U3//9NkSCY1FYlnio/TbvV3TOjKPcazuaL6UjUdDGfDZWvNTSW6kR3PqLow9FtdWl8gfT64+1hmxXA80CReYU37vf+7huD18MxdTQgAUBzUlBEA+PRf1Lf3XWQncFGs21tA85ZAIKz+tT+P538XIPUOdkOw5g59klQgI09/cPRG7xNnCjNRv6lhAhBEuJRlkaOHQ2uOob9V9ddefrLZRebt9qHL7q3CqyoL70Y44O7BifWJNf+DVQ+n4AFivFMECy37hGsnpuE7BEnyEQlhxKxApalfVOUmXqQDi7JPi+p7zf73Md1ZZphFlhW8P2HMp+4rpX6uwTVvKYlDGuIaC504FRQ2HNl8e4eLfuSxAJAcp/T0DR5LZSEtmWB80JRf7nHjfMpAU1T0bzBBOZU6CTOxgIrVdGFBI3tEhPlPBcakBCSQ2EGMpF8oSujt+3WFhJME8ZxJfTHVYWkU4Rtz4tGD0AMkSkR8oMwbgH3JxBlOaSsrkKGSciq9om7SMI4Dv0yDzGnFPqkFSltBt5nAuv6pcGQ0pqEFGHS2rwGFfBdUmFMfCIYSioBbVC3qEVSpC5j4ZNQxjjKiYwaFOrsMaydGMCeV2JYRDjicljAWw47xm38d2GC28J0rlz30navfffhdJ9e9/H++/x/A06tZ8nd4zdPAAAAAElFTkSuQmCC" alt="ISO Certification" style="width:18mm;height:18mm;" /></p>
+</footer>
+</body>
 </html>
+

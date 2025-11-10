@@ -1,80 +1,469 @@
-<html xmlns="http://www.w3.org/1999/xhtml">
-  <head>
-    <title>factuur-62</title>
-    <style type="text/css" media="all">
-
-html, body {
-  width: 210mm;
-  height: 297mm;
-}
-
-/*** Page-level definitions ***/
-@page {
-  size: A4 portrait;
-  /* MARGINS: 10mm 10mm 10mm 10mm */
-  margin: 0 0 0 0;
-}
-.page { position: relative; min-height: 276.7mm; }
-.page + .page { page-break-before: always; }
-
-.pagebreak {page-break-before: always;}
-/*Use this to force pagebreak
-<br style="-fs-page-break-min-height: 10cm;clear:both;"/>
-*/
-
-/*** Custom font Definitions ***/
-@font-face {
-  font-family: 'Roboto';
-  font-weight: normal;
-  font-style: normal;
-  -fs-pdf-font-embed: embed;
-  -fs-pdf-font-encoding: Identity-H;
-}
-@font-face {
-  font-family: 'Bariol';
-  font-weight: normal;
-  font-style: normal;
-  -fs-pdf-font-embed: embed;
-  -fs-pdf-font-encoding: Identity-H;
-}
-@font-face {
-  font-family: 'KIX Barcode';
-  font-weight: normal;
-  font-style: normal;
-  -fs-pdf-font-embed: embed;
-  -fs-pdf-font-encoding: Identity-H;
-}
-
-/*** standard element commons ***/
-html, html * {
-  box-sizing: border-box;
-  margin: 0;
-}
-html,body {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  margin: 0;
-  padding:0;
-  border:0 none;
-  font-family: 'Roboto';
-  font-size: 9pt;
-}
-table {
-  border-collapse: collapse;
-}
-
-    </style>
-  </head>
-  <body>
-    <div class="report-body">
-      <table class="element element-table" style="margin-top:10mm;margin-left:10mm;width:190mm;height:40mm;">
-    <tbody>
-      <tr style="height:40mm;">
-        <td style="width:190mm;height:40mm;padding:0mm 0mm 0mm 0mm;text-align:left;vertical-align:top;border-top:none;border-right:none;border-bottom:none;border-left:none;font-style:normal;font-weight:normal;font-size:9pt;line-height:1;font-family:Roboto, sans-serif;text-decoration:none;"><div class="ql-code-block-container" spellcheck="false"><div class="ql-code-block" data-language="plain">Faktuurtype 62: ${practitioner.practiceName}</div></div></td>
-      </tr>
-    </tbody>
-  </table>
-    </div>
-  </body>
+﻿<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+<head>
+<meta http-equiv="Content-Type" content="application/xhtml+xml; charset=UTF-8" />
+<title>Vertex Labs Market Pulse Assessment 62</title>
+<style type="text/css">
+@page { size: A4 portrait; margin: 10mm 10mm 10mm 15mm; }
+body { font-family: "Roboto", sans-serif; font-size: 11pt; margin: 0; padding: 15mm; color: #1f1f1f; }
+h1, h2 { color: #123c69; }
+p { line-height: 1.5; }
+table { width: 100%; border-collapse: collapse; margin: 12pt 0 18pt 0; }
+th, td { border-bottom: 1px solid #b0b8c1; padding: 6px 10px; text-align: right; }
+th { background: #e8eff7; text-align: left; }
+.pagebreak { page-break-after: always; }
+.logo { margin-bottom: 12pt; font-size: 0;}
+.logo > * {display: inline-block; vertical-align: middle; font-size: 12pt;}
+.logo > * + * {margin-left: 10px;}
+.logo img { width: 20mm; height: 20mm; }
+.meta { font-size: 10pt; color: #5a6472; }
+footer { font-size: 9pt; text-align: center; margin-top: 24pt; color: #6d7885; }
+</style>
+</head>
+<body>
+<div class="logo">
+<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAMAAABEpIrGAAABR1BMVEVHcEwAAAAHExMMHhwJDg4AAAAMExUAAAAUKyoAAAAAAAAAAAAABAQ3VW0AAAABAgIaHRwODw8HCwsULS4nO0sAAAAAAAADCgkGBwgAAAAaODoaJzIfSkULNjEGCQt4//F6//Rr5NaGzf9t6NkmOTtv8eEiP06UjYvIvLkrVVJbi7F0+Oh3/e3///9gz8FKS0tUtqpBk4kuYls0cWr16OR8dnQVHhy+s7BDQUJk2cswSU1hl8A7hn2JgYBCYnxiX101Tl8qMDA7wrJLpZpbw7axrKpLcpBzu/Lh1NFoZmbw8PDWzcpWV1Zx9ORzs+Q+SVFlncgxsqMrJSZGm5ExenLMwsBopdSlm5h0//Js/u5DHybgSWNPq6Dw499Rg6pQepvX1tVF0cF+v/K7urqBxfm1NUubKz6ZlJOgn545a5N0KDX8U3BrJjJBuoRSAAAAH3RSTlMASM3GsgbHFdYONViX/iWN8t64++9oeqWfG+zi8OnwdQqZwAAAAmRJREFUOMttkldz2kAUhSUQoolqcMF2dlFFxUIFBIhuisGmVwPG3U79/88RZCaTCToze/Vwvt29umcR5B95/UQUdzjwaAh1ITY6O+GnSlOWm4p6QXhtgFBJhBCKklUY7fjQ9zoLAEgNnlcAgNfY4SVuTxKAJisIrAzAi9NlewIsVZ6EwBTanuDCZKZUZ4sCTav98YlNk9iU787L+TyXqmol4tBHI0b5rnXX6Vgla0R8By3gXD7VzVe3nV4+m0uXD5rYA6lOaru1ih2AoNHwfJvjslkutc2FMZ/NpLByz5ypqm5Ws6e2YRwbDQZACJip4bfzkaBHhsASVHC3LYD4j5Q+AEwjjNr7Xn84zeu6mY6g/6XtDvqCvjjhTNDz3HKZytUTTsLv+wsFQ55Y7PzLUaPAaNlMJrOt6n25oV84Q39+1X/eXry+D4SazsCHSS6TWRpNCCAQC+plfDefxKhi1gJmrRjQReqovuQmtAjEkqZK9y+XPuQMHxXTz2+tZ65ywz7AWbrazatQKkw+60lpNTtG4gFS6F5ZagXIR15q9m5v0wWpRK83a7q0GmMIJpCL4a0FlNvkgE2K/LylSX36Y/Nz82muxlHEMSLfa29X1r4FecPKUM12H6DIr39sfq211RhH8CJJVr597d0NB3ugUKcpAChl8jFRqPtrB0I8WQA3pDkLWLAUkLTZLg6Gr2si2AFo7JWsVGtPveEN+V23rCQF9gRlpbIDXKdtUjACRaNGjmiFSiYpa+20+1BjhzVoZ3tgPg5YoZiIeA60e/3B01i7OHoM4H73ofaBuVACd2DxM9sn8BuR+XN8yditeQAAAABJRU5ErkJggg==" alt="Vertex Labs logo" />
+<div class="meta"><strong>Vertex Labs</strong><br />Market Pulse Assessment<br />Report date: July 21, 2025</div>
+</div>
+<div class="ql-code-block" data-language="plain" style="color:red;font-size:22pt; font-weight:bold">Faktuurtype 62: ${practitioner.practiceName}</div>
+<p>Customer sentiment and recurring revenue streams remain strong as we accelerate digital engagement initiatives throughout the regions.</p>
+<section>
+<h2>Customer Intelligence - Page 1 of 2</h2>
+<p>Employee engagement surveys recorded record participation rates, informing refreshed well-being programmes launching next period.</p>
+<p>Pipeline velocity reflects stronger partner contributions, reinforcing the case for expanding co-selling agreements in priority territories.</p>
+<p>Scenario modelling highlights resilience under tightened capital expenditure environments, maintaining service continuity.</p>
+<ul>
+<li>Advance sustainability disclosures for key stakeholders</li>
+<li>Accelerate invoicing automation in low-margin streams</li>
+<li>Deepen scenario planning for supply-side constraints</li>
+<li>Revisit capital allocation for in-flight programmes</li>
+<li>Expand partner enablement for priority solution bundles</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Renewals %</th>
+<th>Variance (EUR M)</th>
+<th>Operating Expense (EUR M)</th>
+<th>Contribution Margin %</th>
+<th>Actuals (EUR M)</th>
+<th>Bookings (EUR M)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Operations Productivity</td>
+<td>395.70</td>
+<td>655.20</td>
+<td>613.58</td>
+<td>949.53</td>
+<td>83.94</td>
+<td>524.51</td>
+</tr>
+<tr>
+<td>Innovation Allocation</td>
+<td>913.14</td>
+<td>117.43</td>
+<td>850.36</td>
+<td>223.67</td>
+<td>67.53</td>
+<td>533.67</td>
+</tr>
+<tr>
+<td>SMB Productivity</td>
+<td>813.64</td>
+<td>901.59</td>
+<td>257.34</td>
+<td>641.27</td>
+<td>944.66</td>
+<td>443.78</td>
+</tr>
+<tr>
+<td>Channel Expansion</td>
+<td>825.12</td>
+<td>451.97</td>
+<td>784.22</td>
+<td>710.68</td>
+<td>418.28</td>
+<td>564.73</td>
+</tr>
+<tr>
+<td>Public Sector Readiness</td>
+<td>180.79</td>
+<td>894.79</td>
+<td>444.24</td>
+<td>599.49</td>
+<td>511.74</td>
+<td>244.68</td>
+</tr>
+<tr>
+<td>Digital Velocity</td>
+<td>737.10</td>
+<td>464.21</td>
+<td>968.18</td>
+<td>363.43</td>
+<td>732.95</td>
+<td>233.79</td>
+</tr>
+<tr>
+<td>Operations Stability</td>
+<td>735.15</td>
+<td>279.81</td>
+<td>370.57</td>
+<td>193.92</td>
+<td>172.35</td>
+<td>526.80</td>
+</tr>
+<tr>
+<td>Innovation Satisfaction</td>
+<td>698.26</td>
+<td>117.20</td>
+<td>279.96</td>
+<td>604.77</td>
+<td>118.20</td>
+<td>609.50</td>
+</tr>
+<tr>
+<td>SMB Readiness</td>
+<td>767.61</td>
+<td>258.13</td>
+<td>387.52</td>
+<td>386.81</td>
+<td>414.16</td>
+<td>262.71</td>
+</tr>
+<tr>
+<td>Platform Momentum</td>
+<td>951.70</td>
+<td>685.02</td>
+<td>276.92</td>
+<td>88.85</td>
+<td>808.74</td>
+<td>189.15</td>
+</tr>
+<tr>
+<td>Platform Allocation</td>
+<td>120.27</td>
+<td>353.65</td>
+<td>605.69</td>
+<td>645.68</td>
+<td>486.57</td>
+<td>603.32</td>
+</tr>
+<tr>
+<td>Services Velocity</td>
+<td>565.49</td>
+<td>490.21</td>
+<td>208.64</td>
+<td>63.55</td>
+<td>906.11</td>
+<td>704.84</td>
+</tr>
+<tr>
+<td>Operations Stability</td>
+<td>113.22</td>
+<td>671.20</td>
+<td>319.62</td>
+<td>297.42</td>
+<td>52.42</td>
+<td>341.08</td>
+</tr>
+<tr>
+<td>Public Sector Satisfaction</td>
+<td>324.77</td>
+<td>576.02</td>
+<td>816.59</td>
+<td>834.74</td>
+<td>831.89</td>
+<td>293.61</td>
+</tr>
+<tr>
+<td>Services Performance</td>
+<td>857.17</td>
+<td>390.28</td>
+<td>90.06</td>
+<td>745.47</td>
+<td>411.73</td>
+<td>87.93</td>
+</tr>
+<tr>
+<td>Services Integrity</td>
+<td>956.87</td>
+<td>686.30</td>
+<td>471.08</td>
+<td>221.42</td>
+<td>113.65</td>
+<td>818.70</td>
+</tr>
+<tr>
+<td>Logistics Stability</td>
+<td>921.11</td>
+<td>92.59</td>
+<td>630.63</td>
+<td>676.64</td>
+<td>79.28</td>
+<td>627.98</td>
+</tr>
+<tr>
+<td>Logistics Velocity</td>
+<td>440.87</td>
+<td>744.06</td>
+<td>352.02</td>
+<td>682.67</td>
+<td>313.60</td>
+<td>742.96</td>
+</tr>
+<tr>
+<td>Customer Care Productivity</td>
+<td>943.09</td>
+<td>694.28</td>
+<td>672.60</td>
+<td>935.84</td>
+<td>764.08</td>
+<td>272.72</td>
+</tr>
+<tr>
+<td>Enterprise Allocation</td>
+<td>372.56</td>
+<td>285.53</td>
+<td>521.76</td>
+<td>352.08</td>
+<td>788.51</td>
+<td>136.28</td>
+</tr>
+<tr>
+<td>Analytics Stability</td>
+<td>553.26</td>
+<td>820.02</td>
+<td>118.49</td>
+<td>160.70</td>
+<td>106.68</td>
+<td>259.81</td>
+</tr>
+<tr>
+<td>Public Sector Expansion</td>
+<td>273.77</td>
+<td>891.80</td>
+<td>597.55</td>
+<td>500.92</td>
+<td>376.31</td>
+<td>959.83</td>
+</tr>
+<tr>
+<td>Customer Care Momentum</td>
+<td>710.45</td>
+<td>648.13</td>
+<td>536.74</td>
+<td>228.61</td>
+<td>433.87</td>
+<td>127.83</td>
+</tr>
+<tr>
+<td>Customer Care Velocity</td>
+<td>941.59</td>
+<td>214.49</td>
+<td>116.69</td>
+<td>347.10</td>
+<td>802.38</td>
+<td>717.45</td>
+</tr>
+<tr>
+<td>Channel Stability</td>
+<td>415.33</td>
+<td>61.03</td>
+<td>922.22</td>
+<td>238.36</td>
+<td>848.86</td>
+<td>828.13</td>
+</tr>
+<tr>
+<td>SMB Readiness</td>
+<td>336.94</td>
+<td>609.02</td>
+<td>304.08</td>
+<td>534.35</td>
+<td>163.38</td>
+<td>259.26</td>
+</tr>
+<tr>
+<td>Operations Integrity</td>
+<td>549.50</td>
+<td>320.16</td>
+<td>677.38</td>
+<td>132.21</td>
+<td>448.91</td>
+<td>421.80</td>
+</tr>
+<tr>
+<td>Analytics Stability</td>
+<td>185.41</td>
+<td>482.17</td>
+<td>357.97</td>
+<td>712.78</td>
+<td>265.39</td>
+<td>155.95</td>
+</tr>
+<tr>
+<td>Services Performance</td>
+<td>735.98</td>
+<td>183.96</td>
+<td>851.66</td>
+<td>433.93</td>
+<td>410.50</td>
+<td>614.02</td>
+</tr>
+<tr>
+<td>Customer Care Satisfaction</td>
+<td>59.60</td>
+<td>246.16</td>
+<td>57.64</td>
+<td>401.04</td>
+<td>745.38</td>
+<td>85.65</td>
+</tr>
+</tbody>
+</table>
+<p><em>Insight:</em> Scenario modelling highlights resilience under tightened capital expenditure environments, maintaining service continuity.</p>
+</section>
+<div class="pagebreak"></div>
+<section>
+<h2>Customer Intelligence - Page 2 of 2</h2>
+<p>Segment leaders noted improved throughput after automation upgrades, with fulfilment KPIs beating targets for the third consecutive month.</p>
+<p>Segment leaders noted improved throughput after automation upgrades, with fulfilment KPIs beating targets for the third consecutive month.</p>
+<p>Scenario modelling highlights resilience under tightened capital expenditure environments, maintaining service continuity.</p>
+<ul>
+<li>Enhance risk dashboards with real-time leading indicators</li>
+<li>Accelerate invoicing automation in low-margin streams</li>
+<li>Pilot customer-success playbooks in growth accounts</li>
+<li>Conduct quarterly talent calibration for analytics teams</li>
+<li>Align marketing narratives with refreshed value propositions</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Pipeline (EUR M)</th>
+<th>Operating Expense (EUR M)</th>
+<th>Cash Position (EUR M)</th>
+<th>Forecast (EUR M)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Digital Expansion</td>
+<td>561.12</td>
+<td>848.43</td>
+<td>364.71</td>
+<td>84.47</td>
+</tr>
+<tr>
+<td>Innovation Utilisation</td>
+<td>697.43</td>
+<td>41.56</td>
+<td>82.83</td>
+<td>290.02</td>
+</tr>
+<tr>
+<td>Services Velocity</td>
+<td>531.32</td>
+<td>573.03</td>
+<td>378.04</td>
+<td>792.95</td>
+</tr>
+<tr>
+<td>Innovation Integrity</td>
+<td>300.98</td>
+<td>568.76</td>
+<td>45.70</td>
+<td>701.35</td>
+</tr>
+<tr>
+<td>Analytics Performance</td>
+<td>607.52</td>
+<td>115.86</td>
+<td>530.66</td>
+<td>578.92</td>
+</tr>
+<tr>
+<td>Innovation Velocity</td>
+<td>818.72</td>
+<td>94.77</td>
+<td>392.08</td>
+<td>356.03</td>
+</tr>
+<tr>
+<td>Analytics Performance</td>
+<td>785.71</td>
+<td>82.03</td>
+<td>808.80</td>
+<td>685.53</td>
+</tr>
+<tr>
+<td>SMB Productivity</td>
+<td>746.34</td>
+<td>215.06</td>
+<td>83.87</td>
+<td>240.06</td>
+</tr>
+<tr>
+<td>Customer Care Utilisation</td>
+<td>278.53</td>
+<td>919.53</td>
+<td>677.41</td>
+<td>841.62</td>
+</tr>
+<tr>
+<td>Digital Stability</td>
+<td>190.04</td>
+<td>872.76</td>
+<td>544.18</td>
+<td>186.89</td>
+</tr>
+<tr>
+<td>Digital Stability</td>
+<td>531.96</td>
+<td>381.71</td>
+<td>303.29</td>
+<td>840.47</td>
+</tr>
+<tr>
+<td>Logistics Momentum</td>
+<td>40.81</td>
+<td>623.04</td>
+<td>57.21</td>
+<td>61.92</td>
+</tr>
+<tr>
+<td>Enterprise Productivity</td>
+<td>51.32</td>
+<td>387.95</td>
+<td>63.69</td>
+<td>382.65</td>
+</tr>
+<tr>
+<td>Operations Velocity</td>
+<td>974.19</td>
+<td>199.03</td>
+<td>204.76</td>
+<td>506.35</td>
+</tr>
+<tr>
+<td>Innovation Integrity</td>
+<td>496.35</td>
+<td>48.67</td>
+<td>298.76</td>
+<td>655.40</td>
+</tr>
+</tbody>
+</table>
+<p><em>Insight:</em> Scenario modelling highlights resilience under tightened capital expenditure environments, maintaining service continuity.</p>
+</section>
+<footer>
+<p><strong>Vertex Labs</strong> | <a href="https://vertex-labs.com">https://vertex-labs.com</a> | +49 (0)30 8800 2255</p>
+<p>Opening hours: Mon-Fri 08:30-18:00 CET</p>
+<p>Leadership will revisit these measures during the next steering committee to ensure alignment with strategic goals.</p>
+<p><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAMAAABEpIrGAAAAz1BMVEVHcEwAAAAAAAADDA8FGiBRuNQJHiMAAAAAAAAGDQ8KKTAATV0AAAAAAAAAAAAAAQIAAQEAAABLqMApW2gAAADzcoJj4P9h2/wlVWIbNDwE0vzdaHbpbn00dIVEIyfIXmpAHiJ3OD9f1vY3ICWNQkorY3Lvb3/vXHBFn7cgSVNiLjSyVmJVwN29WGPQY3BOJSlLrMc72f6qR1RZyugLcYfiUmXla3oFttwj1v0+kaY9ip6NMT0rJSsgEBIAWm0AYXUAgZsDv+ZClKrDR1gBocIT0rrUAAAAFXRSTlMAGYrD3f77NgH86/7aKW2umUE7uiA8qHmwAAACCklEQVQ4y4VT2ZLaMBA04IMbNonlQ7JkWb7lA8wNe2U3//9NkSCY1FYlnio/TbvV3TOjKPcazuaL6UjUdDGfDZWvNTSW6kR3PqLow9FtdWl8gfT64+1hmxXA80CReYU37vf+7huD18MxdTQgAUBzUlBEA+PRf1Lf3XWQncFGs21tA85ZAIKz+tT+P538XIPUOdkOw5g59klQgI09/cPRG7xNnCjNRv6lhAhBEuJRlkaOHQ2uOob9V9ddefrLZRebt9qHL7q3CqyoL70Y44O7BifWJNf+DVQ+n4AFivFMECy37hGsnpuE7BEnyEQlhxKxApalfVOUmXqQDi7JPi+p7zf73Md1ZZphFlhW8P2HMp+4rpX6uwTVvKYlDGuIaC504FRQ2HNl8e4eLfuSxAJAcp/T0DR5LZSEtmWB80JRf7nHjfMpAU1T0bzBBOZU6CTOxgIrVdGFBI3tEhPlPBcakBCSQ2EGMpF8oSujt+3WFhJME8ZxJfTHVYWkU4Rtz4tGD0AMkSkR8oMwbgH3JxBlOaSsrkKGSciq9om7SMI4Dv0yDzGnFPqkFSltBt5nAuv6pcGQ0pqEFGHS2rwGFfBdUmFMfCIYSioBbVC3qEVSpC5j4ZNQxjjKiYwaFOrsMaydGMCeV2JYRDjicljAWw47xm38d2GC28J0rlz30navfffhdJ9e9/H++/x/A06tZ8nd4zdPAAAAAElFTkSuQmCC" alt="ISO Certification" style="width:18mm;height:18mm;" /></p>
+</footer>
+</body>
 </html>
+

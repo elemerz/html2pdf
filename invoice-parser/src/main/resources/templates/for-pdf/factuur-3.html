@@ -1,80 +1,532 @@
-<html xmlns="http://www.w3.org/1999/xhtml">
-  <head>
-    <title>factuur-3</title>
-    <style type="text/css" media="all">
-
-html, body {
-  width: 210mm;
-  height: 297mm;
-}
-
-/*** Page-level definitions ***/
-@page {
-  size: A4 portrait;
-  /* MARGINS: 10mm 10mm 10mm 10mm */
-  margin: 0 0 0 0;
-}
-.page { position: relative; min-height: 276.7mm; }
-.page + .page { page-break-before: always; }
-
-.pagebreak {page-break-before: always;}
-/*Use this to force pagebreak
-<br style="-fs-page-break-min-height: 10cm;clear:both;"/>
-*/
-
-/*** Custom font Definitions ***/
-@font-face {
-  font-family: 'Roboto';
-  font-weight: normal;
-  font-style: normal;
-  -fs-pdf-font-embed: embed;
-  -fs-pdf-font-encoding: Identity-H;
-}
-@font-face {
-  font-family: 'Bariol';
-  font-weight: normal;
-  font-style: normal;
-  -fs-pdf-font-embed: embed;
-  -fs-pdf-font-encoding: Identity-H;
-}
-@font-face {
-  font-family: 'KIX Barcode';
-  font-weight: normal;
-  font-style: normal;
-  -fs-pdf-font-embed: embed;
-  -fs-pdf-font-encoding: Identity-H;
-}
-
-/*** standard element commons ***/
-html, html * {
-  box-sizing: border-box;
-  margin: 0;
-}
-html,body {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  margin: 0;
-  padding:0;
-  border:0 none;
-  font-family: 'Roboto';
-  font-size: 9pt;
-}
-table {
-  border-collapse: collapse;
-}
-
-    </style>
-  </head>
-  <body>
-    <div class="report-body">
-      <table class="element element-table" style="margin-top:10mm;margin-left:10mm;width:190mm;height:40mm;">
-    <tbody>
-      <tr style="height:40mm;">
-        <td style="width:190mm;height:40mm;padding:0mm 0mm 0mm 0mm;text-align:left;vertical-align:top;border-top:none;border-right:none;border-bottom:none;border-left:none;font-style:normal;font-weight:normal;font-size:9pt;line-height:1;font-family:Roboto, sans-serif;text-decoration:none;"><div class="ql-code-block-container" spellcheck="false"><div class="ql-code-block" data-language="plain">Faktuurtype 3: ${practitioner.practiceName}</div></div></td>
-      </tr>
-    </tbody>
-  </table>
-    </div>
-  </body>
+﻿<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+<head>
+<meta http-equiv="Content-Type" content="application/xhtml+xml; charset=UTF-8" />
+<title>Pinnacle Ledger Operational Efficiency Digest 03</title>
+<style type="text/css">
+@page { size: A4 portrait; margin: 10mm 10mm 10mm 15mm; }
+body { font-family: "Roboto", sans-serif; font-size: 11pt; margin: 0; padding: 15mm; color: #1f1f1f; }
+h1, h2 { color: #123c69; }
+p { line-height: 1.5; }
+table { width: 100%; border-collapse: collapse; margin: 12pt 0 18pt 0; }
+th, td { border-bottom: 1px solid #b0b8c1; padding: 6px 10px; text-align: right; }
+th { background: #e8eff7; text-align: left; }
+.pagebreak { page-break-after: always; }
+.logo { margin-bottom: 12pt; font-size: 0;}
+.logo > * {display: inline-block; vertical-align: middle; font-size: 12pt;}
+.logo > * + * {margin-left: 10px;}
+.logo img { width: 20mm; height: 20mm; }
+.meta { font-size: 10pt; color: #5a6472; }
+footer { font-size: 9pt; text-align: center; margin-top: 24pt; color: #6d7885; }
+</style>
+</head>
+<body>
+<div class="logo">
+<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAMAAABEpIrGAAABR1BMVEVHcEwAAAAHExMMHhwJDg4AAAAMExUAAAAUKyoAAAAAAAAAAAAABAQ3VW0AAAABAgIaHRwODw8HCwsULS4nO0sAAAAAAAADCgkGBwgAAAAaODoaJzIfSkULNjEGCQt4//F6//Rr5NaGzf9t6NkmOTtv8eEiP06UjYvIvLkrVVJbi7F0+Oh3/e3///9gz8FKS0tUtqpBk4kuYls0cWr16OR8dnQVHhy+s7BDQUJk2cswSU1hl8A7hn2JgYBCYnxiX101Tl8qMDA7wrJLpZpbw7axrKpLcpBzu/Lh1NFoZmbw8PDWzcpWV1Zx9ORzs+Q+SVFlncgxsqMrJSZGm5ExenLMwsBopdSlm5h0//Js/u5DHybgSWNPq6Dw499Rg6pQepvX1tVF0cF+v/K7urqBxfm1NUubKz6ZlJOgn545a5N0KDX8U3BrJjJBuoRSAAAAH3RSTlMASM3GsgbHFdYONViX/iWN8t64++9oeqWfG+zi8OnwdQqZwAAAAmRJREFUOMttkldz2kAUhSUQoolqcMF2dlFFxUIFBIhuisGmVwPG3U79/88RZCaTCToze/Vwvt29umcR5B95/UQUdzjwaAh1ITY6O+GnSlOWm4p6QXhtgFBJhBCKklUY7fjQ9zoLAEgNnlcAgNfY4SVuTxKAJisIrAzAi9NlewIsVZ6EwBTanuDCZKZUZ4sCTav98YlNk9iU787L+TyXqmol4tBHI0b5rnXX6Vgla0R8By3gXD7VzVe3nV4+m0uXD5rYA6lOaru1ih2AoNHwfJvjslkutc2FMZ/NpLByz5ypqm5Ws6e2YRwbDQZACJip4bfzkaBHhsASVHC3LYD4j5Q+AEwjjNr7Xn84zeu6mY6g/6XtDvqCvjjhTNDz3HKZytUTTsLv+wsFQ55Y7PzLUaPAaNlMJrOt6n25oV84Q39+1X/eXry+D4SazsCHSS6TWRpNCCAQC+plfDefxKhi1gJmrRjQReqovuQmtAjEkqZK9y+XPuQMHxXTz2+tZ65ywz7AWbrazatQKkw+60lpNTtG4gFS6F5ZagXIR15q9m5v0wWpRK83a7q0GmMIJpCL4a0FlNvkgE2K/LylSX36Y/Nz82muxlHEMSLfa29X1r4FecPKUM12H6DIr39sfq211RhH8CJJVr597d0NB3ugUKcpAChl8jFRqPtrB0I8WQA3pDkLWLAUkLTZLg6Gr2si2AFo7JWsVGtPveEN+V23rCQF9gRlpbIDXKdtUjACRaNGjmiFSiYpa+20+1BjhzVoZ3tgPg5YoZiIeA60e/3B01i7OHoM4H73ofaBuVACd2DxM9sn8BuR+XN8yditeQAAAABJRU5ErkJggg==" alt="Pinnacle Ledger logo" />
+<div class="meta"><strong>Pinnacle Ledger</strong><br />Operational Efficiency Digest<br />Report date: September 09, 2025</div>
+</div>
+<div class="ql-code-block" data-language="plain" style="color:red;font-size:22pt; font-weight:bold">Faktuurtype 03: ${practitioner.practiceName}</div>
+<p>The leadership team monitors these indicators weekly to ensure we maintain compliance, service excellence, and shareholder value.</p>
+<section>
+<h2>Operational Excellence - Page 1 of 3</h2>
+<p>Cost-to-serve metrics benefited from renegotiated logistics contracts, partially offsetting energy price pressure experienced in the quarter.</p>
+<p>Deferred revenue continues to expand, supporting improved visibility into the next two fiscal quarters.</p>
+<p>Scenario modelling highlights resilience under tightened capital expenditure environments, maintaining service continuity.</p>
+<ul>
+<li>Advance sustainability disclosures for key stakeholders</li>
+<li>Standardise procurement scorecards across regions</li>
+<li>Align marketing narratives with refreshed value propositions</li>
+<li>Expand partner enablement for priority solution bundles</li>
+<li>Revisit capital allocation for in-flight programmes</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Backlog (EUR M)</th>
+<th>Contribution Margin %</th>
+<th>Forecast (EUR M)</th>
+<th>Operating Expense (EUR M)</th>
+<th>Bookings (EUR M)</th>
+<th>Actuals (EUR M)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Logistics Utilisation</td>
+<td>652.04</td>
+<td>349.70</td>
+<td>593.34</td>
+<td>886.00</td>
+<td>746.13</td>
+<td>749.35</td>
+</tr>
+<tr>
+<td>Platform Integrity</td>
+<td>906.06</td>
+<td>573.00</td>
+<td>872.14</td>
+<td>123.07</td>
+<td>776.92</td>
+<td>429.31</td>
+</tr>
+<tr>
+<td>SMB Productivity</td>
+<td>57.74</td>
+<td>207.68</td>
+<td>784.72</td>
+<td>365.98</td>
+<td>98.88</td>
+<td>187.03</td>
+</tr>
+<tr>
+<td>Digital Readiness</td>
+<td>784.88</td>
+<td>981.57</td>
+<td>859.73</td>
+<td>423.30</td>
+<td>371.13</td>
+<td>785.36</td>
+</tr>
+<tr>
+<td>Operations Integrity</td>
+<td>939.69</td>
+<td>744.95</td>
+<td>249.72</td>
+<td>373.24</td>
+<td>118.31</td>
+<td>870.54</td>
+</tr>
+<tr>
+<td>Logistics Satisfaction</td>
+<td>341.62</td>
+<td>657.47</td>
+<td>711.87</td>
+<td>139.62</td>
+<td>552.76</td>
+<td>315.49</td>
+</tr>
+<tr>
+<td>Digital Expansion</td>
+<td>224.63</td>
+<td>560.85</td>
+<td>548.60</td>
+<td>116.94</td>
+<td>328.74</td>
+<td>677.50</td>
+</tr>
+<tr>
+<td>SMB Velocity</td>
+<td>196.63</td>
+<td>807.83</td>
+<td>627.18</td>
+<td>763.11</td>
+<td>502.15</td>
+<td>43.60</td>
+</tr>
+<tr>
+<td>Operations Productivity</td>
+<td>597.47</td>
+<td>455.23</td>
+<td>135.35</td>
+<td>942.68</td>
+<td>819.57</td>
+<td>510.51</td>
+</tr>
+<tr>
+<td>Public Sector Momentum</td>
+<td>740.97</td>
+<td>268.73</td>
+<td>978.58</td>
+<td>807.97</td>
+<td>946.31</td>
+<td>41.18</td>
+</tr>
+<tr>
+<td>Operations Performance</td>
+<td>539.63</td>
+<td>572.82</td>
+<td>494.69</td>
+<td>41.60</td>
+<td>781.45</td>
+<td>159.45</td>
+</tr>
+<tr>
+<td>SMB Allocation</td>
+<td>717.44</td>
+<td>918.12</td>
+<td>654.92</td>
+<td>509.23</td>
+<td>181.35</td>
+<td>538.03</td>
+</tr>
+<tr>
+<td>Public Sector Expansion</td>
+<td>638.43</td>
+<td>707.94</td>
+<td>692.83</td>
+<td>222.23</td>
+<td>266.67</td>
+<td>563.30</td>
+</tr>
+<tr>
+<td>Innovation Readiness</td>
+<td>198.18</td>
+<td>216.58</td>
+<td>282.80</td>
+<td>246.13</td>
+<td>775.77</td>
+<td>663.09</td>
+</tr>
+<tr>
+<td>Enterprise Expansion</td>
+<td>775.19</td>
+<td>398.94</td>
+<td>837.90</td>
+<td>241.37</td>
+<td>398.66</td>
+<td>324.02</td>
+</tr>
+<tr>
+<td>Public Sector Allocation</td>
+<td>336.91</td>
+<td>416.66</td>
+<td>614.54</td>
+<td>547.42</td>
+<td>577.32</td>
+<td>755.91</td>
+</tr>
+<tr>
+<td>Innovation Allocation</td>
+<td>222.81</td>
+<td>195.03</td>
+<td>66.37</td>
+<td>507.73</td>
+<td>85.68</td>
+<td>584.03</td>
+</tr>
+<tr>
+<td>Customer Care Utilisation</td>
+<td>388.68</td>
+<td>128.24</td>
+<td>313.87</td>
+<td>597.32</td>
+<td>344.25</td>
+<td>151.63</td>
+</tr>
+<tr>
+<td>Operations Performance</td>
+<td>817.68</td>
+<td>558.74</td>
+<td>42.06</td>
+<td>455.28</td>
+<td>649.79</td>
+<td>769.73</td>
+</tr>
+<tr>
+<td>Services Performance</td>
+<td>758.38</td>
+<td>333.50</td>
+<td>797.06</td>
+<td>831.61</td>
+<td>266.40</td>
+<td>422.52</td>
+</tr>
+<tr>
+<td>Public Sector Momentum</td>
+<td>321.55</td>
+<td>516.07</td>
+<td>559.46</td>
+<td>370.90</td>
+<td>212.32</td>
+<td>764.69</td>
+</tr>
+<tr>
+<td>Analytics Expansion</td>
+<td>923.49</td>
+<td>131.01</td>
+<td>170.62</td>
+<td>936.92</td>
+<td>999.42</td>
+<td>111.64</td>
+</tr>
+<tr>
+<td>SMB Velocity</td>
+<td>536.93</td>
+<td>690.45</td>
+<td>170.90</td>
+<td>698.77</td>
+<td>857.45</td>
+<td>687.53</td>
+</tr>
+<tr>
+<td>Public Sector Stability</td>
+<td>389.21</td>
+<td>217.88</td>
+<td>94.69</td>
+<td>726.27</td>
+<td>423.69</td>
+<td>839.92</td>
+</tr>
+<tr>
+<td>Services Allocation</td>
+<td>321.97</td>
+<td>881.64</td>
+<td>766.87</td>
+<td>844.81</td>
+<td>789.04</td>
+<td>283.81</td>
+</tr>
+<tr>
+<td>SMB Productivity</td>
+<td>958.85</td>
+<td>391.20</td>
+<td>928.63</td>
+<td>643.86</td>
+<td>226.18</td>
+<td>569.60</td>
+</tr>
+<tr>
+<td>Operations Productivity</td>
+<td>64.57</td>
+<td>57.78</td>
+<td>915.92</td>
+<td>549.18</td>
+<td>673.83</td>
+<td>253.24</td>
+</tr>
+</tbody>
+</table>
+<p><em>Insight:</em> Scenario modelling highlights resilience under tightened capital expenditure environments, maintaining service continuity.</p>
+</section>
+<div class="pagebreak"></div>
+<section>
+<h2>Sustainability Outlook - Page 2 of 3</h2>
+<p>Working capital intensity improved sequentially as collections outpaced revenue recognition in three major regions.</p>
+<p>Compliance reviews confirmed adherence to ISO frameworks, with remediation actions completed ahead of the upcoming surveillance audit.</p>
+<p>Operational readiness drills validated the business continuity playbook and informed minor updates to recovery sequencing.</p>
+<ul>
+<li>Revisit capital allocation for in-flight programmes</li>
+<li>Deepen scenario planning for supply-side constraints</li>
+<li>Standardise procurement scorecards across regions</li>
+<li>Accelerate invoicing automation in low-margin streams</li>
+<li>Pilot customer-success playbooks in growth accounts</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Cash Position (EUR M)</th>
+<th>Forecast (EUR M)</th>
+<th>Bookings (EUR M)</th>
+<th>Actuals (EUR M)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Channel Integrity</td>
+<td>849.33</td>
+<td>908.80</td>
+<td>880.10</td>
+<td>316.03</td>
+</tr>
+<tr>
+<td>Enterprise Stability</td>
+<td>630.90</td>
+<td>477.22</td>
+<td>345.04</td>
+<td>968.85</td>
+</tr>
+<tr>
+<td>Analytics Integrity</td>
+<td>625.24</td>
+<td>551.35</td>
+<td>595.14</td>
+<td>911.27</td>
+</tr>
+<tr>
+<td>Customer Care Allocation</td>
+<td>134.20</td>
+<td>902.70</td>
+<td>911.09</td>
+<td>787.41</td>
+</tr>
+<tr>
+<td>Analytics Velocity</td>
+<td>65.28</td>
+<td>495.07</td>
+<td>77.53</td>
+<td>425.41</td>
+</tr>
+<tr>
+<td>Customer Care Satisfaction</td>
+<td>636.38</td>
+<td>377.92</td>
+<td>642.36</td>
+<td>544.48</td>
+</tr>
+<tr>
+<td>Services Utilisation</td>
+<td>526.38</td>
+<td>850.02</td>
+<td>589.46</td>
+<td>438.93</td>
+</tr>
+<tr>
+<td>Analytics Velocity</td>
+<td>697.38</td>
+<td>367.39</td>
+<td>230.30</td>
+<td>872.71</td>
+</tr>
+<tr>
+<td>Analytics Utilisation</td>
+<td>612.54</td>
+<td>119.04</td>
+<td>168.74</td>
+<td>739.42</td>
+</tr>
+<tr>
+<td>Logistics Stability</td>
+<td>302.90</td>
+<td>617.04</td>
+<td>873.37</td>
+<td>164.08</td>
+</tr>
+<tr>
+<td>Digital Integrity</td>
+<td>369.16</td>
+<td>870.82</td>
+<td>186.36</td>
+<td>328.68</td>
+</tr>
+<tr>
+<td>Services Performance</td>
+<td>948.91</td>
+<td>930.18</td>
+<td>651.05</td>
+<td>640.23</td>
+</tr>
+<tr>
+<td>Innovation Utilisation</td>
+<td>409.52</td>
+<td>604.13</td>
+<td>938.01</td>
+<td>352.45</td>
+</tr>
+</tbody>
+</table>
+<p><em>Insight:</em> Operational readiness drills validated the business continuity playbook and informed minor updates to recovery sequencing.</p>
+</section>
+<div class="pagebreak"></div>
+<section>
+<h2>Regional Highlights - Page 3 of 3</h2>
+<p>Customer lifetime value is trending upward as cross-sell programmes gain traction in the enterprise and public sector verticals.</p>
+<p>Pipeline velocity reflects stronger partner contributions, reinforcing the case for expanding co-selling agreements in priority territories.</p>
+<p>Modernisation of legacy workflows created 57.2 hours of reclaimed capacity delivered back to customer success teams.</p>
+<ul>
+<li>Align marketing narratives with refreshed value propositions</li>
+<li>Enhance risk dashboards with real-time leading indicators</li>
+<li>Update service catalogues to reflect refreshed SLAs</li>
+<li>Consolidate tooling footprints across shared service teams</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Run Rate (EUR M)</th>
+<th>Operating Expense (EUR M)</th>
+<th>Year Over Year %</th>
+<th>Actuals (EUR M)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Services Allocation</td>
+<td>472.98</td>
+<td>927.28</td>
+<td>827.39</td>
+<td>132.48</td>
+</tr>
+<tr>
+<td>Logistics Expansion</td>
+<td>276.32</td>
+<td>463.05</td>
+<td>599.36</td>
+<td>888.51</td>
+</tr>
+<tr>
+<td>Customer Care Integrity</td>
+<td>967.63</td>
+<td>266.48</td>
+<td>631.45</td>
+<td>635.89</td>
+</tr>
+<tr>
+<td>Enterprise Utilisation</td>
+<td>866.27</td>
+<td>237.84</td>
+<td>119.63</td>
+<td>529.78</td>
+</tr>
+<tr>
+<td>Public Sector Stability</td>
+<td>730.75</td>
+<td>294.99</td>
+<td>287.78</td>
+<td>445.83</td>
+</tr>
+<tr>
+<td>Logistics Productivity</td>
+<td>319.85</td>
+<td>952.76</td>
+<td>780.06</td>
+<td>233.45</td>
+</tr>
+<tr>
+<td>Public Sector Integrity</td>
+<td>581.92</td>
+<td>938.53</td>
+<td>876.70</td>
+<td>218.21</td>
+</tr>
+<tr>
+<td>Enterprise Allocation</td>
+<td>868.48</td>
+<td>483.20</td>
+<td>58.16</td>
+<td>70.22</td>
+</tr>
+<tr>
+<td>Digital Readiness</td>
+<td>147.50</td>
+<td>156.63</td>
+<td>738.69</td>
+<td>597.23</td>
+</tr>
+<tr>
+<td>Innovation Stability</td>
+<td>620.84</td>
+<td>529.22</td>
+<td>677.13</td>
+<td>633.20</td>
+</tr>
+<tr>
+<td>Analytics Satisfaction</td>
+<td>206.19</td>
+<td>343.05</td>
+<td>386.05</td>
+<td>369.09</td>
+</tr>
+</tbody>
+</table>
+<p><em>Insight:</em> Modernisation of legacy workflows created 57.2 hours of reclaimed capacity delivered back to customer success teams.</p>
+</section>
+<footer>
+<p><strong>Pinnacle Ledger</strong> | <a href="https://pinnacle-ledger.com">https://pinnacle-ledger.com</a> | +31 (0)20 555 0101</p>
+<p>Opening hours: Mon-Fri 08:00-17:00 CET, Sat by appointment</p>
+<p>Continued vigilance on cost discipline and talent retention will anchor execution priorities into the next quarter.</p>
+<p><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAMAAABEpIrGAAAAz1BMVEVHcEwAAAAAAAADDA8FGiBRuNQJHiMAAAAAAAAGDQ8KKTAATV0AAAAAAAAAAAAAAQIAAQEAAABLqMApW2gAAADzcoJj4P9h2/wlVWIbNDwE0vzdaHbpbn00dIVEIyfIXmpAHiJ3OD9f1vY3ICWNQkorY3Lvb3/vXHBFn7cgSVNiLjSyVmJVwN29WGPQY3BOJSlLrMc72f6qR1RZyugLcYfiUmXla3oFttwj1v0+kaY9ip6NMT0rJSsgEBIAWm0AYXUAgZsDv+ZClKrDR1gBocIT0rrUAAAAFXRSTlMAGYrD3f77NgH86/7aKW2umUE7uiA8qHmwAAACCklEQVQ4y4VT2ZLaMBA04IMbNonlQ7JkWb7lA8wNe2U3//9NkSCY1FYlnio/TbvV3TOjKPcazuaL6UjUdDGfDZWvNTSW6kR3PqLow9FtdWl8gfT64+1hmxXA80CReYU37vf+7huD18MxdTQgAUBzUlBEA+PRf1Lf3XWQncFGs21tA85ZAIKz+tT+P538XIPUOdkOw5g59klQgI09/cPRG7xNnCjNRv6lhAhBEuJRlkaOHQ2uOob9V9ddefrLZRebt9qHL7q3CqyoL70Y44O7BifWJNf+DVQ+n4AFivFMECy37hGsnpuE7BEnyEQlhxKxApalfVOUmXqQDi7JPi+p7zf73Md1ZZphFlhW8P2HMp+4rpX6uwTVvKYlDGuIaC504FRQ2HNl8e4eLfuSxAJAcp/T0DR5LZSEtmWB80JRf7nHjfMpAU1T0bzBBOZU6CTOxgIrVdGFBI3tEhPlPBcakBCSQ2EGMpF8oSujt+3WFhJME8ZxJfTHVYWkU4Rtz4tGD0AMkSkR8oMwbgH3JxBlOaSsrkKGSciq9om7SMI4Dv0yDzGnFPqkFSltBt5nAuv6pcGQ0pqEFGHS2rwGFfBdUmFMfCIYSioBbVC3qEVSpC5j4ZNQxjjKiYwaFOrsMaydGMCeV2JYRDjicljAWw47xm38d2GC28J0rlz30navfffhdJ9e9/H++/x/A06tZ8nd4zdPAAAAAElFTkSuQmCC" alt="ISO Certification" style="width:18mm;height:18mm;" /></p>
+</footer>
+</body>
 </html>
+

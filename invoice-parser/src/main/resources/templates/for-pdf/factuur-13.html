@@ -1,80 +1,1112 @@
-<html xmlns="http://www.w3.org/1999/xhtml">
-  <head>
-    <title>factuur-13</title>
-    <style type="text/css" media="all">
-
-html, body {
-  width: 210mm;
-  height: 297mm;
-}
-
-/*** Page-level definitions ***/
-@page {
-  size: A4 portrait;
-  /* MARGINS: 10mm 10mm 10mm 10mm */
-  margin: 0 0 0 0;
-}
-.page { position: relative; min-height: 276.7mm; }
-.page + .page { page-break-before: always; }
-
-.pagebreak {page-break-before: always;}
-/*Use this to force pagebreak
-<br style="-fs-page-break-min-height: 10cm;clear:both;"/>
-*/
-
-/*** Custom font Definitions ***/
-@font-face {
-  font-family: 'Roboto';
-  font-weight: normal;
-  font-style: normal;
-  -fs-pdf-font-embed: embed;
-  -fs-pdf-font-encoding: Identity-H;
-}
-@font-face {
-  font-family: 'Bariol';
-  font-weight: normal;
-  font-style: normal;
-  -fs-pdf-font-embed: embed;
-  -fs-pdf-font-encoding: Identity-H;
-}
-@font-face {
-  font-family: 'KIX Barcode';
-  font-weight: normal;
-  font-style: normal;
-  -fs-pdf-font-embed: embed;
-  -fs-pdf-font-encoding: Identity-H;
-}
-
-/*** standard element commons ***/
-html, html * {
-  box-sizing: border-box;
-  margin: 0;
-}
-html,body {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  margin: 0;
-  padding:0;
-  border:0 none;
-  font-family: 'Roboto';
-  font-size: 9pt;
-}
-table {
-  border-collapse: collapse;
-}
-
-    </style>
-  </head>
-  <body>
-    <div class="report-body">
-      <table class="element element-table" style="margin-top:10mm;margin-left:10mm;width:190mm;height:40mm;">
-    <tbody>
-      <tr style="height:40mm;">
-        <td style="width:190mm;height:40mm;padding:0mm 0mm 0mm 0mm;text-align:left;vertical-align:top;border-top:none;border-right:none;border-bottom:none;border-left:none;font-style:normal;font-weight:normal;font-size:9pt;line-height:1;font-family:Roboto, sans-serif;text-decoration:none;"><div class="ql-code-block-container" spellcheck="false"><div class="ql-code-block" data-language="plain">Faktuurtype 13: ${practitioner.practiceName}</div></div></td>
-      </tr>
-    </tbody>
-  </table>
-    </div>
-  </body>
+﻿<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+<head>
+<meta http-equiv="Content-Type" content="application/xhtml+xml; charset=UTF-8" />
+<title>Blue Horizon Capital Quarterly Performance Review 13</title>
+<style type="text/css">
+@page { size: A4 portrait; margin: 10mm 10mm 10mm 15mm; }
+body { font-family: "Roboto", sans-serif; font-size: 11pt; margin: 0; padding: 15mm; color: #1f1f1f; }
+h1, h2 { color: #123c69; }
+p { line-height: 1.5; }
+table { width: 100%; border-collapse: collapse; margin: 12pt 0 18pt 0; }
+th, td { border-bottom: 1px solid #b0b8c1; padding: 6px 10px; text-align: right; }
+th { background: #e8eff7; text-align: left; }
+.pagebreak { page-break-after: always; }
+.logo { margin-bottom: 12pt; font-size: 0;}
+.logo > * {display: inline-block; vertical-align: middle; font-size: 12pt;}
+.logo > * + * {margin-left: 10px;}
+.logo img { width: 20mm; height: 20mm; }
+.meta { font-size: 10pt; color: #5a6472; }
+footer { font-size: 9pt; text-align: center; margin-top: 24pt; color: #6d7885; }
+</style>
+</head>
+<body>
+<div class="logo">
+<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAMAAABEpIrGAAABR1BMVEVHcEwAAAAHExMMHhwJDg4AAAAMExUAAAAUKyoAAAAAAAAAAAAABAQ3VW0AAAABAgIaHRwODw8HCwsULS4nO0sAAAAAAAADCgkGBwgAAAAaODoaJzIfSkULNjEGCQt4//F6//Rr5NaGzf9t6NkmOTtv8eEiP06UjYvIvLkrVVJbi7F0+Oh3/e3///9gz8FKS0tUtqpBk4kuYls0cWr16OR8dnQVHhy+s7BDQUJk2cswSU1hl8A7hn2JgYBCYnxiX101Tl8qMDA7wrJLpZpbw7axrKpLcpBzu/Lh1NFoZmbw8PDWzcpWV1Zx9ORzs+Q+SVFlncgxsqMrJSZGm5ExenLMwsBopdSlm5h0//Js/u5DHybgSWNPq6Dw499Rg6pQepvX1tVF0cF+v/K7urqBxfm1NUubKz6ZlJOgn545a5N0KDX8U3BrJjJBuoRSAAAAH3RSTlMASM3GsgbHFdYONViX/iWN8t64++9oeqWfG+zi8OnwdQqZwAAAAmRJREFUOMttkldz2kAUhSUQoolqcMF2dlFFxUIFBIhuisGmVwPG3U79/88RZCaTCToze/Vwvt29umcR5B95/UQUdzjwaAh1ITY6O+GnSlOWm4p6QXhtgFBJhBCKklUY7fjQ9zoLAEgNnlcAgNfY4SVuTxKAJisIrAzAi9NlewIsVZ6EwBTanuDCZKZUZ4sCTav98YlNk9iU787L+TyXqmol4tBHI0b5rnXX6Vgla0R8By3gXD7VzVe3nV4+m0uXD5rYA6lOaru1ih2AoNHwfJvjslkutc2FMZ/NpLByz5ypqm5Ws6e2YRwbDQZACJip4bfzkaBHhsASVHC3LYD4j5Q+AEwjjNr7Xn84zeu6mY6g/6XtDvqCvjjhTNDz3HKZytUTTsLv+wsFQ55Y7PzLUaPAaNlMJrOt6n25oV84Q39+1X/eXry+D4SazsCHSS6TWRpNCCAQC+plfDefxKhi1gJmrRjQReqovuQmtAjEkqZK9y+XPuQMHxXTz2+tZ65ywz7AWbrazatQKkw+60lpNTtG4gFS6F5ZagXIR15q9m5v0wWpRK83a7q0GmMIJpCL4a0FlNvkgE2K/LylSX36Y/Nz82muxlHEMSLfa29X1r4FecPKUM12H6DIr39sfq211RhH8CJJVr597d0NB3ugUKcpAChl8jFRqPtrB0I8WQA3pDkLWLAUkLTZLg6Gr2si2AFo7JWsVGtPveEN+V23rCQF9gRlpbIDXKdtUjACRaNGjmiFSiYpa+20+1BjhzVoZ3tgPg5YoZiIeA60e/3B01i7OHoM4H73ofaBuVACd2DxM9sn8BuR+XN8yditeQAAAABJRU5ErkJggg==" alt="Blue Horizon Capital logo" />
+<div class="meta"><strong>Blue Horizon Capital</strong><br />Quarterly Performance Review<br />Report date: July 19, 2025</div>
+</div>
+<div class="ql-code-block" data-language="plain" style="color:red;font-size:22pt; font-weight:bold">Faktuurtype 13: ${practitioner.practiceName}</div>
+<p>Customer sentiment and recurring revenue streams remain strong as we accelerate digital engagement initiatives throughout the regions.</p>
+<section>
+<h2>Revenue Streams - Page 1 of 6</h2>
+<p>Employee engagement surveys recorded record participation rates, informing refreshed well-being programmes launching next period.</p>
+<p>Deferred revenue continues to expand, supporting improved visibility into the next two fiscal quarters.</p>
+<p>Operational readiness drills validated the business continuity playbook and informed minor updates to recovery sequencing.</p>
+<ul>
+<li>Enhance risk dashboards with real-time leading indicators</li>
+<li>Conduct quarterly talent calibration for analytics teams</li>
+<li>Consolidate tooling footprints across shared service teams</li>
+<li>Deepen scenario planning for supply-side constraints</li>
+<li>Expand partner enablement for priority solution bundles</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Bookings (EUR M)</th>
+<th>Actuals (EUR M)</th>
+<th>Run Rate (EUR M)</th>
+<th>Contribution Margin %</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SMB Velocity</td>
+<td>291.74</td>
+<td>281.64</td>
+<td>807.29</td>
+<td>578.70</td>
+</tr>
+<tr>
+<td>Services Allocation</td>
+<td>606.34</td>
+<td>975.26</td>
+<td>586.75</td>
+<td>59.44</td>
+</tr>
+<tr>
+<td>Enterprise Utilisation</td>
+<td>130.21</td>
+<td>978.07</td>
+<td>284.22</td>
+<td>907.19</td>
+</tr>
+<tr>
+<td>Analytics Productivity</td>
+<td>504.93</td>
+<td>640.67</td>
+<td>707.74</td>
+<td>465.03</td>
+</tr>
+<tr>
+<td>Customer Care Integrity</td>
+<td>132.23</td>
+<td>868.03</td>
+<td>905.88</td>
+<td>118.57</td>
+</tr>
+</tbody>
+</table>
+<p><em>Insight:</em> Operational readiness drills validated the business continuity playbook and informed minor updates to recovery sequencing.</p>
+</section>
+<div class="pagebreak"></div>
+<section>
+<h2>Risk and Compliance - Page 2 of 6</h2>
+<p>Forecast accuracy improved following the rollout of the integrated planning playbook across operational teams.</p>
+<p>The innovation council approved five new proofs of concept aligned with strategic themes in data intelligence and automation.</p>
+<p>Margin optimisation initiatives reduced blended cost-to-serve by 71.1% across core business units.</p>
+<ul>
+<li>Align marketing narratives with refreshed value propositions</li>
+<li>Update service catalogues to reflect refreshed SLAs</li>
+<li>Expand partner enablement for priority solution bundles</li>
+<li>Deepen scenario planning for supply-side constraints</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Variance (EUR M)</th>
+<th>Pipeline (EUR M)</th>
+<th>Contribution Margin %</th>
+<th>Actuals (EUR M)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SMB Velocity</td>
+<td>875.40</td>
+<td>871.67</td>
+<td>668.22</td>
+<td>594.43</td>
+</tr>
+<tr>
+<td>Operations Stability</td>
+<td>195.38</td>
+<td>675.35</td>
+<td>329.05</td>
+<td>654.96</td>
+</tr>
+<tr>
+<td>Operations Utilisation</td>
+<td>454.62</td>
+<td>580.22</td>
+<td>626.77</td>
+<td>761.01</td>
+</tr>
+<tr>
+<td>Platform Expansion</td>
+<td>488.10</td>
+<td>252.57</td>
+<td>978.18</td>
+<td>373.71</td>
+</tr>
+<tr>
+<td>SMB Performance</td>
+<td>512.32</td>
+<td>669.03</td>
+<td>388.80</td>
+<td>551.32</td>
+</tr>
+<tr>
+<td>Enterprise Allocation</td>
+<td>338.20</td>
+<td>115.96</td>
+<td>718.83</td>
+<td>750.67</td>
+</tr>
+<tr>
+<td>Operations Satisfaction</td>
+<td>501.41</td>
+<td>669.08</td>
+<td>442.21</td>
+<td>441.72</td>
+</tr>
+<tr>
+<td>Innovation Momentum</td>
+<td>455.00</td>
+<td>370.59</td>
+<td>213.55</td>
+<td>751.55</td>
+</tr>
+<tr>
+<td>Innovation Velocity</td>
+<td>961.22</td>
+<td>900.28</td>
+<td>563.51</td>
+<td>263.17</td>
+</tr>
+<tr>
+<td>Operations Utilisation</td>
+<td>554.48</td>
+<td>456.77</td>
+<td>998.74</td>
+<td>822.36</td>
+</tr>
+<tr>
+<td>Customer Care Satisfaction</td>
+<td>364.97</td>
+<td>89.90</td>
+<td>612.10</td>
+<td>153.50</td>
+</tr>
+<tr>
+<td>Enterprise Momentum</td>
+<td>901.53</td>
+<td>688.09</td>
+<td>368.12</td>
+<td>417.61</td>
+</tr>
+<tr>
+<td>SMB Utilisation</td>
+<td>756.08</td>
+<td>688.57</td>
+<td>610.50</td>
+<td>523.08</td>
+</tr>
+<tr>
+<td>Analytics Momentum</td>
+<td>391.45</td>
+<td>342.77</td>
+<td>788.95</td>
+<td>799.44</td>
+</tr>
+</tbody>
+</table>
+<p><em>Insight:</em> Margin optimisation initiatives reduced blended cost-to-serve by 71.1% across core business units.</p>
+</section>
+<div class="pagebreak"></div>
+<section>
+<h2>Regional Highlights - Page 3 of 6</h2>
+<p>Deferred revenue continues to expand, supporting improved visibility into the next two fiscal quarters.</p>
+<p>Segment leaders noted improved throughput after automation upgrades, with fulfilment KPIs beating targets for the third consecutive month.</p>
+<p>Cross-selling motions contributed 66.6 incremental basis points to net retention during the trailing quarter.</p>
+<ul>
+<li>Accelerate invoicing automation in low-margin streams</li>
+<li>Deepen scenario planning for supply-side constraints</li>
+<li>Standardise procurement scorecards across regions</li>
+<li>Update service catalogues to reflect refreshed SLAs</li>
+<li>Align marketing narratives with refreshed value propositions</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Operating Expense (EUR M)</th>
+<th>Bookings (EUR M)</th>
+<th>Actuals (EUR M)</th>
+<th>Cash Position (EUR M)</th>
+<th>Contribution Margin %</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Public Sector Performance</td>
+<td>363.94</td>
+<td>716.19</td>
+<td>515.11</td>
+<td>181.34</td>
+<td>476.49</td>
+</tr>
+<tr>
+<td>Operations Productivity</td>
+<td>924.99</td>
+<td>684.68</td>
+<td>222.29</td>
+<td>731.79</td>
+<td>197.85</td>
+</tr>
+<tr>
+<td>Analytics Utilisation</td>
+<td>977.22</td>
+<td>748.71</td>
+<td>438.37</td>
+<td>975.79</td>
+<td>858.50</td>
+</tr>
+<tr>
+<td>Channel Momentum</td>
+<td>822.82</td>
+<td>925.02</td>
+<td>560.66</td>
+<td>336.05</td>
+<td>684.56</td>
+</tr>
+<tr>
+<td>Innovation Utilisation</td>
+<td>897.08</td>
+<td>245.13</td>
+<td>837.68</td>
+<td>575.10</td>
+<td>542.04</td>
+</tr>
+<tr>
+<td>Services Satisfaction</td>
+<td>610.69</td>
+<td>468.49</td>
+<td>522.81</td>
+<td>568.53</td>
+<td>84.06</td>
+</tr>
+<tr>
+<td>Digital Satisfaction</td>
+<td>327.11</td>
+<td>380.68</td>
+<td>275.94</td>
+<td>416.40</td>
+<td>204.13</td>
+</tr>
+<tr>
+<td>SMB Utilisation</td>
+<td>70.64</td>
+<td>551.21</td>
+<td>746.96</td>
+<td>343.81</td>
+<td>803.56</td>
+</tr>
+<tr>
+<td>Enterprise Productivity</td>
+<td>356.39</td>
+<td>687.06</td>
+<td>823.16</td>
+<td>694.94</td>
+<td>847.79</td>
+</tr>
+<tr>
+<td>Digital Velocity</td>
+<td>407.70</td>
+<td>142.27</td>
+<td>359.80</td>
+<td>729.01</td>
+<td>285.59</td>
+</tr>
+<tr>
+<td>Logistics Velocity</td>
+<td>394.67</td>
+<td>664.68</td>
+<td>912.48</td>
+<td>557.14</td>
+<td>576.46</td>
+</tr>
+<tr>
+<td>Analytics Velocity</td>
+<td>158.81</td>
+<td>878.51</td>
+<td>940.01</td>
+<td>639.30</td>
+<td>865.80</td>
+</tr>
+<tr>
+<td>Innovation Momentum</td>
+<td>496.50</td>
+<td>201.87</td>
+<td>653.76</td>
+<td>687.73</td>
+<td>870.74</td>
+</tr>
+<tr>
+<td>Analytics Utilisation</td>
+<td>636.53</td>
+<td>512.77</td>
+<td>61.97</td>
+<td>811.66</td>
+<td>827.87</td>
+</tr>
+<tr>
+<td>Innovation Momentum</td>
+<td>311.61</td>
+<td>218.06</td>
+<td>256.85</td>
+<td>532.50</td>
+<td>368.17</td>
+</tr>
+<tr>
+<td>Analytics Velocity</td>
+<td>250.02</td>
+<td>421.97</td>
+<td>182.74</td>
+<td>727.30</td>
+<td>174.33</td>
+</tr>
+<tr>
+<td>Analytics Utilisation</td>
+<td>508.42</td>
+<td>148.69</td>
+<td>793.81</td>
+<td>322.94</td>
+<td>689.39</td>
+</tr>
+<tr>
+<td>SMB Velocity</td>
+<td>662.43</td>
+<td>468.20</td>
+<td>718.80</td>
+<td>839.93</td>
+<td>85.32</td>
+</tr>
+<tr>
+<td>Channel Productivity</td>
+<td>192.13</td>
+<td>611.20</td>
+<td>147.66</td>
+<td>478.01</td>
+<td>347.05</td>
+</tr>
+<tr>
+<td>Enterprise Stability</td>
+<td>194.52</td>
+<td>73.30</td>
+<td>175.43</td>
+<td>824.20</td>
+<td>251.26</td>
+</tr>
+<tr>
+<td>Public Sector Performance</td>
+<td>894.93</td>
+<td>120.30</td>
+<td>548.14</td>
+<td>901.14</td>
+<td>973.97</td>
+</tr>
+<tr>
+<td>Public Sector Expansion</td>
+<td>216.61</td>
+<td>447.83</td>
+<td>419.99</td>
+<td>228.97</td>
+<td>366.45</td>
+</tr>
+</tbody>
+</table>
+<p><em>Insight:</em> Cross-selling motions contributed 66.6 incremental basis points to net retention during the trailing quarter.</p>
+</section>
+<div class="pagebreak"></div>
+<section>
+<h2>Talent and Culture - Page 4 of 6</h2>
+<p>Employee engagement surveys recorded record participation rates, informing refreshed well-being programmes launching next period.</p>
+<p>Cost-to-serve metrics benefited from renegotiated logistics contracts, partially offsetting energy price pressure experienced in the quarter.</p>
+<p>Modernisation of legacy workflows created 68.6 hours of reclaimed capacity delivered back to customer success teams.</p>
+<ul>
+<li>Advance sustainability disclosures for key stakeholders</li>
+<li>Conduct quarterly talent calibration for analytics teams</li>
+<li>Consolidate tooling footprints across shared service teams</li>
+<li>Expand partner enablement for priority solution bundles</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Variance (EUR M)</th>
+<th>Bookings (EUR M)</th>
+<th>Backlog (EUR M)</th>
+<th>Operating Expense (EUR M)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Enterprise Utilisation</td>
+<td>304.14</td>
+<td>708.55</td>
+<td>457.85</td>
+<td>259.39</td>
+</tr>
+<tr>
+<td>Public Sector Allocation</td>
+<td>341.93</td>
+<td>467.70</td>
+<td>698.21</td>
+<td>266.20</td>
+</tr>
+<tr>
+<td>Public Sector Performance</td>
+<td>427.19</td>
+<td>514.25</td>
+<td>149.44</td>
+<td>742.64</td>
+</tr>
+<tr>
+<td>Channel Velocity</td>
+<td>473.10</td>
+<td>178.43</td>
+<td>529.87</td>
+<td>818.75</td>
+</tr>
+<tr>
+<td>Public Sector Expansion</td>
+<td>667.26</td>
+<td>75.41</td>
+<td>406.57</td>
+<td>585.61</td>
+</tr>
+<tr>
+<td>Customer Care Readiness</td>
+<td>853.67</td>
+<td>514.51</td>
+<td>363.76</td>
+<td>858.19</td>
+</tr>
+<tr>
+<td>Channel Velocity</td>
+<td>79.11</td>
+<td>661.81</td>
+<td>417.13</td>
+<td>151.37</td>
+</tr>
+<tr>
+<td>Public Sector Momentum</td>
+<td>211.98</td>
+<td>311.06</td>
+<td>680.62</td>
+<td>651.55</td>
+</tr>
+<tr>
+<td>Logistics Velocity</td>
+<td>622.18</td>
+<td>922.82</td>
+<td>836.83</td>
+<td>229.70</td>
+</tr>
+<tr>
+<td>Channel Expansion</td>
+<td>363.96</td>
+<td>46.01</td>
+<td>971.62</td>
+<td>678.51</td>
+</tr>
+<tr>
+<td>Digital Productivity</td>
+<td>970.78</td>
+<td>968.35</td>
+<td>628.14</td>
+<td>675.47</td>
+</tr>
+<tr>
+<td>SMB Integrity</td>
+<td>380.86</td>
+<td>674.60</td>
+<td>303.57</td>
+<td>127.14</td>
+</tr>
+<tr>
+<td>Services Satisfaction</td>
+<td>479.39</td>
+<td>968.52</td>
+<td>848.13</td>
+<td>986.44</td>
+</tr>
+<tr>
+<td>SMB Productivity</td>
+<td>158.97</td>
+<td>448.11</td>
+<td>306.44</td>
+<td>789.63</td>
+</tr>
+<tr>
+<td>Enterprise Allocation</td>
+<td>384.79</td>
+<td>599.66</td>
+<td>220.27</td>
+<td>680.12</td>
+</tr>
+<tr>
+<td>Analytics Utilisation</td>
+<td>90.57</td>
+<td>586.83</td>
+<td>94.22</td>
+<td>156.12</td>
+</tr>
+<tr>
+<td>Public Sector Stability</td>
+<td>833.63</td>
+<td>497.88</td>
+<td>160.46</td>
+<td>550.29</td>
+</tr>
+<tr>
+<td>SMB Satisfaction</td>
+<td>341.60</td>
+<td>340.16</td>
+<td>494.79</td>
+<td>661.25</td>
+</tr>
+<tr>
+<td>Public Sector Momentum</td>
+<td>103.79</td>
+<td>728.06</td>
+<td>614.82</td>
+<td>885.32</td>
+</tr>
+<tr>
+<td>SMB Velocity</td>
+<td>886.37</td>
+<td>688.29</td>
+<td>517.32</td>
+<td>404.52</td>
+</tr>
+<tr>
+<td>Digital Satisfaction</td>
+<td>398.24</td>
+<td>329.98</td>
+<td>671.98</td>
+<td>243.46</td>
+</tr>
+<tr>
+<td>Public Sector Integrity</td>
+<td>462.93</td>
+<td>694.17</td>
+<td>532.58</td>
+<td>214.07</td>
+</tr>
+<tr>
+<td>Services Velocity</td>
+<td>656.38</td>
+<td>87.20</td>
+<td>844.92</td>
+<td>764.30</td>
+</tr>
+<tr>
+<td>Enterprise Velocity</td>
+<td>825.74</td>
+<td>331.50</td>
+<td>627.94</td>
+<td>423.95</td>
+</tr>
+<tr>
+<td>Platform Allocation</td>
+<td>914.12</td>
+<td>512.01</td>
+<td>841.84</td>
+<td>882.98</td>
+</tr>
+</tbody>
+</table>
+<p><em>Insight:</em> Modernisation of legacy workflows created 68.6 hours of reclaimed capacity delivered back to customer success teams.</p>
+</section>
+<div class="pagebreak"></div>
+<section>
+<h2>Risk and Compliance - Page 5 of 6</h2>
+<p>Employee engagement surveys recorded record participation rates, informing refreshed well-being programmes launching next period.</p>
+<p>Employee engagement surveys recorded record participation rates, informing refreshed well-being programmes launching next period.</p>
+<p>Margin optimisation initiatives reduced blended cost-to-serve by 70.4% across core business units.</p>
+<ul>
+<li>Consolidate tooling footprints across shared service teams</li>
+<li>Advance sustainability disclosures for key stakeholders</li>
+<li>Align marketing narratives with refreshed value propositions</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Operating Expense (EUR M)</th>
+<th>Actuals (EUR M)</th>
+<th>Pipeline (EUR M)</th>
+<th>Year Over Year %</th>
+<th>Bookings (EUR M)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Analytics Readiness</td>
+<td>161.03</td>
+<td>457.14</td>
+<td>407.94</td>
+<td>863.64</td>
+<td>605.60</td>
+</tr>
+<tr>
+<td>Innovation Allocation</td>
+<td>658.66</td>
+<td>150.46</td>
+<td>346.83</td>
+<td>88.53</td>
+<td>825.52</td>
+</tr>
+<tr>
+<td>Platform Integrity</td>
+<td>762.67</td>
+<td>272.77</td>
+<td>721.78</td>
+<td>907.83</td>
+<td>595.53</td>
+</tr>
+<tr>
+<td>Analytics Performance</td>
+<td>184.07</td>
+<td>716.67</td>
+<td>282.63</td>
+<td>785.58</td>
+<td>53.30</td>
+</tr>
+<tr>
+<td>Operations Satisfaction</td>
+<td>848.78</td>
+<td>946.49</td>
+<td>884.67</td>
+<td>621.15</td>
+<td>810.87</td>
+</tr>
+<tr>
+<td>Services Utilisation</td>
+<td>738.38</td>
+<td>825.33</td>
+<td>655.03</td>
+<td>338.37</td>
+<td>233.97</td>
+</tr>
+<tr>
+<td>SMB Performance</td>
+<td>84.61</td>
+<td>372.69</td>
+<td>651.20</td>
+<td>127.01</td>
+<td>942.34</td>
+</tr>
+<tr>
+<td>Platform Expansion</td>
+<td>401.68</td>
+<td>334.44</td>
+<td>94.03</td>
+<td>42.15</td>
+<td>240.72</td>
+</tr>
+<tr>
+<td>Analytics Productivity</td>
+<td>420.68</td>
+<td>377.15</td>
+<td>734.71</td>
+<td>565.85</td>
+<td>427.70</td>
+</tr>
+<tr>
+<td>Analytics Productivity</td>
+<td>98.02</td>
+<td>920.63</td>
+<td>542.09</td>
+<td>933.38</td>
+<td>705.98</td>
+</tr>
+<tr>
+<td>Logistics Velocity</td>
+<td>771.32</td>
+<td>722.75</td>
+<td>891.34</td>
+<td>242.85</td>
+<td>573.31</td>
+</tr>
+<tr>
+<td>Innovation Performance</td>
+<td>214.53</td>
+<td>572.47</td>
+<td>786.79</td>
+<td>92.77</td>
+<td>867.21</td>
+</tr>
+<tr>
+<td>Services Allocation</td>
+<td>833.32</td>
+<td>495.44</td>
+<td>48.47</td>
+<td>854.56</td>
+<td>780.92</td>
+</tr>
+<tr>
+<td>Digital Performance</td>
+<td>429.98</td>
+<td>621.57</td>
+<td>634.77</td>
+<td>965.50</td>
+<td>233.85</td>
+</tr>
+<tr>
+<td>SMB Allocation</td>
+<td>849.62</td>
+<td>662.64</td>
+<td>280.48</td>
+<td>584.87</td>
+<td>632.62</td>
+</tr>
+<tr>
+<td>Innovation Momentum</td>
+<td>511.63</td>
+<td>251.78</td>
+<td>358.82</td>
+<td>233.46</td>
+<td>752.85</td>
+</tr>
+<tr>
+<td>Enterprise Readiness</td>
+<td>817.76</td>
+<td>323.25</td>
+<td>721.65</td>
+<td>632.38</td>
+<td>462.65</td>
+</tr>
+<tr>
+<td>Operations Momentum</td>
+<td>361.86</td>
+<td>481.35</td>
+<td>448.35</td>
+<td>553.70</td>
+<td>767.80</td>
+</tr>
+<tr>
+<td>Services Satisfaction</td>
+<td>829.21</td>
+<td>547.65</td>
+<td>41.27</td>
+<td>174.94</td>
+<td>407.39</td>
+</tr>
+<tr>
+<td>Analytics Productivity</td>
+<td>925.25</td>
+<td>368.68</td>
+<td>880.15</td>
+<td>784.93</td>
+<td>997.72</td>
+</tr>
+<tr>
+<td>Analytics Velocity</td>
+<td>476.45</td>
+<td>325.86</td>
+<td>576.59</td>
+<td>739.53</td>
+<td>856.36</td>
+</tr>
+<tr>
+<td>Innovation Utilisation</td>
+<td>148.68</td>
+<td>482.27</td>
+<td>346.47</td>
+<td>610.24</td>
+<td>101.68</td>
+</tr>
+<tr>
+<td>Digital Allocation</td>
+<td>962.75</td>
+<td>253.65</td>
+<td>593.33</td>
+<td>339.91</td>
+<td>89.46</td>
+</tr>
+<tr>
+<td>Channel Productivity</td>
+<td>550.08</td>
+<td>773.79</td>
+<td>416.08</td>
+<td>431.91</td>
+<td>459.06</td>
+</tr>
+<tr>
+<td>Operations Velocity</td>
+<td>948.62</td>
+<td>213.22</td>
+<td>121.08</td>
+<td>237.69</td>
+<td>404.64</td>
+</tr>
+<tr>
+<td>Analytics Velocity</td>
+<td>341.97</td>
+<td>661.37</td>
+<td>145.54</td>
+<td>217.47</td>
+<td>707.37</td>
+</tr>
+<tr>
+<td>Platform Satisfaction</td>
+<td>182.95</td>
+<td>371.63</td>
+<td>573.89</td>
+<td>235.73</td>
+<td>316.40</td>
+</tr>
+<tr>
+<td>Public Sector Expansion</td>
+<td>531.90</td>
+<td>746.66</td>
+<td>982.12</td>
+<td>776.02</td>
+<td>353.97</td>
+</tr>
+</tbody>
+</table>
+<p><em>Insight:</em> Margin optimisation initiatives reduced blended cost-to-serve by 70.4% across core business units.</p>
+</section>
+<div class="pagebreak"></div>
+<section>
+<h2>Financial Controls - Page 6 of 6</h2>
+<p>Pipeline velocity reflects stronger partner contributions, reinforcing the case for expanding co-selling agreements in priority territories.</p>
+<p>Working capital intensity improved sequentially as collections outpaced revenue recognition in three major regions.</p>
+<p>Modernisation of legacy workflows created 75.0 hours of reclaimed capacity delivered back to customer success teams.</p>
+<ul>
+<li>Consolidate tooling footprints across shared service teams</li>
+<li>Revisit capital allocation for in-flight programmes</li>
+<li>Deepen scenario planning for supply-side constraints</li>
+<li>Align marketing narratives with refreshed value propositions</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Contribution Margin %</th>
+<th>Year Over Year %</th>
+<th>Actuals (EUR M)</th>
+<th>Run Rate (EUR M)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Public Sector Stability</td>
+<td>206.74</td>
+<td>527.28</td>
+<td>356.66</td>
+<td>808.84</td>
+</tr>
+<tr>
+<td>Digital Velocity</td>
+<td>386.95</td>
+<td>728.37</td>
+<td>747.72</td>
+<td>471.73</td>
+</tr>
+<tr>
+<td>Operations Stability</td>
+<td>250.96</td>
+<td>50.34</td>
+<td>270.44</td>
+<td>435.66</td>
+</tr>
+<tr>
+<td>SMB Readiness</td>
+<td>184.44</td>
+<td>418.43</td>
+<td>251.28</td>
+<td>76.60</td>
+</tr>
+<tr>
+<td>Analytics Productivity</td>
+<td>807.86</td>
+<td>439.85</td>
+<td>95.76</td>
+<td>258.70</td>
+</tr>
+<tr>
+<td>Customer Care Expansion</td>
+<td>853.28</td>
+<td>790.93</td>
+<td>322.18</td>
+<td>492.14</td>
+</tr>
+<tr>
+<td>Enterprise Velocity</td>
+<td>306.27</td>
+<td>196.13</td>
+<td>877.82</td>
+<td>513.09</td>
+</tr>
+<tr>
+<td>Services Utilisation</td>
+<td>461.61</td>
+<td>911.28</td>
+<td>125.04</td>
+<td>711.39</td>
+</tr>
+<tr>
+<td>Customer Care Momentum</td>
+<td>461.51</td>
+<td>101.43</td>
+<td>94.89</td>
+<td>379.38</td>
+</tr>
+<tr>
+<td>Logistics Utilisation</td>
+<td>226.21</td>
+<td>237.05</td>
+<td>588.30</td>
+<td>844.92</td>
+</tr>
+<tr>
+<td>Digital Productivity</td>
+<td>466.22</td>
+<td>504.07</td>
+<td>385.76</td>
+<td>667.50</td>
+</tr>
+<tr>
+<td>Digital Utilisation</td>
+<td>337.48</td>
+<td>658.23</td>
+<td>255.34</td>
+<td>934.10</td>
+</tr>
+<tr>
+<td>Digital Integrity</td>
+<td>199.03</td>
+<td>749.81</td>
+<td>467.50</td>
+<td>528.28</td>
+</tr>
+<tr>
+<td>Enterprise Stability</td>
+<td>559.96</td>
+<td>727.56</td>
+<td>732.53</td>
+<td>415.81</td>
+</tr>
+<tr>
+<td>Logistics Performance</td>
+<td>245.10</td>
+<td>864.52</td>
+<td>542.57</td>
+<td>230.82</td>
+</tr>
+<tr>
+<td>Analytics Performance</td>
+<td>850.55</td>
+<td>274.64</td>
+<td>50.12</td>
+<td>339.69</td>
+</tr>
+<tr>
+<td>SMB Momentum</td>
+<td>925.30</td>
+<td>559.06</td>
+<td>974.16</td>
+<td>123.01</td>
+</tr>
+<tr>
+<td>Channel Expansion</td>
+<td>363.54</td>
+<td>871.90</td>
+<td>850.39</td>
+<td>610.81</td>
+</tr>
+<tr>
+<td>Customer Care Performance</td>
+<td>851.55</td>
+<td>250.84</td>
+<td>792.48</td>
+<td>389.20</td>
+</tr>
+<tr>
+<td>Analytics Velocity</td>
+<td>445.17</td>
+<td>654.68</td>
+<td>194.66</td>
+<td>648.04</td>
+</tr>
+<tr>
+<td>Enterprise Integrity</td>
+<td>940.79</td>
+<td>943.71</td>
+<td>354.06</td>
+<td>711.81</td>
+</tr>
+<tr>
+<td>Logistics Allocation</td>
+<td>483.77</td>
+<td>596.76</td>
+<td>191.42</td>
+<td>733.95</td>
+</tr>
+<tr>
+<td>Platform Productivity</td>
+<td>368.90</td>
+<td>679.09</td>
+<td>174.28</td>
+<td>361.68</td>
+</tr>
+<tr>
+<td>Customer Care Productivity</td>
+<td>694.48</td>
+<td>397.49</td>
+<td>994.37</td>
+<td>231.58</td>
+</tr>
+<tr>
+<td>Enterprise Expansion</td>
+<td>493.95</td>
+<td>86.07</td>
+<td>742.20</td>
+<td>778.42</td>
+</tr>
+<tr>
+<td>Channel Expansion</td>
+<td>684.08</td>
+<td>172.33</td>
+<td>610.57</td>
+<td>327.13</td>
+</tr>
+<tr>
+<td>Services Performance</td>
+<td>899.42</td>
+<td>856.69</td>
+<td>676.73</td>
+<td>349.13</td>
+</tr>
+<tr>
+<td>Platform Productivity</td>
+<td>935.07</td>
+<td>383.32</td>
+<td>970.63</td>
+<td>590.42</td>
+</tr>
+<tr>
+<td>Platform Productivity</td>
+<td>709.86</td>
+<td>894.54</td>
+<td>290.03</td>
+<td>906.84</td>
+</tr>
+</tbody>
+</table>
+<p><em>Insight:</em> Modernisation of legacy workflows created 75.0 hours of reclaimed capacity delivered back to customer success teams.</p>
+</section>
+<footer>
+<p><strong>Blue Horizon Capital</strong> | <a href="https://blue-horizon-capital.com">https://blue-horizon-capital.com</a> | +44 (0)20 8123 4455</p>
+<p>Opening hours: Mon-Fri 08:30-18:00 CET</p>
+<p>Continued vigilance on cost discipline and talent retention will anchor execution priorities into the next quarter.</p>
+<p><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAMAAABEpIrGAAAAz1BMVEVHcEwAAAAAAAADDA8FGiBRuNQJHiMAAAAAAAAGDQ8KKTAATV0AAAAAAAAAAAAAAQIAAQEAAABLqMApW2gAAADzcoJj4P9h2/wlVWIbNDwE0vzdaHbpbn00dIVEIyfIXmpAHiJ3OD9f1vY3ICWNQkorY3Lvb3/vXHBFn7cgSVNiLjSyVmJVwN29WGPQY3BOJSlLrMc72f6qR1RZyugLcYfiUmXla3oFttwj1v0+kaY9ip6NMT0rJSsgEBIAWm0AYXUAgZsDv+ZClKrDR1gBocIT0rrUAAAAFXRSTlMAGYrD3f77NgH86/7aKW2umUE7uiA8qHmwAAACCklEQVQ4y4VT2ZLaMBA04IMbNonlQ7JkWb7lA8wNe2U3//9NkSCY1FYlnio/TbvV3TOjKPcazuaL6UjUdDGfDZWvNTSW6kR3PqLow9FtdWl8gfT64+1hmxXA80CReYU37vf+7huD18MxdTQgAUBzUlBEA+PRf1Lf3XWQncFGs21tA85ZAIKz+tT+P538XIPUOdkOw5g59klQgI09/cPRG7xNnCjNRv6lhAhBEuJRlkaOHQ2uOob9V9ddefrLZRebt9qHL7q3CqyoL70Y44O7BifWJNf+DVQ+n4AFivFMECy37hGsnpuE7BEnyEQlhxKxApalfVOUmXqQDi7JPi+p7zf73Md1ZZphFlhW8P2HMp+4rpX6uwTVvKYlDGuIaC504FRQ2HNl8e4eLfuSxAJAcp/T0DR5LZSEtmWB80JRf7nHjfMpAU1T0bzBBOZU6CTOxgIrVdGFBI3tEhPlPBcakBCSQ2EGMpF8oSujt+3WFhJME8ZxJfTHVYWkU4Rtz4tGD0AMkSkR8oMwbgH3JxBlOaSsrkKGSciq9om7SMI4Dv0yDzGnFPqkFSltBt5nAuv6pcGQ0pqEFGHS2rwGFfBdUmFMfCIYSioBbVC3qEVSpC5j4ZNQxjjKiYwaFOrsMaydGMCeV2JYRDjicljAWw47xm38d2GC28J0rlz30navfffhdJ9e9/H++/x/A06tZ8nd4zdPAAAAAElFTkSuQmCC" alt="ISO Certification" style="width:18mm;height:18mm;" /></p>
+</footer>
+</body>
 </html>
+

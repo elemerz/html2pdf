@@ -39,36 +39,20 @@ export class ToolbarPanelComponent {
     { id: 'manage-images', label: 'Manage Images', passive: true }
   ];
 
-  // Sample JSON data for the Report Data Model viewer
-  protected reportDataModel: any = {
-    invoice: {
-      number: 'INV-2024-001',
-      date: '2024-01-15',
-      dueDate: '2024-02-15',
-      total: 1250.00,
-      currency: 'USD'
-    },
-    customer: {
-      name: 'Acme Corporation',
-      email: 'billing@acme.com',
-      address: {
-        street: '123 Main St',
-        city: 'Springfield',
-        state: 'IL',
-        zip: '62701'
-      }
-    },
-    items: [
-      { id: 1, description: 'Widget A', quantity: 10, price: 50.00 },
-      { id: 2, description: 'Widget B', quantity: 5, price: 150.00 }
-    ]
-  };
+  // Report data model loaded from selectable JSON files in /public/data-models
+  protected reportDataModel: any = {};
+  protected dataModelOptions: string[] = ['report-model-A.json'];
+  protected selectedModel = signal<string>('');
+  protected selectPlaceholder = '<select model>';
 
   protected jsonTree = signal<JsonNode[]>([]);
 
   constructor() {
+    // Build initial empty tree; auto-load if only one model available
     this.jsonTree.set(this.buildJsonTree(this.reportDataModel, ''));
-    this.reportDataService.setReportDataModel(this.reportDataModel);
+    if (this.dataModelOptions.length === 1) {
+      this.loadDataModel(this.dataModelOptions[0]);
+    }
   }
 
   private buildJsonTree(obj: any, path: string): JsonNode[] {
@@ -125,6 +109,25 @@ export class ToolbarPanelComponent {
     return '';
   }
 
+  protected loadDataModel(fileName: string) {
+    fetch(`/data-models/${fileName}`)
+      .then(resp => resp.json())
+      .then(jsonData => {
+        this.reportDataModel = jsonData;
+        this.jsonTree.set(this.buildJsonTree(this.reportDataModel, ''));
+        this.reportDataService.setReportDataModel(jsonData);
+        this.selectedModel.set(fileName);
+      })
+      .catch(err => console.error('Failed to load data model', err));
+  }
+
+  protected onSelectModel(event: Event) {
+    const select = event.target as HTMLSelectElement;
+    const value = select.value;
+    if (!value) return;
+    this.loadDataModel(value);
+  }
+
   protected onImportJson() {
     const input = document.createElement('input');
     input.type = 'file';
@@ -138,9 +141,9 @@ export class ToolbarPanelComponent {
       reader.onload = (e) => {
         try {
           const jsonData = JSON.parse(e.target?.result as string);
-          this.reportDataModel = jsonData;
-          this.jsonTree.set(this.buildJsonTree(this.reportDataModel, ''));
-          this.reportDataService.setReportDataModel(jsonData);
+            this.reportDataModel = jsonData;
+            this.jsonTree.set(this.buildJsonTree(this.reportDataModel, ''));
+            this.reportDataService.setReportDataModel(jsonData);
         } catch (error) {
           console.error('Failed to parse JSON file:', error);
           alert('Invalid JSON file');
