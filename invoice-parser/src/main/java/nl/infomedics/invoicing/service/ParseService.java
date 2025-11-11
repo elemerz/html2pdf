@@ -112,16 +112,19 @@ private static String get(com.univocity.parsers.common.record.Record r, int idx)
 				// Last line -> practitioner (doctor)
 				// Last classic row is practitioner: extract directly from columns
 				this.practitioner = new Practitioner();
-				this.practitioner.setPracticeName(get(r,1));
-				this.practitioner.setPracticeStreet(get(r,2));
+				// Defensive: practitioner now initializes nested objects, but guard anyway
+				if (this.practitioner.getPractice()==null) this.practitioner.setPractice(new nl.infomedics.invoicing.model.Practice());
+				if (this.practitioner.getAddress()==null) this.practitioner.setAddress(new nl.infomedics.invoicing.model.Address());
+				this.practitioner.getPractice().setName(get(r,1));
+				this.practitioner.getAddress().setStreet(get(r,2));
 				String house = get(r,3);
-				this.practitioner.setPracticeHouseNr(house);
-				this.practitioner.setPracticePostcode(get(r,4));
-				this.practitioner.setPracticeCity(get(r,5));
+				this.practitioner.getAddress().setHouseNr(house);
+				this.practitioner.getAddress().setPostcode(get(r,4));
+				this.practitioner.getAddress().setCity(get(r,5));
 				this.practitioner.setAgbCode(get(r,6));
-				this.practitioner.setPracticeCode(""); // unknown in classic line
-				this.practitioner.setPracticeCountry("");
-				this.practitioner.setPracticePhone("");
+				this.practitioner.getPractice().setCode(""); // unknown in classic line
+				this.practitioner.getAddress().setCountry("");
+				this.practitioner.getPractice().setPhone("");
 				this.practitioner.setLogoNr(0);
 				this.practitioner.normalize();
 				continue; // skip adding as debtor
@@ -151,7 +154,7 @@ private static String get(com.univocity.parsers.common.record.Record r, int idx)
 			s.setTariffCode(get(r, 4));
 			s.setReference(get(r, 5));
 			s.setAmountCents(safeInt(get(r, 15))); // fall back to last column where needed
-			map.computeIfAbsent(zorgId, k -> new ArrayList<>()).add(s);
+			map.computeIfAbsent(zorgId, _ -> new ArrayList<>()).add(s);
 		}
 		return map;
 	}
@@ -194,9 +197,10 @@ private static String get(com.univocity.parsers.common.record.Record r, int idx)
 						String praktijkCode = attr(xr, "Praktijk_code");
 						String logoNr = attr(xr, "Logo_nr");
 						if (out.practitioner==null) out.practitioner = new Practitioner();
-						out.practitioner.setPracticeName(practitionerName);
+						if (out.practitioner.getPractice()==null) out.practitioner.setPractice(new nl.infomedics.invoicing.model.Practice());
+						out.practitioner.getPractice().setName(practitionerName);
 						out.practitioner.setAgbCode(agb);
-						out.practitioner.setPracticeCode(praktijkCode);
+						out.practitioner.getPractice().setCode(praktijkCode);
 						try { out.practitioner.setLogoNr(logoNr==null?0:Integer.parseInt(logoNr)); } catch(Exception e){ out.practitioner.setLogoNr(0); }
 					}
 					else if ("Adres".equals(local)) {
@@ -208,12 +212,12 @@ private static String get(com.univocity.parsers.common.record.Record r, int idx)
 						String tel = attr(xr, "Telefoonnummer");
 						if (practitionerName != null && debiteurNum == null) {
 							if (out.practitioner==null) out.practitioner = new Practitioner();
-							out.practitioner.setPracticeCity(plaats);
-							out.practitioner.setPracticeStreet(straat);
-							out.practitioner.setPracticeHouseNr(huisnr);
-							out.practitioner.setPracticePostcode(postcode);
-							out.practitioner.setPracticeCountry("Nederland".equalsIgnoreCase(land)?"Netherlands":land);
-							out.practitioner.setPracticePhone(tel);
+							out.practitioner.getAddress().setCity(plaats);
+							out.practitioner.getAddress().setStreet(straat);
+							out.practitioner.getAddress().setHouseNr(huisnr);
+							out.practitioner.getAddress().setPostcode(postcode);
+							out.practitioner.getAddress().setCountry("Nederland".equalsIgnoreCase(land)?"Netherlands":land);
+							out.practitioner.getPractice().setPhone(tel);
 						}
 					}
 					else if ("Patient".equals(local)) {
@@ -249,7 +253,7 @@ private static String get(com.univocity.parsers.common.record.Record r, int idx)
 							try { s.setAmountCents(new BigDecimal(bedrag).movePointRight(2).intValue()); } catch(Exception ignored) {}
 						}
 						if (debiteurNum!=null) {
-							out.specificaties.computeIfAbsent(debiteurNum,k->new ArrayList<>()).add(s);
+							out.specificaties.computeIfAbsent(debiteurNum,_->new ArrayList<>()).add(s);
 						}
 					}
 				}
