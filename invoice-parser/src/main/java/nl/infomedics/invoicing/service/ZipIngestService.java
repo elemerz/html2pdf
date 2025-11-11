@@ -14,7 +14,6 @@ import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.Semaphore;
@@ -31,8 +30,10 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import nl.infomedics.invoicing.config.AppProperties;
+import nl.infomedics.invoicing.model.DebiteurWithPractitioner;
 import nl.infomedics.invoicing.model.MetaInfo;
 import nl.infomedics.invoicing.model.Practitioner;
+
 @Getter @Setter @Slf4j
 @Service
 public class ZipIngestService {
@@ -74,7 +75,7 @@ public class ZipIngestService {
 				new LinkedBlockingQueue<>(queueCapacity),
 				r -> {
 					Thread thread = new Thread(r);
-					thread.setName("pdf-conversion-worker-" + thread.getId());
+					thread.setName("pdf-conversion-worker-" + thread.threadId());
 					thread.setDaemon(false);
 					return thread;
 				},
@@ -227,8 +228,7 @@ public class ZipIngestService {
 		}
 	}
 
-	private void generatePdfsPerDebtor(String zipName, Integer invoiceType, MetaInfo metaInfo, 
-	                                     Practitioner practitioner, List<nl.infomedics.invoicing.model.DebiteurWithPractitioner> debiteuren) {
+	private void generatePdfsPerDebtor(String zipName, Integer invoiceType, MetaInfo metaInfo, Practitioner practitioner, List<DebiteurWithPractitioner> debiteuren) {
 		String stage = "load template";
 		try {
 			String templateHtml = loadTemplateHtml(invoiceType);
@@ -236,15 +236,15 @@ public class ZipIngestService {
 			
 			stage = "prepare batch items";
 			List<Xhtml2PdfClient.BatchItem> batchItems = new ArrayList<>();
-			for (nl.infomedics.invoicing.model.DebiteurWithPractitioner debtor : debiteuren) {
+			for (DebiteurWithPractitioner dwp : debiteuren) {
 				try {
-					String debtorJson = json.stringifySingleDebtor(new nl.infomedics.invoicing.model.SingleDebtorInvoice(debtor), false);
-					String outputId = sanitizeFilename(debtor.getInvoiceNumber() != null ? 
-						debtor.getInvoiceNumber() : debtor.getInsuredId());
+					String debtorJson = json.stringifySingleDebtor(new nl.infomedics.invoicing.model.SingleDebtorInvoice(dwp), false);
+					String outputId = sanitizeFilename(dwp.getDebiteur().getInvoiceNumber() != null ? 
+						dwp.getDebiteur().getInvoiceNumber() : dwp.getDebiteur().getInsuredId());
 					batchItems.add(new Xhtml2PdfClient.BatchItem(debtorJson, outputId));
 				} catch (Exception e) {
 					log.error("Failed to prepare batch item for debtor {} in {}: {}", 
-						debtor.getInvoiceNumber(), zipName, e.getMessage(), e);
+						dwp.getDebiteur().getInvoiceNumber(), zipName, e.getMessage(), e);
 				}
 			}
 			

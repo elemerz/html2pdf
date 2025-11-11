@@ -124,8 +124,8 @@ public class HtmlToPdfController {
                 log.warn("Failed to parse debiteur model for {}: {}", item.outputId(), parseEx.getMessage());
             }
             String htmlResolved = dwp != null ? resolvePropertyPlaceholders(sharedHtml, dwp) : sharedHtml;
-            log.info("sharedHtml = {}", sharedHtml);
-            log.info("htmlResolved = {}", htmlResolved);
+//            log.info("sharedHtml = {}", sharedHtml);
+//            log.info("htmlResolved = {}", htmlResolved);
             PdfConversionResult result = converterService.convertHtmlToPdf(htmlResolved);
             String pdfBase64 = Base64.getEncoder().encodeToString(result.pdfContent());
             String sanitised = includeSanitised ? result.sanitisedXhtml() : null;

@@ -34,6 +34,7 @@
 		<maven-compiler-plugin.version>3.14.1</maven-compiler-plugin.version>
 		<lombok.version>1.18.42</lombok.version>
 		<univocity-parsers.version>2.9.1</univocity-parsers.version>
+		<invoice-models.version>1.0.0</invoice-models.version>
 	</properties>
 
 	<dependencyManagement>
@@ -57,7 +58,11 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-json</artifactId>
 		</dependency>
-
+		<dependency>
+			<groupId>nl.infomedics.invoicing</groupId>
+			<artifactId>invoice-models</artifactId>
+			<version>${invoice-models.version}</version>
+		</dependency>
 		<!-- Ultra-fast CSV/TSV parsing (semicolon) -->
 		<dependency>
 			<groupId>com.univocity</groupId>

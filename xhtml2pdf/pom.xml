@@ -28,6 +28,7 @@
 	</scm>
 	<properties>
 		<java.version>25</java.version>
+		<invoice-models.version>1.0.0</invoice-models.version>
 		<lombok.version>1.18.42</lombok.version>
 	</properties>
 	<dependencies>
@@ -84,7 +85,11 @@
 			<artifactId>javase</artifactId>
 			<version>3.5.3</version>
 		</dependency>
-
+		<dependency>
+			<groupId>nl.infomedics.invoicing</groupId>
+			<artifactId>invoice-models</artifactId>
+			<version>${invoice-models.version}</version>
+		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-test</artifactId>
