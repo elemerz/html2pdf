@@ -44,7 +44,9 @@ import nl.infomedics.invoicing.model.Debiteur;
 public class HtmlToPdfController {
 
     private final Html2PdfConverterService converterService;
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper()
+            .registerModule(new com.fasterxml.jackson.datatype.jsr310.JavaTimeModule())
+            .disable(com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
 
     public HtmlToPdfController(Html2PdfConverterService converterService) {
         this.converterService = converterService;
@@ -122,6 +124,8 @@ public class HtmlToPdfController {
                 log.warn("Failed to parse debiteur model for {}: {}", item.outputId(), parseEx.getMessage());
             }
             String htmlResolved = debiteur != null ? resolvePropertyPlaceholders(sharedHtml, debiteur) : sharedHtml;
+            log.info("sharedHtml = {}", sharedHtml);
+            log.info("htmlResolved = {}", htmlResolved);
             PdfConversionResult result = converterService.convertHtmlToPdf(htmlResolved);
             String pdfBase64 = Base64.getEncoder().encodeToString(result.pdfContent());
             String sanitised = includeSanitised ? result.sanitisedXhtml() : null;
