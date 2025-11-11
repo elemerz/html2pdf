@@ -32,7 +32,7 @@ import nl.infomedics.xhtml2pdf.web.dto.HtmlToPdfResponse;
 import nl.infomedics.xhtml2pdf.web.dto.HtmlToPdfWithModelRequest;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import nl.infomedics.invoicing.model.Debiteur;
+import nl.infomedics.invoicing.model.DebiteurWithPractitioner;
 
 /**
  * REST controller exposing HTML-to-PDF conversion endpoints.
@@ -106,18 +106,18 @@ public class HtmlToPdfController {
         return ResponseEntity.ok(response);
     }
     
-    private Debiteur parseDebiteur(String jsonModel) throws Exception {
-        if (jsonModel == null || jsonModel.isBlank()) return new Debiteur();
+    private DebiteurWithPractitioner parseDebiteur(String jsonModel) throws Exception {
+        if (jsonModel == null || jsonModel.isBlank()) return new DebiteurWithPractitioner();
         JsonNode root = OBJECT_MAPPER.readTree(jsonModel);
         if (root.isObject() && root.has("debiteur") && root.get("debiteur").isObject()) {
             root = root.get("debiteur");
         }
-        return OBJECT_MAPPER.treeToValue(root, Debiteur.class);
+        return OBJECT_MAPPER.treeToValue(root, DebiteurWithPractitioner.class);
     }
 
     private BatchConversionResultItem convertSingleItem(String sharedHtml, boolean includeSanitised, BatchConversionItem item) {
         try {
-            Debiteur debiteur = null;
+            DebiteurWithPractitioner debiteur = null;
             try {
                 debiteur = parseDebiteur(item.jsonModel());
             } catch (Exception parseEx) {
@@ -136,13 +136,13 @@ public class HtmlToPdfController {
         }
     }
 
-    private String resolvePropertyPlaceholders(String htmlString, Debiteur debiteur) {
+    private String resolvePropertyPlaceholders(String htmlString, DebiteurWithPractitioner debiteur) {
         if (htmlString == null || htmlString.isEmpty() || debiteur == null) return htmlString;
         // Collect bean properties via reflection once per call (Debiteur is small)
         try {
             // Build a simple map of property name -> value string
             java.util.Map<String,String> values = new java.util.HashMap<>();
-            for (java.lang.reflect.Method m : Debiteur.class.getMethods()) {
+            for (java.lang.reflect.Method m : DebiteurWithPractitioner.class.getMethods()) {
                 if ((m.getName().startsWith("get") || m.getName().startsWith("is")) && m.getParameterCount()==0 && !m.getName().equals("getClass")) {
                     Object v = null;
                     try { v = m.invoke(debiteur); } catch (Exception ignore) { }
