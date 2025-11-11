@@ -117,13 +117,13 @@ public class HtmlToPdfController {
 
     private BatchConversionResultItem convertSingleItem(String sharedHtml, boolean includeSanitised, BatchConversionItem item) {
         try {
-            DebiteurWithPractitioner debiteur = null;
+            DebiteurWithPractitioner dwp = null;
             try {
-                debiteur = parseDebiteur(item.jsonModel());
+                dwp = parseDebiteur(item.jsonModel());
             } catch (Exception parseEx) {
                 log.warn("Failed to parse debiteur model for {}: {}", item.outputId(), parseEx.getMessage());
             }
-            String htmlResolved = debiteur != null ? resolvePropertyPlaceholders(sharedHtml, debiteur) : sharedHtml;
+            String htmlResolved = dwp != null ? resolvePropertyPlaceholders(sharedHtml, dwp) : sharedHtml;
             log.info("sharedHtml = {}", sharedHtml);
             log.info("htmlResolved = {}", htmlResolved);
             PdfConversionResult result = converterService.convertHtmlToPdf(htmlResolved);
@@ -138,26 +138,28 @@ public class HtmlToPdfController {
 
     private String resolvePropertyPlaceholders(String htmlString, DebiteurWithPractitioner debiteur) {
         if (htmlString == null || htmlString.isEmpty() || debiteur == null) return htmlString;
-        // Collect bean properties via reflection once per call (Debiteur is small)
+        // Resolve placeholders with support for nested properties (e.g. ${a.b.c}). NPE safe: null -> empty string.
         try {
-            // Build a simple map of property name -> value string
-            java.util.Map<String,String> values = new java.util.HashMap<>();
-            for (java.lang.reflect.Method m : DebiteurWithPractitioner.class.getMethods()) {
-                if ((m.getName().startsWith("get") || m.getName().startsWith("is")) && m.getParameterCount()==0 && !m.getName().equals("getClass")) {
-                    Object v = null;
-                    try { v = m.invoke(debiteur); } catch (Exception ignore) { }
-                    if (v != null) {
-                        String propName = m.getName().startsWith("get") ? m.getName().substring(3) : m.getName().substring(2);
-                        if (!propName.isEmpty()) {
-                            // lowerCamelCase first letter
-                            propName = Character.toLowerCase(propName.charAt(0)) + propName.substring(1);
-                            values.put(propName, v.toString());
-                        }
-                    }
+            java.util.Map<String,String> cache = new java.util.HashMap<>(); // cache computed values per key
+            java.util.function.BiFunction<Object,String,Object> readProp = (obj, name) -> {
+                if (obj == null || name == null || name.isEmpty()) return null;
+                Class<?> c = obj.getClass();
+                String capital = Character.toUpperCase(name.charAt(0)) + name.substring(1);
+                try { java.lang.reflect.Method m = c.getMethod("get" + capital); return m.invoke(obj); } catch (Exception ignored) {}
+                try { java.lang.reflect.Method m = c.getMethod("is" + capital); return m.invoke(obj); } catch (Exception ignored) {}
+                // fallback: direct method name (rare)
+                try { java.lang.reflect.Method m = c.getMethod(name); if (m.getParameterCount()==0) return m.invoke(obj); } catch (Exception ignored) {}
+                return null;
+            };
+            java.util.function.BiFunction<Object,String,Object> resolvePath = (root, path) -> {
+                if (root == null || path == null || path.isEmpty()) return null;
+                Object current = root;
+                for (String part : path.split("\\.")) {
+                    if (current == null) return null;
+                    current = readProp.apply(current, part);
                 }
-            }
-            if (values.isEmpty()) return htmlString;
-            // Fast scan replacing ${...}
+                return current;
+            };
             StringBuilder out = new StringBuilder(htmlString.length());
             int i=0; int len=htmlString.length();
             while (i < len) {
@@ -165,9 +167,14 @@ public class HtmlToPdfController {
                 if (start < 0) { out.append(htmlString, i, len); break; }
                 int end = htmlString.indexOf('}', start+2);
                 if (end < 0) { out.append(htmlString, i, len); break; }
-                out.append(htmlString, i, start); // append text before placeholder
+                out.append(htmlString, i, start); // text before placeholder
                 String key = htmlString.substring(start+2, end).trim();
-                String val = values.get(key);
+                String val = cache.get(key);
+                if (val == null && !cache.containsKey(key)) { // not computed yet
+                    Object resolved = resolvePath.apply(debiteur, key);
+                    val = resolved != null ? resolved.toString() : "";
+                    cache.put(key, val);
+                }
                 out.append(val != null ? val : "");
                 i = end + 1;
             }
