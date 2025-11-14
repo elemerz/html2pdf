@@ -787,6 +787,11 @@ export class DesignerStateService {
 
     const subTablesMap = element.properties?.['tableCellSubTables'] as Record<string, any> | undefined;
 
+    // Repeat binding data for table/tbody
+    const repeatMap = element.properties?.['tableRepeatBindings'] as Record<string, any> | undefined;
+    const tableRepeat = repeatMap ? Object.values(repeatMap).find(r => r.repeatedElement === 'table') : undefined;
+    const tbodyRepeat = repeatMap ? Object.values(repeatMap).find(r => r.repeatedElement === 'tbody') : undefined;
+
     const borderConfigMap = element.properties?.['tableCellBorders'] as Record<string, TableCellBorderConfig> | undefined;
     const borderWidthMap = element.properties?.['tableCellBorderWidth'] as Record<string, number> | undefined;
     const borderStyleMap = element.properties?.['tableCellBorderStyle'] as Record<string, string> | undefined;
@@ -852,12 +857,17 @@ export class DesignerStateService {
           })
           .join('\n');
 
-        return `      <tr style="height:${rowHeightStr}mm;">\n${cells}\n      </tr>`;
+        const rowRepeat = repeatMap ? repeatMap[`${rowIndex}_0`] && repeatMap[`${rowIndex}_0`].repeatedElement === 'tr' ? repeatMap[`${rowIndex}_0`] : undefined : undefined;
+        const repeatAttr = rowRepeat ? ` data-repeat-over=\"${this.escapeHtml(rowRepeat.binding)}\" data-repeat-var=\"${this.escapeHtml(rowRepeat.iteratorName)}\"` : '';
+        return `      <tr${repeatAttr} style=\"height:${rowHeightStr}mm;\">\n${cells}\n      </tr>`;
       })
       .join('\n');
 
-    return `<table${idAttr}${roleAttr} class="element element-table" style="${style}">\n` +
-      `    <tbody>\n${rowsMarkup}\n    </tbody>\n  </table>`;
+    const tableRepeatAttr = tableRepeat ? ` data-repeat-over=\"${this.escapeHtml(tableRepeat.binding)}\" data-repeat-var=\"${this.escapeHtml(tableRepeat.iteratorName)}\"` : '';
+    const tbodyRepeatAttr = tbodyRepeat ? ` data-repeat-over=\"${this.escapeHtml(tbodyRepeat.binding)}\" data-repeat-var=\"${this.escapeHtml(tbodyRepeat.iteratorName)}\"` : '';
+
+    return `<table${idAttr}${roleAttr}${tableRepeatAttr} class=\"element element-table\" style=\"${style}\">\n` +
+      `    <tbody${tbodyRepeatAttr}>\n${rowsMarkup}\n    </tbody>\n  </table>`;
   }
 
   /**
