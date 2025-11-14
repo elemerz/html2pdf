@@ -1,33 +1,41 @@
 {
-  "invoiceNumber": "872712074",
-  "practiceName": "TEST_Sample_TC_0",
-  "insuredId": "66300148456503071",
-  "patientName": "M FRERIKS",
-  "insurer": "CZ groep Zorgverzekeringen",
-  "periodFrom": "2025-11-02",
-  "periodTo": "2025-11-10",
-  "invoiceType": 66,
-  "totals": [
-    0,
-    6171,
-    null,
-    null
-  ],
+  "debiteur": {
+    "invoiceNumber": "876801518",
+    "practiceName": "TEST_Sample_TC_0",
+    "insuredId": "68300148729302071",
+    "patientName": "NJ De Vries",
+    "insurer": "Zilveren Kruis Achmea Zorgverzekeringen NV",
+    "periodFrom": "2025-08-15",
+    "periodTo": "2025-11-10",
+    "invoiceType": 68,
+    "totals": [
+      0,
+      7302,
+      null,
+      null
+    ]
+  },
+  "practitioner": {
+    "agbCode": "3108000099",
+    "logoNr": 0,
+    "address": {
+      "country": "",
+      "postcode": "3758AB",
+      "street": "VecozoTestStreet",
+      "houseNr": "53"
+    },
+    "practice": {
+      "name": "Huisartsenpraktijk Centrum",
+      "code": "",
+      "phone": ""
+    }
+  },
   "treatments": [
     {
-      "insuredId": "66300148456503071",
-      "date": "2025-08-16",
+      "insuredId": "68300148729302071",
+      "date": "2025-09-12",
       "tariffCode": "5507"
     }
   ],
-  "practitionerName": "TA_Reserved_1_Pharmaceutical_Compleet",
-  "practitionerAgbCode": "3108000099",
-  "practitionerPracticeCode": "",
-  "practitionerLogoNr": 0,
-  "practitionerCountry": "",
-  "practitionerPostcode": "4094AB",
-  "practitionerStreet": "Lindelaan",
-  "practitionerHouseNr": "22",
-  "practitionerPhone": "",
-  "totaalBedrag": 450.70
+  "totaalBedrag": 445.8
 }

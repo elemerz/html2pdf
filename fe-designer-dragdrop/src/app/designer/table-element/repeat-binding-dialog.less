@@ -1,0 +1,59 @@
+@import '../../../styles/theme.less';
+
+.tree-container {
+  max-height: 240px;
+  overflow: auto;
+  border: 1px solid @border;
+  border-radius: @radius-sm;
+  padding: @spacing-xs;
+  background: fade(@muted, 10%);
+  font-size: 12px;
+}
+
+.json-tree,
+.json-children {
+  list-style: none;
+  margin: 0;
+  padding-left: @spacing-sm;
+}
+
+.node-row {
+  display: flex;
+  align-items: center;
+  gap: @spacing-xs;
+  padding: 2px 4px;
+  border-radius: @radius-sm;
+  cursor: pointer;
+
+  &.selected {
+    background: fade(@primary, 25%);
+    color: @primary-foreground;
+  }
+}
+
+.expand-btn,
+.select-btn {
+  background: none;
+  border: none;
+  padding: 0 4px;
+  cursor: pointer;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: @foreground;
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: default;
+  }
+}
+
+.node-key { font-weight: 600; }
+.node-meta { opacity: 0.7; font-style: italic; }
+
+.radio-option { display: flex; align-items: center; gap: 6px; font-size: 13px; margin-bottom: 4px; }
+.selected-path-display { margin-top: @spacing-xs; font-size: 12px; }
+
+.repeat-form { display: flex; flex-direction: column; gap: 8px; }
+.radio-option-group { display:flex; flex-direction:row; gap:12px; }

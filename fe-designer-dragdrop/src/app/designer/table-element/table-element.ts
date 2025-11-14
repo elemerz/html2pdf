@@ -1,5 +1,6 @@
 import { Component, HostListener, Input, signal, inject, ElementRef, AfterViewInit, AfterViewChecked, OnDestroy, OnChanges, SimpleChanges } from '@angular/core';
 import { CellEditorDialogComponent } from './cell-editor-dialog';
+import { RepeatBindingDialogComponent } from './repeat-binding-dialog';
 import { CommonModule } from '@angular/common';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { CanvasElement, TableCellBorderConfig, TableCellBorderSpec } from '../../shared/models/schema';
@@ -26,7 +27,7 @@ interface ContextMenuCell {
 @Component({
   selector: 'app-table-element',
   standalone: true,
-  imports: [CommonModule, CellEditorDialogComponent],
+  imports: [CommonModule, CellEditorDialogComponent, RepeatBindingDialogComponent],
   templateUrl: './table-element.html',
   styleUrl: './table-element.less',
 })
@@ -832,6 +833,17 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
     this.closeActionsToolbar();
   }
 
+  /** Opens custom repeat binding dialog for selected cell. */
+  protected onSetRepeatBindingFromToolbar(): void {
+    const selection = this.designerState.selectedTableCell();
+    if (!selection || selection.elementId !== this.element.id) {
+      this.closeActionsToolbar();
+      return;
+    }
+    this.showRepeatBindingDialog.set(true);
+    this.closeActionsToolbar();
+  }
+
   /**
    * Builds a new nested sub-table inside an existing sub-table cell and migrates styles.
    */
@@ -1573,6 +1585,70 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
   protected onCellEditorClosed(): void {
     this.showCellEditor.set(false);
     this.editorCellSelection.set(null);
+  }
+
+  // Repeat binding dialog state
+  protected showRepeatBindingDialog = signal(false);
+
+  protected onRepeatBindingSaved(data: { binding: string; iteratorName: string; repeatedElement: 'tr' | 'tbody' | 'table' }): void {
+    const selection = this.designerState.selectedTableCell();
+    if (!selection || selection.elementId !== this.element.id) {
+      this.showRepeatBindingDialog.set(false);
+      return;
+    }
+    const props = { ...(this.element.properties || {}) } as Record<string, any>;
+    const repeatMap: Record<string, any> = { ...(props['tableRepeatBindings'] as Record<string, any> || {}) };
+    const cellKey = `${selection.row}_${selection.col}`;
+    repeatMap[cellKey] = {
+      binding: data.binding,
+      iteratorName: data.iteratorName,
+      repeatedElement: data.repeatedElement,
+      subTablePath: selection.subTablePath && selection.subTablePath.length ? [...selection.subTablePath] : undefined
+    };
+    props['tableRepeatBindings'] = repeatMap;
+    this.designerState.updateElement(this.element.id, { properties: props });
+    this.showRepeatBindingDialog.set(false);
+  }
+
+  protected onRepeatBindingClosed(): void {
+    this.showRepeatBindingDialog.set(false);
+  }
+
+  protected getRepeatBindingForSelection(): { binding: string; iteratorName: string; repeatedElement: 'tr' | 'tbody' | 'table'; subTablePath?: Array<{row:number;col:number}> } | null {
+    const selection = this.designerState.selectedTableCell();
+    if (!selection || selection.elementId !== this.element.id) return null;
+    const props = this.element.properties || {};
+    const map = props['tableRepeatBindings'] as Record<string, any> | undefined;
+    if (!map) return null;
+    const key = `${selection.row}_${selection.col}`;
+    return map[key] || null;
+  }
+
+  private repeatBindingMap(): Record<string, any> {
+    return (this.element.properties?.['tableRepeatBindings'] as Record<string, any>) || {};
+  }
+
+  protected repeatTableBinding(): any {
+    const map = this.repeatBindingMap();
+    for (const key in map) { if (map[key].repeatedElement === 'table') return map[key]; }
+    return null;
+  }
+  protected repeatTbodyBinding(): any {
+    const map = this.repeatBindingMap();
+    for (const key in map) { if (map[key].repeatedElement === 'tbody') return map[key]; }
+    return null;
+  }
+  protected repeatRowBinding(rowIndex: number): any {
+    const map = this.repeatBindingMap();
+    for (const key in map) {
+      const entry = map[key];
+      if (entry.repeatedElement === 'tr') {
+        const [rStr] = key.split('_');
+        const r = parseInt(rStr,10);
+        if (r === rowIndex) return entry;
+      }
+    }
+    return null;
   }
 
   /**

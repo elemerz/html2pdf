@@ -2,10 +2,10 @@
 @let colSizes = getColSizes();
 
 <div class="table-element-container">
-  <table class="element-table" aria-label="Table element">
-    <tbody>
+  <table class="element-table" aria-label="Table element" [attr.data-repeat-over]="repeatTableBinding()?.binding" [attr.data-repeat-var]="repeatTableBinding()?.iteratorName">
+    <tbody [attr.data-repeat-over]="repeatTbodyBinding()?.binding" [attr.data-repeat-var]="repeatTbodyBinding()?.iteratorName">
       @for (rowSize of rowSizes; track $index; let rowIndex = $index) {
-        <tr [style.height.mm]="element.height * rowSize">
+        <tr [style.height.mm]="element.height * rowSize" [attr.data-repeat-over]="repeatRowBinding(rowIndex)?.binding" [attr.data-repeat-var]="repeatRowBinding(rowIndex)?.iteratorName">
           @for (colSize of colSizes; track $index; let colIndex = $index) {
             <td
               [style.width.mm]="element.width * colSize"
@@ -176,6 +176,14 @@
             </g>
           </svg>
         </button>
+        <button class="cell-action" type="button" (click)="onSetRepeatBindingFromToolbar()" title="Repeat Over Collection">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M7 7h10a4 4 0 1 1 0 8h-2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <polyline points="9 11 5 7 9 3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M17 17H7a4 4 0 1 1 0-8h2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <polyline points="15 13 19 17 15 21" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
       </div>
     }
   }
@@ -187,4 +195,13 @@
     (saved)="onCellEditorSaved($event)"
     (closed)="onCellEditorClosed()"
   ></app-cell-editor-dialog>
+}
+@if (showRepeatBindingDialog()) {
+  <app-repeat-binding-dialog
+    [initialBinding]="getRepeatBindingForSelection()?.binding"
+    [initialIterator]="getRepeatBindingForSelection()?.iteratorName"
+    [initialRepeatedElement]="getRepeatBindingForSelection()?.repeatedElement"
+    (saved)="onRepeatBindingSaved($event)"
+    (closed)="onRepeatBindingClosed()"
+  ></app-repeat-binding-dialog>
 }

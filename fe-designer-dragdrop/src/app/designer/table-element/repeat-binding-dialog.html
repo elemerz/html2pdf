@@ -1,0 +1,91 @@
+<div class="dialog-overlay" (click)="onOverlayClick()">
+  <div class="dialog-content" (click)="onDialogClick($event)" data-testid="dialog-repeat-binding">
+
+    <div class="dialog-body">
+      <form (submit)="onSaveClicked($event)" class="repeat-form">
+        <fieldset class="form-field compact-fieldset">
+          <legend class="form-label">Repeated Element</legend>
+          <div class="radio-option-group">
+            <label class="radio-option">
+              <input type="radio" name="repeatedElement" value="tr" [checked]="repeatedElement() === 'tr'" (change)="repeatedElement.set('tr')" />
+              <span>&lt;tr&gt;</span>
+            </label>
+            <label class="radio-option">
+              <input type="radio" name="repeatedElement" value="tbody" [checked]="repeatedElement() === 'tbody'" (change)="repeatedElement.set('tbody')" />
+              <span>&lt;tbody&gt;</span>
+            </label>
+            <label class="radio-option">
+              <input type="radio" name="repeatedElement" value="table" [checked]="repeatedElement() === 'table'" (change)="repeatedElement.set('table')" />
+              <span>&lt;table&gt;</span>
+            </label>
+          </div>
+        </fieldset>
+
+        <fieldset class="form-field">
+          <legend class="form-label">Repeat Over (select an array)</legend>
+          <div class="tree-container">
+            <ul class="json-tree">
+              @for (node of jsonTree(); track node.path) {
+                <li class="json-node" [class.array]="node.type === 'array'" [class.object]="node.type === 'object'">
+                  <div class="node-row" [class.selected]="selectedPath() === node.path">
+                    <button type="button" class="expand-btn" (click)="toggleNode(node)" [disabled]="node.type === 'primitive'">
+                      {{ node.expanded ? '-' : '+' }}
+                    </button>
+                    <button type="button" class="select-btn" (click)="onSelectNode(node)" [title]="'Select path ' + node.path">
+                      <span class="node-key">{{ node.key }}</span>
+                      <span class="node-meta">{{ getPreview(node) }}</span>
+                    </button>
+                  </div>
+                  @if (node.expanded && node.children?.length) {
+                    <ul class="json-children">
+                      @for (child of node.children; track child.path) {
+                        <li class="json-node" [class.array]="child.type === 'array'" [class.object]="child.type === 'object'">
+                          <div class="node-row" [class.selected]="selectedPath() === child.path">
+                            <button type="button" class="expand-btn" (click)="toggleNode(child)" [disabled]="child.type === 'primitive'">
+                              {{ child.expanded ? '-' : '+' }}
+                            </button>
+                            <button type="button" class="select-btn" (click)="onSelectNode(child)" [title]="'Select path ' + child.path">
+                              <span class="node-key">{{ child.key }}</span>
+                              <span class="node-meta">{{ getPreview(child) }}</span>
+                            </button>
+                          </div>
+                          @if (child.expanded && child.children?.length) {
+                            <ul class="json-children">
+                              @for (grand of child.children; track grand.path) {
+                                <li class="json-node" [class.array]="grand.type === 'array'" [class.object]="grand.type === 'object'">
+                                  <div class="node-row" [class.selected]="selectedPath() === grand.path">
+                                    <button type="button" class="expand-btn" (click)="toggleNode(grand)" [disabled]="grand.type === 'primitive'">
+                                      {{ grand.expanded ? '-' : '+' }}
+                                    </button>
+                                    <button type="button" class="select-btn" (click)="onSelectNode(grand)" [title]="'Select path ' + grand.path">
+                                      <span class="node-key">{{ grand.key }}</span>
+                                      <span class="node-meta">{{ getPreview(grand) }}</span>
+                                    </button>
+                                  </div>
+                                </li>
+                              }
+                            </ul>
+                          }
+                        </li>
+                      }
+                    </ul>
+                  }
+                </li>
+              }
+            </ul>
+          </div>
+          <div class="selected-path-display" *ngIf="selectedPath()">Selected: <code>{{ selectedPath() }}</code></div>
+        </fieldset>
+
+        <div class="form-field">
+          <label class="form-label" for="iterator-name">Iterator Variable Name</label>
+          <input id="iterator-name" type="text" class="form-input" [value]="iteratorName()" (input)="iteratorName.set($any($event.target).value)" placeholder="e.g. item" />
+        </div>
+      </form>
+    </div>
+    <div class="dialog-footer">
+      <button type="button" class="button button-secondary" (click)="onCancelClicked()">Cancel</button>
+      <button type="button" class="button button-primary" [disabled]="!canSave()" (click)="onSaveClicked($event)">Save</button>
+    </div>
+  </div>
+</div>
