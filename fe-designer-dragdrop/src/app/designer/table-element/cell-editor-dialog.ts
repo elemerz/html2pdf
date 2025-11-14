@@ -150,7 +150,8 @@ function isDiacriticalLetter(code: number, char: string): boolean {
   styleUrl: './cell-editor-dialog.less'
 })
 export class CellEditorDialogComponent implements OnInit, OnDestroy {
-  @Input() initialContent: string = '';
+  @Input() initialContent: string = ''; // initial HTML
+  @Input() repeatBinding?: { binding: string; iteratorName: string; repeatedElement: 'tr' | 'tbody' | 'table'; subTablePath?: Array<{row:number;col:number}> };
   @Output() closed = new EventEmitter<void>();
   @Output() saved = new EventEmitter<string>();
 
@@ -629,16 +630,42 @@ export class CellEditorDialogComponent implements OnInit, OnDestroy {
     const insideExpression = this.detectExpressionContext(textBeforeCursor, textAfterCursor);
     
     const currentPath = this.extractPathBeforeCursor(textBeforeCursor, insideExpression);
-    
-    const fields = this.reportDataService.getFieldsAtPath(currentPath);
-    
+
+    // Map iterator variable (cycle variable) to underlying data path when present
+    let underlyingPath = currentPath;
+    const iteratorName = this.repeatBinding?.iteratorName?.trim();
+    const bindingPath = this.repeatBinding?.binding?.trim();
+
+    if (iteratorName && bindingPath && currentPath) {
+      if (currentPath === iteratorName) {
+        // At the iterator root -> use binding collection path to fetch item fields
+        underlyingPath = bindingPath;
+      } else if (currentPath.startsWith(iteratorName + '.')) {
+        // Translate iteratorName.remainder -> bindingPath.remainder
+        const remainder = currentPath.slice(iteratorName.length + 1);
+        underlyingPath = remainder ? `${bindingPath}.${remainder}` : bindingPath;
+      }
+    }
+
+    let fields = this.reportDataService.getFieldsAtPath(underlyingPath);
+
+    // Inject iterator variable itself at root suggestions (only once)
+    if (iteratorName && (!currentPath || currentPath === '')) {
+      if (!fields.includes(iteratorName)) {
+        fields = [iteratorName, ...fields];
+      }
+    }
+
     console.log('[Intellisense] Path detection:', {
       textBeforeCursor: textBeforeCursor.slice(-30),
       textAfterCursor: textAfterCursor.slice(0, 30),
       insideExpression,
       currentPath,
+      underlyingPath,
+      iteratorName,
+      bindingPath,
       fieldsCount: fields.length,
-      fields: fields.slice(0, 5)
+      sampleFields: fields.slice(0, 5)
     });
     
     if (fields.length === 0) {
@@ -647,7 +674,7 @@ export class CellEditorDialogComponent implements OnInit, OnDestroy {
     }
 
     this.intellisenseItems = fields;
-    this.intellisenseCurrentPath = currentPath;
+    this.intellisenseCurrentPath = currentPath; // keep the user's typed path (may be iteratorName.*)
     this.intellisenseInsertIndex = range.index;
     this.intellisenseSelectedIndex = 0;
 

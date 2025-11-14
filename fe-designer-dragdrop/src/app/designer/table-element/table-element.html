@@ -192,6 +192,7 @@
 @if (showCellEditor() && editorCellSelection()) {
   <app-cell-editor-dialog
     [initialContent]="getCellContentRaw(editorCellSelection()!.row, editorCellSelection()!.col)"
+    [repeatBinding]="repeatRowBinding(editorCellSelection()!.row) || repeatTbodyBinding() || repeatTableBinding()"
     (saved)="onCellEditorSaved($event)"
     (closed)="onCellEditorClosed()"
   ></app-cell-editor-dialog>
