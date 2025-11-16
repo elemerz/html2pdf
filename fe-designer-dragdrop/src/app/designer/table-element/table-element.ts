@@ -1606,6 +1606,7 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
       subTablePath: selection.subTablePath && selection.subTablePath.length ? [...selection.subTablePath] : undefined
     };
     props['tableRepeatBindings'] = repeatMap;
+    console.log('[RepeatBinding] Saved:', { cellKey, binding: data.binding, iteratorName: data.iteratorName, repeatedElement: data.repeatedElement });
     this.designerState.updateElement(this.element.id, { properties: props });
     this.showRepeatBindingDialog.set(false);
   }
