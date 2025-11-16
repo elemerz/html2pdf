@@ -787,10 +787,10 @@ export class DesignerStateService {
 
     const subTablesMap = element.properties?.['tableCellSubTables'] as Record<string, any> | undefined;
 
-    // Repeat binding data for table/tbody
+    // Repeat binding data for table/tbody (level 0 only)
     const repeatMap = element.properties?.['tableRepeatBindings'] as Record<string, any> | undefined;
-    const tableRepeat = repeatMap ? Object.values(repeatMap).find(r => r.repeatedElement === 'table') : undefined;
-    const tbodyRepeat = repeatMap ? Object.values(repeatMap).find(r => r.repeatedElement === 'tbody') : undefined;
+    const tableRepeat = repeatMap ? Object.values(repeatMap).find(r => r.repeatedElement === 'table' && r.level === 0) : undefined;
+    const tbodyRepeat = repeatMap ? Object.values(repeatMap).find(r => r.repeatedElement === 'tbody' && r.level === 0) : undefined;
 
     const borderConfigMap = element.properties?.['tableCellBorders'] as Record<string, TableCellBorderConfig> | undefined;
     const borderWidthMap = element.properties?.['tableCellBorderWidth'] as Record<string, number> | undefined;
@@ -857,7 +857,7 @@ export class DesignerStateService {
           })
           .join('\n');
 
-        const rowRepeat = repeatMap ? repeatMap[`${rowIndex}_0`] && repeatMap[`${rowIndex}_0`].repeatedElement === 'tr' ? repeatMap[`${rowIndex}_0`] : undefined : undefined;
+        const rowRepeat = repeatMap ? repeatMap[`${rowIndex}_0`] && repeatMap[`${rowIndex}_0`].repeatedElement === 'tr' && repeatMap[`${rowIndex}_0`].level === 0 ? repeatMap[`${rowIndex}_0`] : undefined : undefined;
         const repeatAttr = rowRepeat ? ` data-repeat-over=\"${this.escapeHtml(rowRepeat.binding)}\" data-repeat-var=\"${this.escapeHtml(rowRepeat.iteratorName)}\"` : '';
         return `      <tr${repeatAttr} style=\"height:${rowHeightStr}mm;\">\n${cells}\n      </tr>`;
       })
@@ -883,6 +883,11 @@ export class DesignerStateService {
     const cellBorderWidthMap = subTable.cellBorderWidth as Record<string, number> | undefined;
     const cellBorderStyleMap = subTable.cellBorderStyle as Record<string, string> | undefined;
     const cellBorderColorMap = subTable.cellBorderColor as Record<string, string> | undefined;
+
+    // Repeat binding data for this sub-table
+    const repeatMap = subTable.repeatBindings as Record<string, any> | undefined;
+    const tableRepeat = repeatMap ? Object.values(repeatMap).find(r => r.repeatedElement === 'table') : undefined;
+    const tbodyRepeat = repeatMap ? Object.values(repeatMap).find(r => r.repeatedElement === 'tbody') : undefined;
 
     const rowsMarkup = rowSizes
       .map((rowRatio: number, rowIndex: number) => {
@@ -935,11 +940,17 @@ export class DesignerStateService {
           })
           .join('\n');
 
-        return `        <tr style="height:${rowHeightStr}mm;">\n${cells}\n        </tr>`;
+        // Check for row-level repeat binding
+        const rowRepeat = repeatMap ? repeatMap['0_0'] && repeatMap['0_0'].repeatedElement === 'tr' ? repeatMap['0_0'] : undefined : undefined;
+        const repeatAttr = rowRepeat ? ` data-repeat-over="${this.escapeHtml(rowRepeat.binding)}" data-repeat-var="${this.escapeHtml(rowRepeat.iteratorName)}"` : '';
+        return `        <tr${repeatAttr} style="height:${rowHeightStr}mm;">\n${cells}\n        </tr>`;
       })
       .join('\n');
 
-    return `<table style="width:100%;height:100%;border-collapse:collapse;">\n      <tbody>\n${rowsMarkup}\n      </tbody>\n    </table>`;
+    const tableRepeatAttr = tableRepeat ? ` data-repeat-over="${this.escapeHtml(tableRepeat.binding)}" data-repeat-var="${this.escapeHtml(tableRepeat.iteratorName)}"` : '';
+    const tbodyRepeatAttr = tbodyRepeat ? ` data-repeat-over="${this.escapeHtml(tbodyRepeat.binding)}" data-repeat-var="${this.escapeHtml(tbodyRepeat.iteratorName)}"` : '';
+
+    return `<table${tableRepeatAttr} style="width:100%;height:100%;border-collapse:collapse;">\n      <tbody${tbodyRepeatAttr}>\n${rowsMarkup}\n      </tbody>\n    </table>`;
   }
 
   /**

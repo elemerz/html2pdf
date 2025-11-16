@@ -1252,14 +1252,25 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
     // Calculate selection color based on level
     const selectionColor = this.getSelectionColorForLevel(level);
 
+    // Get repeat bindings for this sub-table
+    const repeatBindings = subTable.repeatBindings as Record<string, any> | undefined;
+    const tableRepeat = repeatBindings ? Object.values(repeatBindings).find(r => r.repeatedElement === 'table') : undefined;
+    const tbodyRepeat = repeatBindings ? Object.values(repeatBindings).find(r => r.repeatedElement === 'tbody') : undefined;
+    const trRepeat = repeatBindings ? Object.values(repeatBindings).find(r => r.repeatedElement === 'tr') : undefined;
+
+    // Build repeat attributes
+    const tableRepeatAttr = tableRepeat ? ` data-repeat-over="${this.escapeHtmlAttribute(tableRepeat.binding)}" data-repeat-var="${this.escapeHtmlAttribute(tableRepeat.iteratorName)}"` : '';
+    const tbodyRepeatAttr = tbodyRepeat ? ` data-repeat-over="${this.escapeHtmlAttribute(tbodyRepeat.binding)}" data-repeat-var="${this.escapeHtmlAttribute(tbodyRepeat.iteratorName)}"` : '';
+    const trRepeatAttr = trRepeat ? ` data-repeat-over="${this.escapeHtmlAttribute(trRepeat.binding)}" data-repeat-var="${this.escapeHtmlAttribute(trRepeat.iteratorName)}"` : '';
+
     // Wrap subtable in a positioned container for resize handles
     let html = `<div class="sub-table-wrapper" style="position:relative;width:100%;height:100%;">`;
-    html += `<table class="sub-table sub-table-level-${level}" style="width:100%;height:100%;border-collapse:collapse;table-layout:fixed;">`;
-    html += '<tbody>';
+    html += `<table class="sub-table sub-table-level-${level}" style="width:100%;height:100%;border-collapse:collapse;table-layout:fixed;"${tableRepeatAttr}>`;
+    html += `<tbody${tbodyRepeatAttr}>`;
 
     for (let r = 0; r < rows; r++) {
       const rowHeightPercent = (rowSizes[r] * 100).toFixed(2);
-      html += `<tr style="height:${rowHeightPercent}%;">`;
+      html += `<tr style="height:${rowHeightPercent}%;"${trRepeatAttr}>`;
 
       for (let c = 0; c < cols; c++) {
         const cellKey = `${r}_${c}`;
@@ -1596,17 +1607,104 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
       this.showRepeatBindingDialog.set(false);
       return;
     }
-    const props = { ...(this.element.properties || {}) } as Record<string, any>;
-    const repeatMap: Record<string, any> = { ...(props['tableRepeatBindings'] as Record<string, any> || {}) };
-    const cellKey = `${selection.row}_${selection.col}`;
-    repeatMap[cellKey] = {
-      binding: data.binding,
-      iteratorName: data.iteratorName,
-      repeatedElement: data.repeatedElement,
-      subTablePath: selection.subTablePath && selection.subTablePath.length ? [...selection.subTablePath] : undefined
-    };
-    props['tableRepeatBindings'] = repeatMap;
-    console.log('[RepeatBinding] Saved:', { cellKey, binding: data.binding, iteratorName: data.iteratorName, repeatedElement: data.repeatedElement });
+
+    // Determine the current level based on breadcrumb
+    const breadcrumb = this.getSelectedSubTableAncestors();
+    const currentLevel = breadcrumb.length > 0 ? breadcrumb.length : 0;
+    
+    // Deep clone all properties to avoid mutation issues
+    const props = JSON.parse(JSON.stringify(this.element.properties || {}));
+
+    if (currentLevel === 0) {
+      // Level 0: Save to root element properties
+      if (!props['tableRepeatBindings']) {
+        props['tableRepeatBindings'] = {};
+      }
+      const cellKey = `${selection.row}_${selection.col}`;
+      
+      props['tableRepeatBindings'][cellKey] = {
+        binding: data.binding,
+        iteratorName: data.iteratorName,
+        repeatedElement: data.repeatedElement,
+        level: 0
+      };
+      console.log('[RepeatBinding] Saved at level 0:', { cellKey, binding: data.binding, iteratorName: data.iteratorName, repeatedElement: data.repeatedElement });
+    } else {
+      // Level >= 1: Navigate to the sub-table and save there
+      const subTablesMap = props['tableCellSubTables'];
+      
+      console.log('[RepeatBinding] Level >= 1 Debug:', { 
+        currentLevel, 
+        hasSubTablesMap: !!subTablesMap, 
+        subTablesMapKeys: subTablesMap ? Object.keys(subTablesMap) : [],
+        selectionRow: selection.row,
+        selectionCol: selection.col,
+        subTablePath: selection.subTablePath
+      });
+      
+      if (!subTablesMap || Object.keys(subTablesMap).length === 0) {
+        console.error('[RepeatBinding] No sub-tables found');
+        this.showRepeatBindingDialog.set(false);
+        return;
+      }
+
+      // Navigate to the sub-table at the current level
+      const parentKey = `${selection.row}_${selection.col}`;
+      let currentSubTable = subTablesMap[parentKey];
+      
+      console.log('[RepeatBinding] Looking for parent key:', parentKey, 'found:', !!currentSubTable);
+      
+      if (!currentSubTable) {
+        console.error('[RepeatBinding] Parent sub-table not found, key:', parentKey);
+        this.showRepeatBindingDialog.set(false);
+        return;
+      }
+
+      // Navigate through the path to reach the sub-table at currentLevel
+      console.log('[RepeatBinding] Navigating, loop iterations:', currentLevel - 1);
+      for (let i = 0; i < currentLevel - 1; i++) {
+        const subCell = selection.subTablePath![i];
+        const cellKey = `${subCell.row}_${subCell.col}`;
+        console.log('[RepeatBinding] Navigation step', i, 'looking for cellKey:', cellKey);
+        if (!currentSubTable.cellSubTables || !currentSubTable.cellSubTables[cellKey]) {
+          console.error(`[RepeatBinding] Sub-table not found at level ${i}, key: ${cellKey}`);
+          this.showRepeatBindingDialog.set(false);
+          return;
+        }
+        currentSubTable = currentSubTable.cellSubTables[cellKey];
+        console.log('[RepeatBinding] Navigation step', i, 'success, currentSubTable level:', currentSubTable.level);
+      }
+
+      // Now currentSubTable is the sub-table at currentLevel
+      console.log('[RepeatBinding] Reached target sub-table, level:', currentSubTable.level);
+      
+      // Initialize repeatBindings if needed
+      if (!currentSubTable.repeatBindings) {
+        currentSubTable.repeatBindings = {};
+        console.log('[RepeatBinding] Initialized repeatBindings');
+      }
+
+      // For repeating this sub-table's elements, we use a dummy key (like "0_0")
+      // since the repeat applies to the table/tbody/tr of this sub-table itself
+      const cellKey = "0_0"; // Convention: use first cell as key for table-level bindings
+      
+      currentSubTable.repeatBindings[cellKey] = {
+        binding: data.binding,
+        iteratorName: data.iteratorName,
+        repeatedElement: data.repeatedElement,
+        level: currentLevel
+      };
+
+      console.log('[RepeatBinding] Saved at level', currentLevel, ':', { 
+        cellKey, 
+        binding: data.binding, 
+        iteratorName: data.iteratorName, 
+        repeatedElement: data.repeatedElement,
+        repeatBindings: currentSubTable.repeatBindings 
+      });
+    }
+    
+    console.log('[RepeatBinding] About to call updateElement with props:', JSON.stringify(props, null, 2).substring(0, 500));
     this.designerState.updateElement(this.element.id, { properties: props });
     this.showRepeatBindingDialog.set(false);
   }
@@ -1619,10 +1717,72 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
     const selection = this.designerState.selectedTableCell();
     if (!selection || selection.elementId !== this.element.id) return null;
     const props = this.element.properties || {};
-    const map = props['tableRepeatBindings'] as Record<string, any> | undefined;
-    if (!map) return null;
-    const key = `${selection.row}_${selection.col}`;
-    return map[key] || null;
+    
+    // Determine the current level based on breadcrumb
+    const breadcrumb = this.getSelectedSubTableAncestors();
+    const currentLevel = breadcrumb.length > 0 ? breadcrumb.length : 0;
+    
+    console.log('[RepeatBinding] GET - currentLevel:', currentLevel);
+    
+    if (currentLevel === 0) {
+      // Level 0: Look in root element properties
+      const map = props['tableRepeatBindings'] as Record<string, any> | undefined;
+      if (!map) return null;
+      
+      const key = `${selection.row}_${selection.col}`;
+      const binding = map[key];
+      
+      console.log('[RepeatBinding] GET Level 0 - key:', key, 'binding:', binding);
+      
+      if (binding && binding.level === 0) {
+        return binding;
+      }
+      return null;
+    } else {
+      // Level >= 1: Navigate to the sub-table and look there
+      const subTablesMap = props['tableCellSubTables'] as Record<string, any> | undefined;
+      if (!subTablesMap) {
+        console.log('[RepeatBinding] GET Level', currentLevel, '- No subTablesMap');
+        return null;
+      }
+
+      const parentKey = `${selection.row}_${selection.col}`;
+      let currentSubTable = subTablesMap[parentKey];
+      if (!currentSubTable) {
+        console.log('[RepeatBinding] GET Level', currentLevel, '- Parent not found, key:', parentKey);
+        return null;
+      }
+
+      console.log('[RepeatBinding] GET Level', currentLevel, '- Found parent, navigating...');
+
+      // Navigate through the path to reach the sub-table at currentLevel
+      for (let i = 0; i < currentLevel - 1; i++) {
+        const subCell = selection.subTablePath![i];
+        const cellKey = `${subCell.row}_${subCell.col}`;
+        if (!currentSubTable.cellSubTables || !currentSubTable.cellSubTables[cellKey]) {
+          console.log('[RepeatBinding] GET Level', currentLevel, '- Navigation failed at step', i, 'key:', cellKey);
+          return null;
+        }
+        currentSubTable = currentSubTable.cellSubTables[cellKey];
+      }
+
+      // Now currentSubTable is the sub-table at currentLevel
+      if (!currentSubTable.repeatBindings) {
+        console.log('[RepeatBinding] GET Level', currentLevel, '- No repeatBindings on target sub-table');
+        return null;
+      }
+
+      const cellKey = "0_0"; // Convention: use first cell as key for table-level bindings
+      const binding = currentSubTable.repeatBindings[cellKey];
+      
+      console.log('[RepeatBinding] GET Level', currentLevel, '- repeatBindings:', currentSubTable.repeatBindings, 'binding for key', cellKey, ':', binding);
+      
+      if (binding && binding.level === currentLevel) {
+        return binding;
+      }
+      console.log('[RepeatBinding] GET Level', currentLevel, '- Binding level mismatch or not found');
+      return null;
+    }
   }
 
   private repeatBindingMap(): Record<string, any> {
@@ -1631,19 +1791,29 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
 
   protected repeatTableBinding(): any {
     const map = this.repeatBindingMap();
-    for (const key in map) { if (map[key].repeatedElement === 'table') return map[key]; }
+    for (const key in map) { 
+      const entry = map[key];
+      if (entry.repeatedElement === 'table' && entry.level === 0) {
+        return entry;
+      }
+    }
     return null;
   }
   protected repeatTbodyBinding(): any {
     const map = this.repeatBindingMap();
-    for (const key in map) { if (map[key].repeatedElement === 'tbody') return map[key]; }
+    for (const key in map) { 
+      const entry = map[key];
+      if (entry.repeatedElement === 'tbody' && entry.level === 0) {
+        return entry;
+      }
+    }
     return null;
   }
   protected repeatRowBinding(rowIndex: number): any {
     const map = this.repeatBindingMap();
     for (const key in map) {
       const entry = map[key];
-      if (entry.repeatedElement === 'tr') {
+      if (entry.repeatedElement === 'tr' && entry.level === 0) {
         const [rStr] = key.split('_');
         const r = parseInt(rStr,10);
         if (r === rowIndex) return entry;
@@ -2079,6 +2249,17 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
   private applyTableSizes(rowSizes: number[], colSizes: number[]): void {
     const properties = withTableSizes(this.element, rowSizes, colSizes);
     this.designerState.updateElement(this.element.id, { properties });
+  }
+
+  /**
+   * Escapes HTML attribute values for safe embedding in HTML strings.
+   */
+  private escapeHtmlAttribute(value: string): string {
+    return value
+      .replace(/&/g, '&amp;')
+      .replace(/"/g, '&quot;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
   }
 
   /**

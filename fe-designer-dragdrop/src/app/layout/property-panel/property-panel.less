@@ -267,6 +267,34 @@
   background: linear-gradient(90deg, @primary 0%, darken(@primary,10%) 100%);
   border-radius: @radius-sm;
   text-shadow: 0 1px 2px fade(@background,40%);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  transition: background @transition-fast;
+
+  &:hover {
+    background: linear-gradient(90deg, lighten(@primary,5%) 0%, @primary 100%);
+  }
+}
+
+.subsection-toggle {
+  background: transparent;
+  border: none;
+  color: @primary-foreground;
+  font-size: 12px;
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+  transition: transform @transition-fast;
+
+  &:hover {
+    color: lighten(@primary-foreground, 10%);
+  }
+}
+
+.subsection-body {
+  margin-top: 8px;
 }
 
 .border-popover::before {

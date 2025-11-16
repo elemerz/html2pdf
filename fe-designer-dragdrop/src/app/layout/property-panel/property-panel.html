@@ -142,30 +142,39 @@
             </div>
 
             <div class="property-subsection">
-              <header class="subsection-header">Alignment</header>
-              <div class="property-grid" style="grid-template-columns:1fr 1fr;">
-                <div class="property-field">
-                  <label class="property-label">Horizontal</label>
-                  <div class="align-buttons-row">
-                    <button type="button" class="align-btn" [class.active]="getSelectedCellHAlign()==='left'" (click)="updateSelectedCellAlignment('h','left')"><span class="ico-align_horizontal_left"></span></button>
-                    <button type="button" class="align-btn" [class.active]="getSelectedCellHAlign()==='center'" (click)="updateSelectedCellAlignment('h','center')"><span class="ico-align_horizontal_center"></span></button>
-                    <button type="button" class="align-btn" [class.active]="getSelectedCellHAlign()==='right'" (click)="updateSelectedCellAlignment('h','right')"><span class="ico-align_horizontal_right"></span></button>
+              <header class="subsection-header" (click)="toggleSubsection('alignment')">
+                <span>Alignment</span>
+                <button type="button" class="subsection-toggle" (click)="toggleSubsection('alignment'); $event.stopPropagation()">{{ collapsedSubsection('alignment') ? '▸' : '▾' }}</button>
+              </header>
+              <div class="subsection-body" *ngIf="!collapsedSubsection('alignment')">
+                <div class="property-grid" style="grid-template-columns:1fr 1fr;">
+                  <div class="property-field">
+                    <label class="property-label">Horizontal</label>
+                    <div class="align-buttons-row">
+                      <button type="button" class="align-btn" [class.active]="getSelectedCellHAlign()==='left'" (click)="updateSelectedCellAlignment('h','left')"><span class="ico-align_horizontal_left"></span></button>
+                      <button type="button" class="align-btn" [class.active]="getSelectedCellHAlign()==='center'" (click)="updateSelectedCellAlignment('h','center')"><span class="ico-align_horizontal_center"></span></button>
+                      <button type="button" class="align-btn" [class.active]="getSelectedCellHAlign()==='right'" (click)="updateSelectedCellAlignment('h','right')"><span class="ico-align_horizontal_right"></span></button>
+                    </div>
                   </div>
-                </div>
-                <div class="property-field">
-                  <label class="property-label">Vertical</label>
-                  <div class="align-buttons-row">
-                    <button type="button" class="align-btn" [class.active]="getSelectedCellVAlign()==='top'" (click)="updateSelectedCellAlignment('v','top')"><span class="ico-align_vertical_top"></span></button>
-                    <button type="button" class="align-btn" [class.active]="getSelectedCellVAlign()==='middle'" (click)="updateSelectedCellAlignment('v','middle')"><span class="ico-align_vertical_center"></span></button>
-                    <button type="button" class="align-btn" [class.active]="getSelectedCellVAlign()==='bottom'" (click)="updateSelectedCellAlignment('v','bottom')"><span class="ico-align_vertical_bottom"></span></button>
+                  <div class="property-field">
+                    <label class="property-label">Vertical</label>
+                    <div class="align-buttons-row">
+                      <button type="button" class="align-btn" [class.active]="getSelectedCellVAlign()==='top'" (click)="updateSelectedCellAlignment('v','top')"><span class="ico-align_vertical_top"></span></button>
+                      <button type="button" class="align-btn" [class.active]="getSelectedCellVAlign()==='middle'" (click)="updateSelectedCellAlignment('v','middle')"><span class="ico-align_vertical_center"></span></button>
+                      <button type="button" class="align-btn" [class.active]="getSelectedCellVAlign()==='bottom'" (click)="updateSelectedCellAlignment('v','bottom')"><span class="ico-align_vertical_bottom"></span></button>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
 
             <div class="property-subsection">
-              <header class="subsection-header">Cell Border</header>
-              <div class="border-settings">
+              <header class="subsection-header" (click)="toggleSubsection('cellBorder')">
+                <span>Cell Border</span>
+                <button type="button" class="subsection-toggle" (click)="toggleSubsection('cellBorder'); $event.stopPropagation()">{{ collapsedSubsection('cellBorder') ? '▸' : '▾' }}</button>
+              </header>
+              <div class="subsection-body" *ngIf="!collapsedSubsection('cellBorder')">
+                <div class="border-settings">
                 <div class="border-row border-row-top">
                   <div class="border-button">
                     <button type="button" class="border-btn border-btn-top"
@@ -312,12 +321,17 @@
                     </div>
                   </div>
                 </div>
+                </div>
               </div>
             </div>
 
             <div class="property-subsection">
-              <header class="subsection-header">Font</header>
-              <div class="property-grid">
+              <header class="subsection-header" (click)="toggleSubsection('font')">
+                <span>Font</span>
+                <button type="button" class="subsection-toggle" (click)="toggleSubsection('font'); $event.stopPropagation()">{{ collapsedSubsection('font') ? '▸' : '▾' }}</button>
+              </header>
+              <div class="subsection-body" *ngIf="!collapsedSubsection('font')">
+                <div class="property-grid">
                 <div class="property-field">
                   <label class="property-label">Font Family</label>
                   <select class="property-input"
@@ -404,6 +418,7 @@
                     <option value="Raleway, sans-serif">Raleway</option>
                   </select>
                 </div>
+              </div>
               </div>
             </div>
           </div>

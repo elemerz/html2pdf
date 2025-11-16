@@ -20,14 +20,31 @@ type BorderPart = 'width' | 'style' | 'color';
 })
 export class PropertyPanelComponent {
   protected collapsedSections: Record<string, boolean> = { general: false, table: false, cell: false };
+  protected collapsedSubsections: Record<string, boolean> = { 
+    alignment: false, 
+    cellBorder: false, 
+    font: false 
+  };
+
   /**
    * Returns whether the requested accordion section is collapsed.
    */
   collapsed(id: string): boolean { return !!this.collapsedSections[id]; }
+
+  /**
+   * Returns whether the requested subsection is collapsed.
+   */
+  collapsedSubsection(id: string): boolean { return !!this.collapsedSubsections[id]; }
+
   /**
    * Toggles the expansion state for a panel section.
    */
   toggleSection(id: string): void { this.collapsedSections[id] = !this.collapsedSections[id]; }
+
+  /**
+   * Toggles the given subsection (collapsed <-> expanded).
+   */
+  toggleSubsection(id: string): void { this.collapsedSubsections[id] = !this.collapsedSubsections[id]; }
   private designerState = inject(DesignerStateService);
   
   protected selectedElement = this.designerState.selectedElement;

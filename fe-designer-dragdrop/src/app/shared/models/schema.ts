@@ -59,6 +59,7 @@ export interface SubTableData {
   cellLineHeight: Record<string, number>;
   cellTextDecoration: Record<string, string>;
   cellSubTables?: Record<string, SubTableData>; // Nested sub-tables
+  repeatBindings?: Record<string, any>; // Repeat bindings for this sub-table's rows/tbody/table
 }
 
 // Layout/Report design
