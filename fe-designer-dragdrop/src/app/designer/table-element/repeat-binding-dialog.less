@@ -1,12 +1,186 @@
 @import '../../../styles/theme.less';
 
+.dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: fade(@background, 80%);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 60px;
+  z-index: @z-dialog;
+}
+
+.dialog-content {
+  background-color: @card;
+  border: 1px solid @card-border;
+  border-radius: @radius;
+  box-shadow: @shadow-lg;
+  width: 90%;
+  max-width: 600px;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  user-select: none;
+}
+
+.dialog-drag-handle {
+  height: 32px;
+  background: linear-gradient(to bottom, fade(@primary, 15%), fade(@primary, 5%));
+  border-bottom: 1px solid @border;
+  border-radius: @radius @radius 0 0;
+  cursor: move;
+  flex-shrink: 0;
+  
+  &:hover {
+    background: linear-gradient(to bottom, fade(@primary, 20%), fade(@primary, 8%));
+  }
+  
+  &:active {
+    background: fade(@primary, 25%);
+  }
+}
+
+.dialog-body {
+  padding: @spacing-sm @spacing-md;
+  overflow-y: auto;
+  flex: 1;
+  user-select: text;
+}
+
+.dialog-footer {
+  padding: @spacing-sm @spacing-md;
+  border-top: 1px solid @border;
+  display: flex;
+  justify-content: flex-end;
+  gap: @spacing-sm;
+  user-select: none;
+}
+
+.button {
+  padding: @spacing-sm @spacing-md;
+  border: none;
+  border-radius: @radius-sm;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all @transition-fast;
+
+  &:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px fade(@primary, 20%);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.button-primary {
+  background-color: @primary;
+  color: @primary-foreground;
+
+  &:hover:not(:disabled) {
+    opacity: 0.9;
+  }
+}
+
+.button-secondary {
+  background-color: @secondary;
+  color: @secondary-foreground;
+
+  &:hover:not(:disabled) {
+    opacity: 0.9;
+  }
+}
+
+.repeat-form {
+  display: flex;
+  flex-direction: column;
+  gap: @spacing-sm;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: @spacing-xs;
+}
+
+.form-label {
+  display: block;
+  margin-bottom: @spacing-xs;
+  font-size: 14px;
+  font-weight: 500;
+  color: @foreground;
+}
+
+.form-input {
+  width: 100%;
+  padding: @spacing-sm;
+  border: 1px solid @input-border;
+  border-radius: @radius-sm;
+  font-size: 14px;
+  background-color: @input;
+  color: @foreground;
+  
+  &:focus {
+    outline: none;
+    border-color: @primary;
+    box-shadow: 0 0 0 3px fade(@primary, 20%);
+  }
+
+  &::placeholder {
+    color: @muted-foreground;
+  }
+}
+
+.compact-fieldset {
+  border: 1px solid @border;
+  border-radius: @radius-sm;
+  padding: @spacing-xs;
+  background-color: fade(@muted, 20%);
+  
+  legend {
+    padding: 0 @spacing-xs;
+    font-size: 13px;
+  }
+}
+
+.radio-option-group {
+  display: flex;
+  flex-direction: row;
+  gap: @spacing-sm;
+}
+
+.radio-option {
+  display: flex;
+  align-items: center;
+  gap: @spacing-xs;
+  font-size: 13px;
+  cursor: pointer;
+
+  input[type="radio"] {
+    cursor: pointer;
+  }
+
+  span {
+    color: @foreground;
+    font-family: @font-mono;
+  }
+}
+
 .tree-container {
   max-height: 240px;
   overflow: auto;
   border: 1px solid @border;
   border-radius: @radius-sm;
   padding: @spacing-xs;
-  background: fade(@muted, 10%);
+  background: @input;
   font-size: 12px;
 }
 
@@ -17,6 +191,20 @@
   padding-left: @spacing-sm;
 }
 
+.json-node {
+  &.array {
+    .node-key {
+      color: @secondary;
+    }
+  }
+
+  &.object {
+    .node-key {
+      color: @primary;
+    }
+  }
+}
+
 .node-row {
   display: flex;
   align-items: center;
@@ -24,10 +212,20 @@
   padding: 2px 4px;
   border-radius: @radius-sm;
   cursor: pointer;
+  transition: background-color @transition-fast;
+
+  &:hover {
+    background-color: fade(@muted, 30%);
+  }
 
   &.selected {
-    background: fade(@primary, 25%);
+    background-color: @primary;
     color: @primary-foreground;
+
+    .node-key,
+    .node-meta {
+      color: @primary-foreground;
+    }
   }
 }
 
@@ -49,11 +247,35 @@
   }
 }
 
-.node-key { font-weight: 600; }
-.node-meta { opacity: 0.7; font-style: italic; }
+.select-btn {
+  flex: 1;
+  justify-content: flex-start;
+}
 
-.radio-option { display: flex; align-items: center; gap: 6px; font-size: 13px; margin-bottom: 4px; }
-.selected-path-display { margin-top: @spacing-xs; font-size: 12px; }
+.node-key {
+  font-weight: 600;
+  font-family: @font-mono;
+}
 
-.repeat-form { display: flex; flex-direction: column; gap: 8px; }
-.radio-option-group { display:flex; flex-direction:row; gap:12px; }
+.node-meta {
+  opacity: 0.7;
+  font-style: italic;
+  font-size: 11px;
+  color: @muted-foreground;
+}
+
+.selected-path-display {
+  margin-top: @spacing-xs;
+  font-size: 12px;
+  padding: @spacing-xs;
+  background-color: fade(@secondary, 10%);
+  border-radius: @radius-sm;
+  border: 1px solid fade(@secondary, 30%);
+  color: @foreground;
+
+  code {
+    font-family: @font-mono;
+    color: @secondary;
+    font-weight: 600;
+  }
+}

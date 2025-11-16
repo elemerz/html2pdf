@@ -1,5 +1,6 @@
 <div class="dialog-overlay" (click)="onOverlayClick()">
-  <div class="dialog-content" (click)="onDialogClick($event)" data-testid="dialog-repeat-binding">
+  <div class="dialog-content" #dialogContent (click)="onDialogClick($event)" data-testid="dialog-repeat-binding">
+    <div class="dialog-drag-handle"></div>
 
     <div class="dialog-body">
       <form (submit)="onSaveClicked($event)" class="repeat-form">

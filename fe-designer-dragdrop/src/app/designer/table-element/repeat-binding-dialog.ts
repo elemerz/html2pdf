@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Output, signal, inject, OnInit, Input } from '@angular/core';
+import { Component, EventEmitter, Output, signal, inject, OnInit, Input, ElementRef, ViewChild, AfterViewInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReportDataService } from '../../core/services/report-data.service';
 
@@ -18,9 +18,10 @@ interface JsonTreeNode {
   templateUrl: './repeat-binding-dialog.html',
   styleUrl: './repeat-binding-dialog.less'
 })
-export class RepeatBindingDialogComponent implements OnInit {
+export class RepeatBindingDialogComponent implements OnInit, AfterViewInit {
   @Output() saved = new EventEmitter<{ binding: string; iteratorName: string; repeatedElement: 'tr' | 'tbody' | 'table' }>();
   @Output() closed = new EventEmitter<void>();
+  @ViewChild('dialogContent') dialogContent?: ElementRef<HTMLDivElement>;
 
   private reportData = inject(ReportDataService);
 
@@ -33,11 +34,111 @@ export class RepeatBindingDialogComponent implements OnInit {
   protected selectedPath = signal<string>('');
   protected jsonTree = signal<JsonTreeNode[]>([]);
 
+  private isDragging = false;
+  private dragStartX = 0;
+  private dragStartY = 0;
+  private initialLeft = 0;
+  private initialTop = 0;
+
   ngOnInit(): void {
     this.jsonTree.set(this.buildTree(this.reportData.reportDataModel(), ''));
     if (this.initialBinding) this.selectedPath.set(this.initialBinding);
     if (this.initialIterator) this.iteratorName.set(this.initialIterator);
     if (this.initialRepeatedElement) this.repeatedElement.set(this.initialRepeatedElement);
+  }
+
+  ngAfterViewInit(): void {
+    if (this.dialogContent) {
+      const element = this.dialogContent.nativeElement;
+      element.addEventListener('mousedown', this.onMouseDown.bind(this));
+    }
+  }
+
+  private onMouseDown(event: MouseEvent) {
+    const target = event.target as HTMLElement;
+    
+    // Only drag from the drag handle
+    if (!target.closest('.dialog-drag-handle')) {
+      return;
+    }
+
+    const element = this.dialogContent!.nativeElement;
+    
+    // Get current VISUAL position relative to viewport
+    const rectBefore = element.getBoundingClientRect();
+    
+    // Change to fixed positioning
+    element.style.position = 'fixed';
+    element.style.width = `${rectBefore.width}px`;
+    element.style.margin = '0';
+    element.style.left = '0px';
+    element.style.top = '0px';
+    
+    // Force reflow
+    void element.offsetHeight;
+    
+    // Now get where it actually ended up
+    const rectAfter = element.getBoundingClientRect();
+    
+    // Calculate the offset and correct it
+    const leftOffset = rectBefore.left - rectAfter.left;
+    const topOffset = rectBefore.top - rectAfter.top;
+    
+    element.style.left = `${leftOffset}px`;
+    element.style.top = `${topOffset}px`;
+    
+    // Now it should be at the original visual position
+    this.isDragging = true;
+    this.dragStartX = event.clientX;
+    this.dragStartY = event.clientY;
+    this.initialLeft = leftOffset;
+    this.initialTop = topOffset;
+
+    const boundMouseMove = this.onMouseMove.bind(this);
+    const boundMouseUp = this.onMouseUp.bind(this);
+
+    document.addEventListener('mousemove', boundMouseMove);
+    document.addEventListener('mouseup', boundMouseUp);
+    
+    // Store bound functions for removal
+    (this as any)._boundMouseMove = boundMouseMove;
+    (this as any)._boundMouseUp = boundMouseUp;
+    
+    event.preventDefault();
+    event.stopPropagation();
+  }
+
+  private onMouseMove(event: MouseEvent) {
+    if (!this.isDragging) return;
+
+    const dx = event.clientX - this.dragStartX;
+    const dy = event.clientY - this.dragStartY;
+
+    const element = this.dialogContent!.nativeElement;
+    element.style.left = `${this.initialLeft + dx}px`;
+    element.style.top = `${this.initialTop + dy}px`;
+    
+    event.preventDefault();
+    event.stopPropagation();
+  }
+
+  private onMouseUp(event: MouseEvent) {
+    if (!this.isDragging) return;
+    
+    this.isDragging = false;
+    
+    // Remove event listeners using stored bound functions
+    if ((this as any)._boundMouseMove) {
+      document.removeEventListener('mousemove', (this as any)._boundMouseMove);
+      delete (this as any)._boundMouseMove;
+    }
+    if ((this as any)._boundMouseUp) {
+      document.removeEventListener('mouseup', (this as any)._boundMouseUp);
+      delete (this as any)._boundMouseUp;
+    }
+    
+    event.preventDefault();
+    event.stopPropagation();
   }
 
   private buildTree(obj: any, basePath: string): JsonTreeNode[] {
@@ -114,6 +215,8 @@ export class RepeatBindingDialogComponent implements OnInit {
     this.closed.emit();
   }
 
-  protected onOverlayClick() { this.closed.emit(); }
+  protected onOverlayClick() {
+    // Do not close on overlay click
+  }
   protected onDialogClick(event: MouseEvent) { event.stopPropagation(); }
 }
