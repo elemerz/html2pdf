@@ -878,16 +878,30 @@ export class DesignerStateService {
     const cols = subTable.cols || 1;
     const rowSizes = subTable.rowSizes || Array(rows).fill(1 / rows);
     const colSizes = subTable.colSizes || Array(cols).fill(1 / cols);
+    const level = subTable.level || 1;
 
     const cellBorderConfigMap = subTable.cellBorders as Record<string, TableCellBorderConfig> | undefined;
     const cellBorderWidthMap = subTable.cellBorderWidth as Record<string, number> | undefined;
     const cellBorderStyleMap = subTable.cellBorderStyle as Record<string, string> | undefined;
     const cellBorderColorMap = subTable.cellBorderColor as Record<string, string> | undefined;
 
-    // Repeat binding data for this sub-table
+    // Generic repeat binding lookup for this sub-table level
     const repeatMap = subTable.repeatBindings as Record<string, any> | undefined;
-    const tableRepeat = repeatMap ? Object.values(repeatMap).find(r => r.repeatedElement === 'table') : undefined;
-    const tbodyRepeat = repeatMap ? Object.values(repeatMap).find(r => r.repeatedElement === 'tbody') : undefined;
+    let tableRepeat: any = undefined;
+    let tbodyRepeat: any = undefined;
+    let trRepeat: any = undefined;
+    
+    // Find repeat bindings matching this sub-table's level
+    if (repeatMap) {
+      for (const key in repeatMap) {
+        const binding = repeatMap[key];
+        if (binding.level === level) {
+          if (binding.repeatedElement === 'table') tableRepeat = binding;
+          else if (binding.repeatedElement === 'tbody') tbodyRepeat = binding;
+          else if (binding.repeatedElement === 'tr') trRepeat = binding;
+        }
+      }
+    }
 
     const rowsMarkup = rowSizes
       .map((rowRatio: number, rowIndex: number) => {
@@ -940,9 +954,8 @@ export class DesignerStateService {
           })
           .join('\n');
 
-        // Check for row-level repeat binding
-        const rowRepeat = repeatMap ? repeatMap['0_0'] && repeatMap['0_0'].repeatedElement === 'tr' ? repeatMap['0_0'] : undefined : undefined;
-        const repeatAttr = rowRepeat ? ` data-repeat-over="${this.escapeHtml(rowRepeat.binding)}" data-repeat-var="${this.escapeHtml(rowRepeat.iteratorName)}"` : '';
+        // Check for row-level repeat binding - use the generic trRepeat found above
+        const repeatAttr = trRepeat ? ` data-repeat-over="${this.escapeHtml(trRepeat.binding)}" data-repeat-var="${this.escapeHtml(trRepeat.iteratorName)}"` : '';
         return `        <tr${repeatAttr} style="height:${rowHeightStr}mm;">\n${cells}\n        </tr>`;
       })
       .join('\n');

@@ -1252,13 +1252,25 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
     // Calculate selection color based on level
     const selectionColor = this.getSelectionColorForLevel(level);
 
-    // Get repeat bindings for this sub-table
+    // Get repeat bindings for this sub-table - generic approach for all levels
     const repeatBindings = subTable.repeatBindings as Record<string, any> | undefined;
-    const tableRepeat = repeatBindings ? Object.values(repeatBindings).find(r => r.repeatedElement === 'table') : undefined;
-    const tbodyRepeat = repeatBindings ? Object.values(repeatBindings).find(r => r.repeatedElement === 'tbody') : undefined;
-    const trRepeat = repeatBindings ? Object.values(repeatBindings).find(r => r.repeatedElement === 'tr') : undefined;
+    let tableRepeat: any = undefined;
+    let tbodyRepeat: any = undefined;
+    let trRepeat: any = undefined;
+    
+    // Find repeat bindings for this sub-table by searching all entries
+    if (repeatBindings) {
+      for (const key in repeatBindings) {
+        const binding = repeatBindings[key];
+        if (binding.level === level) {
+          if (binding.repeatedElement === 'table') tableRepeat = binding;
+          else if (binding.repeatedElement === 'tbody') tbodyRepeat = binding;
+          else if (binding.repeatedElement === 'tr') trRepeat = binding;
+        }
+      }
+    }
 
-    // Build repeat attributes
+    // Build repeat attributes - these will be applied to the direct parent nodes
     const tableRepeatAttr = tableRepeat ? ` data-repeat-over="${this.escapeHtmlAttribute(tableRepeat.binding)}" data-repeat-var="${this.escapeHtmlAttribute(tableRepeat.iteratorName)}"` : '';
     const tbodyRepeatAttr = tbodyRepeat ? ` data-repeat-over="${this.escapeHtmlAttribute(tbodyRepeat.binding)}" data-repeat-var="${this.escapeHtmlAttribute(tbodyRepeat.iteratorName)}"` : '';
     const trRepeatAttr = trRepeat ? ` data-repeat-over="${this.escapeHtmlAttribute(trRepeat.binding)}" data-repeat-var="${this.escapeHtmlAttribute(trRepeat.iteratorName)}"` : '';
