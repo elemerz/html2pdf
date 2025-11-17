@@ -203,6 +203,7 @@
     [initialIterator]="getRepeatBindingForSelection()?.iteratorName"
     [initialRepeatedElement]="getRepeatBindingForSelection()?.repeatedElement"
     (saved)="onRepeatBindingSaved($event)"
+    (cleared)="onRepeatBindingCleared()"
     (closed)="onRepeatBindingClosed()"
   ></app-repeat-binding-dialog>
 }

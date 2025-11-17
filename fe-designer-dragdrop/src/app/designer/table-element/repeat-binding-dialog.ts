@@ -20,6 +20,7 @@ interface JsonTreeNode {
 })
 export class RepeatBindingDialogComponent implements OnInit, AfterViewInit {
   @Output() saved = new EventEmitter<{ binding: string; iteratorName: string; repeatedElement: 'tr' | 'tbody' | 'table' }>();
+  @Output() cleared = new EventEmitter<void>();
   @Output() closed = new EventEmitter<void>();
   @ViewChild('dialogContent') dialogContent?: ElementRef<HTMLDivElement>;
 
@@ -219,4 +220,5 @@ export class RepeatBindingDialogComponent implements OnInit, AfterViewInit {
     // Do not close on overlay click
   }
   protected onDialogClick(event: MouseEvent) { event.stopPropagation(); }
+  protected onClearClicked() { this.cleared.emit(); }
 }

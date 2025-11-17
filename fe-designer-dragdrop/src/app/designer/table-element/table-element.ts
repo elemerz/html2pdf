@@ -1737,6 +1737,41 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
   protected onRepeatBindingClosed(): void {
     this.showRepeatBindingDialog.set(false);
   }
+  protected onRepeatBindingCleared(): void {
+    const selection = this.designerState.selectedTableCell();
+    if (!selection || selection.elementId !== this.element.id) {
+      this.showRepeatBindingDialog.set(false);
+      return;
+    }
+    const breadcrumb = this.getSelectedSubTableAncestors();
+    const currentLevel = breadcrumb.length > 0 ? breadcrumb.length : 0;
+    const props = JSON.parse(JSON.stringify(this.element.properties || {}));
+    if (currentLevel === 0) {
+      const map = props['tableRepeatBindings'] as Record<string, any> | undefined;
+      if (map) {
+        const cellKey = `${selection.row}_${selection.col}`;
+        delete map[cellKey];
+      }
+    } else {
+      const subTablesMap = props['tableCellSubTables'];
+      if (subTablesMap) {
+        const parentKey = `${selection.row}_${selection.col}`;
+        let currentSubTable = subTablesMap[parentKey];
+        for (let i = 0; i < currentLevel - 1 && currentSubTable; i++) {
+          const subCell = selection.subTablePath![i];
+          const cellKey = `${subCell.row}_${subCell.col}`;
+          currentSubTable = currentSubTable.cellSubTables?.[cellKey];
+        }
+        if (currentSubTable && currentSubTable.repeatBindings) {
+          const last = selection.subTablePath![selection.subTablePath!.length - 1];
+          const cellKey = `${last.row}_${last.col}`;
+          delete currentSubTable.repeatBindings[cellKey];
+        }
+      }
+    }
+    this.designerState.updateElement(this.element.id, { properties: props });
+    this.showRepeatBindingDialog.set(false);
+  }
 
   protected getRepeatBindingForSelection(): { binding: string; iteratorName: string; repeatedElement: 'tr' | 'tbody' | 'table'; subTablePath?: Array<{row:number;col:number}> } | null {
     const selection = this.designerState.selectedTableCell();
