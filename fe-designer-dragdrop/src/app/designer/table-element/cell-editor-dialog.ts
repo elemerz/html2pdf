@@ -405,6 +405,8 @@ export class CellEditorDialogComponent implements OnInit, OnDestroy {
         // Quill auto-updates button active states for bold/italic/underline/color
       }
     });
+    // Enable image resize support (adds click listener for IMG elements)
+    this.initImageResizeSupport();
   }
 
   private setupSymbolToolbar(toolbarEl: HTMLElement) {
@@ -1186,6 +1188,118 @@ export class CellEditorDialogComponent implements OnInit, OnDestroy {
    */
   close(): void {
     this.hideSymbolPalette();
+    this.deactivateImageResize();
     this.closed.emit();
+  }
+
+  // Image resize support
+  private resizingImage: HTMLImageElement | null = null;
+  private imageResizeHandleEl: HTMLDivElement | null = null;
+  private imageResizeLabelEl: HTMLDivElement | null = null;
+  private resizeStartX = 0;
+  private resizeStartY = 0;
+  private resizeStartWidth = 0;
+  private resizeStartHeight = 0;
+
+  private initImageResizeSupport(): void {
+    if (!this.quill) return;
+    const root = this.quill.root as HTMLElement;
+    if ((root as any)._imageResizeBound) return;
+    (root as any)._imageResizeBound = true;
+    root.addEventListener('click', (ev) => this.handleImageClick(ev), true);
+  }
+
+  private handleImageClick(ev: MouseEvent): void {
+    const t = ev.target as HTMLElement | null;
+    if (!t) return;
+    if (t.tagName === 'IMG') {
+      this.activateImageResize(t as HTMLImageElement);
+    } else if (this.resizingImage && this.imageResizeHandleEl && !this.imageResizeHandleEl.contains(t)) {
+      // clicked elsewhere
+      this.deactivateImageResize();
+    }
+  }
+
+  private activateImageResize(img: HTMLImageElement): void {
+    if (this.resizingImage === img && this.imageResizeHandleEl) return;
+    this.deactivateImageResize();
+    this.resizingImage = img;
+    this.createImageResizeHandle();
+    this.positionImageResizeHandle();
+  }
+
+  private deactivateImageResize(): void {
+    this.resizingImage = null;
+    if (this.imageResizeHandleEl) { this.imageResizeHandleEl.remove(); this.imageResizeHandleEl = null; }
+    if (this.imageResizeLabelEl) { this.imageResizeLabelEl.remove(); this.imageResizeLabelEl = null; }
+    document.removeEventListener('mousemove', this.onImageResizeMoveBound, true);
+    document.removeEventListener('mouseup', this.onImageResizeEndBound, true);
+  }
+
+  private createImageResizeHandle(): void {
+    if (!this.resizingImage) return;
+    const handle = document.createElement('div');
+    handle.className = 'cell-editor-image-resize-handle';
+    // Inline styles to avoid Angular view encapsulation issues (element appended outside template)
+    handle.style.cssText = 'position:fixed;width:12px;height:12px;background:#0078d4;border:2px solid #fff;box-shadow:0 0 2px rgba(0,0,0,.4);border-radius:2px;cursor:nwse-resize;z-index:10000;user-select:none;';
+    handle.addEventListener('mousedown', (ev) => this.onImageResizeStart(ev));
+    document.body.appendChild(handle);
+    this.imageResizeHandleEl = handle;
+  }
+
+  private positionImageResizeHandle(): void {
+    if (!this.resizingImage || !this.imageResizeHandleEl) return;
+    const rect = this.resizingImage.getBoundingClientRect();
+    this.imageResizeHandleEl.style.left = (rect.right - 6) + 'px';
+    this.imageResizeHandleEl.style.top = (rect.bottom - 6) + 'px';
+  }
+
+  private ensureImageResizeLabel(): void {
+    if (this.imageResizeLabelEl) return;
+    const label = document.createElement('div');
+    label.className = 'cell-editor-image-resize-label';
+    // Inline styles ensure visibility despite style encapsulation
+    label.style.cssText = 'position:fixed;font-size:11px;padding:2px 6px;background:rgba(0,0,0,.75);color:#fff;border-radius:4px;pointer-events:none;z-index:10001;font-family:Arial,Helvetica,sans-serif;';
+    document.body.appendChild(label);
+    this.imageResizeLabelEl = label;
+  }
+
+  private onImageResizeStart(ev: MouseEvent): void {
+    if (ev.button !== 0 || !this.resizingImage) return;
+    ev.preventDefault(); ev.stopPropagation();
+    this.resizeStartX = ev.clientX;
+    this.resizeStartY = ev.clientY;
+    this.resizeStartWidth = this.resizingImage.width || this.resizingImage.getBoundingClientRect().width;
+    this.resizeStartHeight = this.resizingImage.height || this.resizingImage.getBoundingClientRect().height;
+    this.ensureImageResizeLabel();
+    this.updateImageResizeLabel(this.resizeStartWidth, this.resizeStartHeight, ev);
+    document.addEventListener('mousemove', this.onImageResizeMoveBound, true);
+    document.addEventListener('mouseup', this.onImageResizeEndBound, true);
+  }
+
+  private onImageResizeMoveBound = (ev: MouseEvent) => this.onImageResizeMove(ev);
+  private onImageResizeEndBound = (ev: MouseEvent) => this.onImageResizeEnd(ev);
+
+  private onImageResizeMove(ev: MouseEvent): void {
+    if (!this.resizingImage) return;
+    const dx = ev.clientX - this.resizeStartX;
+    const dy = ev.clientY - this.resizeStartY;
+    const newW = Math.max(8, Math.round(this.resizeStartWidth + dx));
+    const newH = Math.max(8, Math.round(this.resizeStartHeight + dy));
+    this.resizingImage.style.width = newW + 'px';
+    this.resizingImage.style.height = newH + 'px';
+    this.positionImageResizeHandle();
+    this.updateImageResizeLabel(newW, newH, ev);
+  }
+
+  private onImageResizeEnd(_: MouseEvent): void {
+    this.deactivateImageResize();
+  }
+
+  private updateImageResizeLabel(w: number, h: number, ev: MouseEvent): void {
+    if (!this.imageResizeLabelEl) return;
+    this.imageResizeLabelEl.textContent = `${w} x ${h}`;
+    this.imageResizeLabelEl.style.left = (ev.clientX + 12) + 'px';
+    this.imageResizeLabelEl.style.top = (ev.clientY + 12) + 'px';
   }
 }
