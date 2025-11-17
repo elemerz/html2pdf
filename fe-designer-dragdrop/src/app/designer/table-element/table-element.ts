@@ -1256,16 +1256,14 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
     const repeatBindings = subTable.repeatBindings as Record<string, any> | undefined;
     let tableRepeat: any = undefined;
     let tbodyRepeat: any = undefined;
-    let trRepeat: any = undefined;
     
-    // Find repeat bindings for this sub-table by searching all entries
+    // Find table and tbody repeat bindings (apply to entire sub-table)
     if (repeatBindings) {
       for (const key in repeatBindings) {
         const binding = repeatBindings[key];
         if (binding.level === level) {
           if (binding.repeatedElement === 'table') tableRepeat = binding;
           else if (binding.repeatedElement === 'tbody') tbodyRepeat = binding;
-          else if (binding.repeatedElement === 'tr') trRepeat = binding;
         }
       }
     }
@@ -1273,7 +1271,6 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
     // Build repeat attributes - these will be applied to the direct parent nodes
     const tableRepeatAttr = tableRepeat ? ` data-repeat-over="${this.escapeHtmlAttribute(tableRepeat.binding)}" data-repeat-var="${this.escapeHtmlAttribute(tableRepeat.iteratorName)}"` : '';
     const tbodyRepeatAttr = tbodyRepeat ? ` data-repeat-over="${this.escapeHtmlAttribute(tbodyRepeat.binding)}" data-repeat-var="${this.escapeHtmlAttribute(tbodyRepeat.iteratorName)}"` : '';
-    const trRepeatAttr = trRepeat ? ` data-repeat-over="${this.escapeHtmlAttribute(trRepeat.binding)}" data-repeat-var="${this.escapeHtmlAttribute(trRepeat.iteratorName)}"` : '';
 
     // Wrap subtable in a positioned container for resize handles
     let html = `<div class="sub-table-wrapper" style="position:relative;width:100%;height:100%;">`;
@@ -1282,6 +1279,21 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
 
     for (let r = 0; r < rows; r++) {
       const rowHeightPercent = (rowSizes[r] * 100).toFixed(2);
+      
+      // Find row-specific repeat binding (search all cells in this row)
+      let rowRepeat: any = undefined;
+      if (repeatBindings) {
+        for (let c = 0; c < cols; c++) {
+          const cellKey = `${r}_${c}`;
+          const binding = repeatBindings[cellKey];
+          if (binding && binding.repeatedElement === 'tr' && binding.level === level) {
+            rowRepeat = binding;
+            break;
+          }
+        }
+      }
+      const trRepeatAttr = rowRepeat ? ` data-repeat-over="${this.escapeHtmlAttribute(rowRepeat.binding)}" data-repeat-var="${this.escapeHtmlAttribute(rowRepeat.iteratorName)}"` : '';
+      
       html += `<tr style="height:${rowHeightPercent}%;"${trRepeatAttr}>`;
 
       for (let c = 0; c < cols; c++) {
@@ -1696,9 +1708,10 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
         console.log('[RepeatBinding] Initialized repeatBindings');
       }
 
-      // For repeating this sub-table's elements, we use a dummy key (like "0_0")
-      // since the repeat applies to the table/tbody/tr of this sub-table itself
-      const cellKey = "0_0"; // Convention: use first cell as key for table-level bindings
+      // Get the actual cell coordinates within this sub-table level
+      // The last element of subTablePath contains the row/col where user clicked
+      const lastPathElement = selection.subTablePath![selection.subTablePath!.length - 1];
+      const cellKey = `${lastPathElement.row}_${lastPathElement.col}`;
       
       currentSubTable.repeatBindings[cellKey] = {
         binding: data.binding,
@@ -1784,7 +1797,9 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
         return null;
       }
 
-      const cellKey = "0_0"; // Convention: use first cell as key for table-level bindings
+      // Get the actual cell coordinates within this sub-table level
+      const lastPathElement = selection.subTablePath![selection.subTablePath!.length - 1];
+      const cellKey = `${lastPathElement.row}_${lastPathElement.col}`;
       const binding = currentSubTable.repeatBindings[cellKey];
       
       console.log('[RepeatBinding] GET Level', currentLevel, '- repeatBindings:', currentSubTable.repeatBindings, 'binding for key', cellKey, ':', binding);

@@ -857,7 +857,18 @@ export class DesignerStateService {
           })
           .join('\n');
 
-        const rowRepeat = repeatMap ? repeatMap[`${rowIndex}_0`] && repeatMap[`${rowIndex}_0`].repeatedElement === 'tr' && repeatMap[`${rowIndex}_0`].level === 0 ? repeatMap[`${rowIndex}_0`] : undefined : undefined;
+        // Find row repeat binding: search all cells in this row for a 'tr' repeat at level 0
+        let rowRepeat: any = undefined;
+        if (repeatMap) {
+          for (let colIdx = 0; colIdx < effectiveColSizes.length; colIdx++) {
+            const cellKey = `${rowIndex}_${colIdx}`;
+            const binding = repeatMap[cellKey];
+            if (binding && binding.repeatedElement === 'tr' && binding.level === 0) {
+              rowRepeat = binding;
+              break;
+            }
+          }
+        }
         const repeatAttr = rowRepeat ? ` data-repeat-over=\"${this.escapeHtml(rowRepeat.binding)}\" data-repeat-var=\"${this.escapeHtml(rowRepeat.iteratorName)}\"` : '';
         return `      <tr${repeatAttr} style=\"height:${rowHeightStr}mm;\">\n${cells}\n      </tr>`;
       })
@@ -889,16 +900,14 @@ export class DesignerStateService {
     const repeatMap = subTable.repeatBindings as Record<string, any> | undefined;
     let tableRepeat: any = undefined;
     let tbodyRepeat: any = undefined;
-    let trRepeat: any = undefined;
     
-    // Find repeat bindings matching this sub-table's level
+    // Find table and tbody repeat bindings (apply to entire sub-table)
     if (repeatMap) {
       for (const key in repeatMap) {
         const binding = repeatMap[key];
         if (binding.level === level) {
           if (binding.repeatedElement === 'table') tableRepeat = binding;
           else if (binding.repeatedElement === 'tbody') tbodyRepeat = binding;
-          else if (binding.repeatedElement === 'tr') trRepeat = binding;
         }
       }
     }
@@ -954,8 +963,19 @@ export class DesignerStateService {
           })
           .join('\n');
 
-        // Check for row-level repeat binding - use the generic trRepeat found above
-        const repeatAttr = trRepeat ? ` data-repeat-over="${this.escapeHtml(trRepeat.binding)}" data-repeat-var="${this.escapeHtml(trRepeat.iteratorName)}"` : '';
+        // Find row-specific repeat binding (search all cells in this row)
+        let rowRepeat: any = undefined;
+        if (repeatMap) {
+          for (let colIdx = 0; colIdx < colSizes.length; colIdx++) {
+            const cellKey = `${rowIndex}_${colIdx}`;
+            const binding = repeatMap[cellKey];
+            if (binding && binding.repeatedElement === 'tr' && binding.level === level) {
+              rowRepeat = binding;
+              break;
+            }
+          }
+        }
+        const repeatAttr = rowRepeat ? ` data-repeat-over="${this.escapeHtml(rowRepeat.binding)}" data-repeat-var="${this.escapeHtml(rowRepeat.iteratorName)}"` : '';
         return `        <tr${repeatAttr} style="height:${rowHeightStr}mm;">\n${cells}\n        </tr>`;
       })
       .join('\n');
