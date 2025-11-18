@@ -32,8 +32,8 @@ export class ToolbarPanelComponent {
 
   protected categories: { id: string; label: string; passive?: boolean }[] = [
     { id: 'layout', label: 'Layout' },
-    { id: 'custom-templates', label: 'Custom Templates', passive: true },
     { id: 'report-data-model', label: 'Report Data Model', passive: true },
+    { id: 'custom-templates', label: 'Custom Templates', passive: true },
     { id: 'custom-symbols', label: 'Custom Symbols', passive: true },
     { id: 'manage-managed-fonts', label: 'Manage Fonts', passive: true },
     { id: 'manage-images', label: 'Manage Images', passive: true }

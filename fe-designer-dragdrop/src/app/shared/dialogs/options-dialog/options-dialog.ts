@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DesignerStateService, PageGutters } from '../../../core/services/designer-state.service';
 
-type OptionsSection = 'page' | 'grid';
+type OptionsSection = 'page' | 'grid' | 'layout';
 
 /**
  * Modal dialog that allows tuning canvas grid and page gutter settings.
@@ -22,7 +22,8 @@ export class OptionsDialogComponent implements OnInit {
   
   protected expandedSections = signal<Record<OptionsSection, boolean>>({
     page: false,
-    grid: false
+    grid: false,
+    layout: false
   });
 
   protected visualGridSize = signal(10);
@@ -32,6 +33,7 @@ export class OptionsDialogComponent implements OnInit {
   protected pageGutterRight = signal(10);
   protected pageGutterBottom = signal(10);
   protected pageGutterLeft = signal(10);
+  protected allowVerticalResizeOnly = signal(true);
 
   /**
    * Seeds local signals with the current designer configuration.
@@ -41,6 +43,7 @@ export class OptionsDialogComponent implements OnInit {
     this.logicalGridSize.set(this.designerState.logicalGridSize());
     this.visualGridColor.set(this.designerState.visualGridColor());
     this.setPageGutterSignals(this.designerState.pageGutters());
+    this.allowVerticalResizeOnly.set(this.designerState.allowVerticalResizeOnly());
   }
 
   /**
@@ -63,6 +66,7 @@ export class OptionsDialogComponent implements OnInit {
       bottom: this.pageGutterBottom(),
       left: this.pageGutterLeft()
     });
+    this.designerState.setAllowVerticalResizeOnly(this.allowVerticalResizeOnly());
     this.close.emit();
   }
 

@@ -1,13 +1,13 @@
 <div class="dialog-overlay" (click)="onOverlayClick()">
   <div class="dialog-content" (click)="onDialogClick($event)" data-testid="dialog-options">
     <h2 class="dialog-title">Options</h2>
-    
+
     <div class="dialog-body">
       <div class="accordion">
-        <div 
+        <div
           class="accordion-section"
           [class.expanded]="isSectionExpanded('page')">
-          <button 
+          <button
             type="button"
             class="accordion-header"
             (click)="toggleSection('page')"
@@ -76,10 +76,10 @@
           }
         </div>
 
-        <div 
+        <div
           class="accordion-section"
           [class.expanded]="isSectionExpanded('grid')">
-          <button 
+          <button
             type="button"
             class="accordion-header"
             (click)="toggleSection('grid')"
@@ -134,18 +134,39 @@
             </div>
           }
         </div>
+        <div class="accordion-section" [class.expanded]="isSectionExpanded('layout')">
+          <button
+            type="button"
+            class="accordion-header"
+            (click)="toggleSection('layout')"
+            data-testid="toggle-section-layout">
+            <span>Layout</span>
+            <span class="chevron" [class.expanded]="isSectionExpanded('layout')">›</span>
+          </button>
+
+          @if (isSectionExpanded('layout')) {
+            <div class="accordion-content">
+              <div class="form-grid" style="grid-template-columns: 1fr auto; align-items:center;">
+                <label for="allow-vertical-only" class="form-label" style="margin:0;display:flex;align-items:center;">Allow Vertical resize only</label>
+                <input id="allow-vertical-only" type="checkbox" class="form-checkbox" [ngModel]="allowVerticalResizeOnly()" (ngModelChange)="allowVerticalResizeOnly.set(!!$event)" data-testid="input-allow-vertical-only" />
+                <div style="grid-column:1 / -1; font-size:12px;">Restricts table elements to top/bottom handles only.</div>
+              </div>
+            </div>
+          }
+        </div>
+
       </div>
     </div>
 
     <div class="dialog-footer">
-      <button 
-        class="button button-secondary" 
+      <button
+        class="button button-secondary"
         (click)="onCancel()"
         data-testid="button-cancel">
         Cancel
       </button>
-      <button 
-        class="button button-primary" 
+      <button
+        class="button button-primary"
         (click)="onSave()"
         data-testid="button-save">
         Save

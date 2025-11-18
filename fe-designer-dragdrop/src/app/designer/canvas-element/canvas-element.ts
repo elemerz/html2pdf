@@ -60,7 +60,7 @@ export class CanvasElementComponent {
   }
 
   private elementRef = inject(ElementRef);
-  private designerState = inject(DesignerStateService);
+  protected designerState = inject(DesignerStateService);
 
   protected showContextMenu = signal(false);
   protected contextMenuPosition = signal({ x: 0, y: 0 });
@@ -217,10 +217,15 @@ export class CanvasElementComponent {
    * Derives element resize deltas for the active handle and enforces constraints.
    */
   private calculateResizeUpdates(handle: ResizeHandle, deltaX: number, deltaY: number): Partial<CanvasElement> | null {
-    const resizeLeft = handle === 'left' || handle === 'top-left' || handle === 'bottom-left';
-    const resizeRight = handle === 'right' || handle === 'top-right' || handle === 'bottom-right';
-    const resizeTop = handle === 'top' || handle === 'top-left' || handle === 'top-right';
-    const resizeBottom = handle === 'bottom' || handle === 'bottom-left' || handle === 'bottom-right';
+    let resizeLeft = handle === 'left' || handle === 'top-left' || handle === 'bottom-left';
+    let resizeRight = handle === 'right' || handle === 'top-right' || handle === 'bottom-right';
+    let resizeTop = handle === 'top' || handle === 'top-left' || handle === 'top-right';
+    let resizeBottom = handle === 'bottom' || handle === 'bottom-left' || handle === 'bottom-right';
+
+    // Enforce vertical-only for table elements when setting enabled
+    if (this.element.type === 'table' && this.designerState.allowVerticalResizeOnly()) {
+      resizeLeft = resizeRight = false; // disable horizontal resize
+    }
 
     const start = this.resizeStart;
     const minSize = this.gridSize;

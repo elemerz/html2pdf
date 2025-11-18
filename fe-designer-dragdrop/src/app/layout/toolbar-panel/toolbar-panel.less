@@ -45,7 +45,8 @@
 
 .elements-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  /* Increased min column width to give ~25% more horizontal space per item so labels like "Layout Rectangle" don't wrap */
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   gap: 8px;
 }
 

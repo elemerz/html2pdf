@@ -103,6 +103,7 @@ export class DesignerStateService {
     bottom: 10,
     left: 10
   });
+  readonly allowVerticalResizeOnly = signal(true); // When true, table elements resize only vertically
 
   /**
    * Initializes default state, loads persisted calibration, and hooks auto-save effect.
@@ -456,6 +457,10 @@ export class DesignerStateService {
   setVisualGridColor(color: string) {
     if (!color) return;
     this.visualGridColor.set(color);
+  }
+  // Sets vertical resize-only flag for table elements
+  setAllowVerticalResizeOnly(value: boolean) {
+    this.allowVerticalResizeOnly.set(!!value);
   }
 
   /**
