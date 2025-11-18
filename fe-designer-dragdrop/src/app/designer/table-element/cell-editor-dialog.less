@@ -94,6 +94,47 @@
 .qr-popover button { padding: 4px 10px; font-size: 12px; border: 1px solid @border; background: @background; border-radius: @radius-sm; cursor: pointer; }
 .qr-popover button[type=submit] { background: @primary; color: @primary-foreground; border-color: @primary; }
 
+// Logo placeholder popover styling
+.logo-popover {
+  position: absolute;
+  top: 56px;
+  left: 16px;
+  width: 260px;
+  max-width: calc(100% - 32px);
+  background: @surface;
+  color: @surface-foreground;
+  border: 1px solid @border;
+  border-radius: @radius-sm;
+  padding: 12px;
+  box-shadow: @shadow-lg;
+  display: grid;
+  gap: 8px;
+  z-index: @z-tooltip + 1;
+}
+.logo-popover h3 { margin: 0 0 4px; font-size: 14px; }
+.logo-popover form label { display: grid; gap: 4px; font-size: 12px; }
+.logo-popover input { padding: 6px 8px; border: 1px solid @border; border-radius: @radius-sm; font-size: 12px; background: @background; color: @foreground; }
+.logo-popover .btns { display: flex; justify-content: flex-end; gap: 6px; }
+.logo-popover button { padding: 4px 10px; font-size: 12px; border: 1px solid @border; background: @background; border-radius: @radius-sm; cursor: pointer; }
+.logo-popover button[type=submit] { background: @primary; color: @primary-foreground; border-color: @primary; }
+
+// Logo placeholder base styling (dynamic width/height applied inline)
+.lg-placeholder,
+:host ::ng-deep .lg-placeholder,
+:host ::ng-deep p[data-type="logo-placeholder"] {
+  border: 2px solid #ffcc00;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 11px;
+  font-family: Arial, Helvetica, sans-serif;
+  background-color: transparent;
+  text-align: center;
+}
+
+:host ::ng-deep .ql-toolbar button.ql-logo-placeholder { display:inline-flex;align-items:center;justify-content:center; }
+:host ::ng-deep .ql-toolbar button.ql-logo-placeholder .ql-logo-icon { font-size:11px;font-weight:600;letter-spacing:.5px; }
+
 :host ::ng-deep .ql-snow .ql-picker.ql-font .ql-picker-item[data-value="calibri"]::before,
 :host ::ng-deep .ql-snow .ql-picker.ql-font .ql-picker-label[data-value="calibri"]::before {
   content: 'Calibri';

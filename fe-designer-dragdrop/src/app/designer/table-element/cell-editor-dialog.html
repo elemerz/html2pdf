@@ -47,5 +47,23 @@
       </div>
     </form>
   </div>
+  <!-- Logo placeholder popover -->
+  <div class="logo-popover" *ngIf="showLogoDialog" (mousedown)="$event.stopPropagation()" (click)="$event.stopPropagation()">
+    <form (ngSubmit)="submitLogoDialog()" #logoF="ngForm">
+      <h3>Insert Logo Placeholder</h3>
+      <label>
+        Width (mm)
+        <input name="width" type="number" min="1" max="1024" [(ngModel)]="logoForm.width" required autofocus />
+      </label>
+      <label>
+        Height (mm)
+        <input name="height" type="number" min="1" max="1024" [(ngModel)]="logoForm.height" required />
+      </label>
+      <div class="btns">
+        <button type="button" (click)="cancelLogoDialog()">Cancel</button>
+        <button type="submit" [disabled]="!logoF.form.valid">Ok</button>
+      </div>
+    </form>
+  </div>
 
 </div>

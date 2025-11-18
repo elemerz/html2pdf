@@ -215,6 +215,7 @@ export class CellEditorDialogComponent implements OnInit, OnDestroy {
    */
   onEditorCreated(q: Quill) {
     this.quill = q;
+    this.normalizeLogoPlaceholders();
     // Autofocus editor so user can type immediately (ensure contenteditable root gets focus)
     setTimeout(() => { try { this.quill.focus(); (this.quill.root as HTMLElement).focus(); } catch {} }, 0);
     
@@ -244,6 +245,19 @@ export class CellEditorDialogComponent implements OnInit, OnDestroy {
         // Ensure a QR button exists even if Quill did not auto-generate one for custom handler
         try {
           const imageBtn = toolbarEl.querySelector('button.ql-image');
+          // Inject Logo Placeholder button right after image button
+          const existingLogo = toolbarEl.querySelector('button.ql-logo-placeholder');
+          if (imageBtn && !existingLogo) {
+            const logoBtn = document.createElement('button');
+            logoBtn.type = 'button';
+            logoBtn.className = 'ql-logo-placeholder';
+            logoBtn.setAttribute('aria-label', 'Insert Logo Placeholder');
+            logoBtn.innerHTML = '<span class="ql-logo-icon" style="font-size:11px;font-weight:600;letter-spacing:.5px">LG</span>';
+            logoBtn.addEventListener('click', () => this.openLogoDialog());
+            imageBtn.after(logoBtn);
+            console.debug('[CellEditorDialog] Logo placeholder button injected after image button');
+          }
+          // Inject QR button after logo (or image if logo absent)
           const existingQr = toolbarEl.querySelector('button.ql-qr');
           if (imageBtn && !existingQr) {
             const qrBtn = document.createElement('button');
@@ -252,12 +266,13 @@ export class CellEditorDialogComponent implements OnInit, OnDestroy {
             qrBtn.setAttribute('aria-label', 'Insert QR Code');
             qrBtn.innerHTML = '<span class="ql-qr-icon" style="font-size:11px;font-weight:600;letter-spacing:.5px">QR</span>';
             qrBtn.addEventListener('click', () => this.openQrDialog());
-            imageBtn.after(qrBtn); // place directly after image button
-            console.debug('[CellEditorDialog] QR button injected after image button');
+            const afterEl = (toolbarEl.querySelector('button.ql-logo-placeholder') as HTMLElement) || imageBtn;
+            afterEl.after(qrBtn);
+            console.debug('[CellEditorDialog] QR button injected after', afterEl.className);
           } else {
             console.debug('[CellEditorDialog] QR button already exists or image button missing', { hasImage: !!imageBtn, hasQr: !!existingQr });
           }
-        } catch (e) { console.warn('[CellEditorDialog] QR injection error', e); }
+        } catch (e) { console.warn('[CellEditorDialog] QR/logo injection error', e); }
         const fontPicker = toolbarEl.querySelector('.ql-font');
         // Locate the formats group containing the font picker
         const formatsGroups = Array.from(toolbarEl.querySelectorAll(':scope > .ql-formats')) as HTMLElement[];
@@ -1129,6 +1144,8 @@ export class CellEditorDialogComponent implements OnInit, OnDestroy {
         // Insert new image
         const range = this.quill.getSelection(true);
         const index = range ? range.index : this.quill.getLength();
+       // Insert newline to isolate placeholder so Quill doesn't wrap text in span
+       this.quill.insertText(index, '\n', 'silent');
         this.quill.insertEmbed(index, 'image', dataUrl, 'user');
         this.quill.setSelection(index + 1, 0, 'silent');
         setTimeout(() => {
@@ -1151,6 +1168,83 @@ export class CellEditorDialogComponent implements OnInit, OnDestroy {
     this.showQrDialog = false;
     this.qrEditImg = null;
     this.qrEditMode = false;
+  }
+
+  // Logo placeholder dialog state & handlers
+  showLogoDialog: boolean = false;
+  logoForm = { width: 32, height: 16 };
+  openLogoDialog(): void {
+    this.logoForm = { width: 32, height: 16 }; // reset defaults each time
+    this.showLogoDialog = true;
+  }
+  cancelLogoDialog(): void { this.showLogoDialog = false; }
+  private normalizeLogoPlaceholders(): void {
+    if (!this.quill) return;
+    const paras = Array.from(this.quill.root.querySelectorAll('p')) as HTMLParagraphElement[];
+    paras.forEach(p => {
+      if (!p.textContent) return;
+      const txt = p.textContent.trim();
+      const m = /^(\d+)\s*x\s*(\d+)\s*mm$/i.exec(txt);
+      if (!m) return;
+      p.setAttribute('data-type','logo-placeholder');
+      if (!p.classList.contains('lg-placeholder')) p.classList.add('lg-placeholder');
+      p.style.border = '2px solid #ffcc00';
+      p.style.width = m[1] + 'mm';
+      p.style.height = m[2] + 'mm';
+      p.style.display = 'flex';
+      p.style.justifyContent = 'center';
+      p.style.alignItems = 'center';
+      p.style.fontSize = '11px';
+      p.style.fontFamily = 'Arial, Helvetica, sans-serif';
+      p.style.backgroundColor = 'transparent';
+      p.style.textAlign = 'center';
+    });
+  }
+
+  submitLogoDialog(): void {
+    this.normalizeLogoPlaceholders();
+    // Remove Quill alignment auto-format on plain line before insertion
+    try {
+      const rangePre = this.quill?.getSelection();
+      if (rangePre) {
+        this.quill.formatLine(rangePre.index, 1, { align: false });
+      }
+    } catch {}
+
+    if (!this.quill) { this.showLogoDialog = false; return; }
+    const { width, height } = this.logoForm;
+    if (width <= 0 || height <= 0) { this.showLogoDialog = false; return; }
+    // Build placeholder div with mm dimensions and centered label
+    const html = `<p data-type=\"logo-placeholder\">${width} x ${height} mm</p>`;
+    try {
+      const range = this.quill.getSelection(true);
+      const index = range ? range.index : this.quill.getLength();
+      (this.quill.clipboard as any).dangerouslyPasteHTML(index, html);
+      this.quill.setSelection(index + 1, 0, 'silent');
+      // Force placeholder element styling via direct DOM mutation (Quill strips custom classes on paste)
+      const [line] = this.quill.getLine(index);
+      if (line && line.domNode && line.domNode.tagName === 'P') {
+        const el = line.domNode as HTMLElement;
+        el.setAttribute('data-type','logo-placeholder');
+        // Preserve existing alignment class if Quill added it, then add placeholder class
+        if (el.classList.contains('ql-align-center')) {
+          el.classList.add('lg-placeholder');
+        } else {
+          el.classList.add('lg-placeholder');
+        }
+        el.style.border = '2px solid #ffcc00';
+        el.style.height = height + 'mm';
+        el.style.width = width + 'mm';
+        el.style.display = 'flex';
+        el.style.justifyContent = 'center';
+        el.style.alignItems = 'center';
+        el.style.fontSize = '11px';
+        el.style.fontFamily = 'Arial, Helvetica, sans-serif';
+        el.style.backgroundColor = 'transparent';
+        el.style.textAlign = 'center';
+      }
+    } catch (e) { console.warn('Logo placeholder insertion failed', e); }
+    this.showLogoDialog = false;
   }
 
   ngOnDestroy(): void {
