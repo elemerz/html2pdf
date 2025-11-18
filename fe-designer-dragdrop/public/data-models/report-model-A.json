@@ -1,41 +1,41 @@
-{
-  "debiteur": {
-    "invoiceNumber": "876801518",
-    "practiceName": "TEST_Sample_TC_0",
-    "insuredId": "68300148729302071",
-    "patientName": "NJ De Vries",
-    "insurer": "Zilveren Kruis Achmea Zorgverzekeringen NV",
-    "periodFrom": "2025-08-15",
-    "periodTo": "2025-11-10",
-    "invoiceType": 68,
-    "totals": [
-      0,
-      7302,
-      null,
-      null
-    ]
-  },
-  "practitioner": {
-    "agbCode": "3108000099",
-    "logoNr": 0,
-    "address": {
-      "country": "",
-      "postcode": "3758AB",
-      "street": "VecozoTestStreet",
-      "houseNr": "53"
-    },
-    "practice": {
-      "name": "Huisartsenpraktijk Centrum",
-      "code": "",
-      "phone": ""
-    }
-  },
-  "treatments": [
     {
-      "insuredId": "68300148729302071",
-      "date": "2025-09-12",
-      "tariffCode": "5507"
+      "debiteur": {
+        "invoiceNumber": "119154695",
+        "practiceName": "Samenwerkende Tandartsen Made",
+        "practiceCity": "Made",
+        "insuredId": "12300164715071",
+        "patientName": "EAM Hessels",
+        "patientDob": "2004-02-12",
+        "insurer": "Centrale Verwerkingseenheid CZ: CZ,  Nationale Nederlanden en OHRA",
+        "periodFrom": "2025-09-26",
+        "periodTo": "2025-10-26",
+        "invoiceType": 20,
+        "totalsAmount": 7146
+      },
+      "practitioner": {
+        "agbCode": "3108000099",
+        "logoNr": 0,
+        "address": {
+          "country": "",
+          "postcode": "3532BL",
+          "street": "Lindelaan",
+          "houseNr": "17"
+        },
+        "practice": {
+          "name": "Tandarts Sterrenwijk",
+          "code": "",
+          "phone": ""
+        }
+      },
+      "treatments": [
+        {
+          "insuredId": "12300164715071",
+          "date": "2023-10-25",
+          "treatmentCode": "Q241",
+          "description": "Perio*Aid mondspoelmiddel 0.12% chlx 500ml",
+          "tariffCode": "895",
+          "reference": "38000182"
+        }
+      ],
+      "totaalBedrag": 71.46
     }
-  ],
-  "totaalBedrag": 445.8
-}

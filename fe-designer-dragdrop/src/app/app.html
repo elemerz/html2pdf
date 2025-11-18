@@ -5,6 +5,7 @@
     <app-menu-bar
       (onNew)="onNewLayout()"
       (onExportAsXhtml)="onSaveLayout()"
+      (onPublishTemplate)="onPublishTemplate()"
       (onSaveDesign)="onSaveDesign()"
       (onLoadDesign)="onLoadDesign()"
       (onOpen)="onOpenLayout()"
@@ -73,6 +74,7 @@
   (onSave)="handleSaveReport($event)"
   (onCancel)="handleCancelSaveReport()">
 </app-save-report-dialog>
+<app-publish-template-dialog *ngIf="showPublishDialog()" (onClose)="handlePublishDialogClosed()"></app-publish-template-dialog>
 
 @if (showSettingsDialog()) {
   <app-options-dialog

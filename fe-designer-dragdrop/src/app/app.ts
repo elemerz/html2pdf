@@ -9,6 +9,7 @@ import { CanvasComponent } from './designer/canvas/canvas';
 import { SaveDialogComponent } from './layout/save-dialog/save-dialog';
 import { OptionsDialogComponent } from './shared/dialogs/options-dialog/options-dialog';
 import { ScreenCalibrationDialogComponent } from './shared/dialogs/screen-calibration/screen-calibration-dialog';
+import { PublishTemplateDialogComponent } from './layout/publish-template-dialog/publish-template-dialog';
 import { SaveReportDialogComponent } from './layout/save-report-dialog/save-report-dialog';
 
 /**
@@ -26,7 +27,8 @@ import { SaveReportDialogComponent } from './layout/save-report-dialog/save-repo
     SaveDialogComponent,
     SaveReportDialogComponent,
     OptionsDialogComponent,
-    ScreenCalibrationDialogComponent
+    ScreenCalibrationDialogComponent,
+    PublishTemplateDialogComponent
   ],
   templateUrl: './app.html',
   styleUrl: './app.less',
@@ -40,6 +42,7 @@ export class App {
   protected showSaveDialog = signal(false);
   protected showSettingsDialog = signal(false);
   protected showCalibrationDialog = signal(false);
+  protected showPublishDialog = signal(false);
 
   // Expose signals to template
   protected westCollapsed = this.designerState.westCollapsed;
@@ -288,6 +291,7 @@ export class App {
         case 'o': prevent(); this.onLoadDesign(); return;
         case 's': prevent(); this.onSaveDesign(); return;
         case 'e': prevent(); this.onSaveLayout(); return;
+        case 'p': prevent(); this.onPublishTemplate(); return;
         case 'w': prevent(); this.onCloseLayout(); return;
         case 'z': prevent(); this.onUndo(); return;
         case 'y': prevent(); this.onRedo(); return;
@@ -305,5 +309,13 @@ export class App {
 
     // Ctrl+F12 (Calibrate Screen)
     if (ctrl && !alt && !shift && event.key === 'F12') { prevent(); this.onCalibrateScreen(); return; }
+  }
+
+  // Publish dialog handlers
+  onPublishTemplate(): void {
+    this.showPublishDialog.set(true);
+  }
+  handlePublishDialogClosed(): void {
+    this.showPublishDialog.set(false);
   }
 }

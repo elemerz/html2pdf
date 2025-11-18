@@ -17,7 +17,9 @@ public class TemplateController {
 
     @PutMapping("/api/templates")
     public ResponseEntity<?> putTemplate(@RequestParam(name = "invoicetype") int invoiceType,
-                                         @RequestParam(name = "xhtmlTemplate") String xhtmlTemplate) {
+                                         @RequestParam(name = "xhtmlTemplate") String xhtmlTemplate,
+                                         @RequestParam(name = "version", required = false) String version) {
+        // Version currently ignored but accepted for future extension
         templateHtmlMap.put(invoiceType, xhtmlTemplate);
         return ResponseEntity.ok().build();
     }

@@ -124,8 +124,8 @@ public class HtmlToPdfController {
                 log.warn("Failed to parse debiteur model for {}: {}", item.outputId(), parseEx.getMessage());
             }
             String htmlResolved = dwp != null ? resolvePropertyPlaceholders(sharedHtml, dwp) : sharedHtml;
-//            log.info("sharedHtml = {}", sharedHtml);
-//            log.info("htmlResolved = {}", htmlResolved);
+            log.info("\n\nsharedHtml =\n\n {}", sharedHtml);
+            log.info("\n\nhtmlResolved =\n\n {}", htmlResolved);
             PdfConversionResult result = converterService.convertHtmlToPdf(htmlResolved);
             String pdfBase64 = Base64.getEncoder().encodeToString(result.pdfContent());
             String sanitised = includeSanitised ? result.sanitisedXhtml() : null;
@@ -138,7 +138,8 @@ public class HtmlToPdfController {
 
     private String resolvePropertyPlaceholders(String htmlString, DebiteurWithPractitioner debiteur) {
         if (htmlString == null || htmlString.isEmpty() || debiteur == null) return htmlString;
-        // Resolve placeholders with support for nested properties (e.g. ${a.b.c}). NPE safe: null -> empty string.
+        // Extended placeholder resolution: supports ${a.b.c} and simple repeat nodes:
+        // <tr data-repeat-over="collectionName" data-repeat-var="itemVar"> ... ${itemVar.prop} ... </tr>
         try {
             java.util.Map<String,String> cache = new java.util.HashMap<>(); // cache computed values per key
             java.util.function.BiFunction<Object,String,Object> readProp = (obj, name) -> {
@@ -147,7 +148,6 @@ public class HtmlToPdfController {
                 String capital = Character.toUpperCase(name.charAt(0)) + name.substring(1);
                 try { java.lang.reflect.Method m = c.getMethod("get" + capital); return m.invoke(obj); } catch (Exception ignored) {}
                 try { java.lang.reflect.Method m = c.getMethod("is" + capital); return m.invoke(obj); } catch (Exception ignored) {}
-                // fallback: direct method name (rare)
                 try { java.lang.reflect.Method m = c.getMethod(name); if (m.getParameterCount()==0) return m.invoke(obj); } catch (Exception ignored) {}
                 return null;
             };
@@ -160,17 +160,61 @@ public class HtmlToPdfController {
                 }
                 return current;
             };
-            StringBuilder out = new StringBuilder(htmlString.length());
-            int i=0; int len=htmlString.length();
+            // 1. Handle repeat nodes (very lightweight parser; assumes attributes on same opening tag line)
+            // Pattern for a repeatable TR (can generalize later): find tags with both data-repeat-over and data-repeat-var
+            String repeatPattern = "(<([a-zA-Z0-9]+)([^>]*?data-repeat-over=\\\"([a-zA-Z0-9_\\.]+)\\\"[^>]*?data-repeat-var=\\\"([a-zA-Z0-9_]+)\\\"[^>]*?)>)([\\s\\S]*?)(</\\2>)"; // group 4: collection path, 5: var name, 6: inner html
+            java.util.regex.Pattern rp = java.util.regex.Pattern.compile(repeatPattern);
+            java.util.regex.Matcher rm = rp.matcher(htmlString);
+            StringBuffer sbRepeat = new StringBuffer();
+            while (rm.find()) {
+                String openingTag = rm.group(1);
+                String collectionPath = rm.group(4);
+                String varName = rm.group(5);
+                String inner = rm.group(6);
+                Object collectionObj = resolvePath.apply(debiteur, collectionPath);
+                StringBuilder repeated = new StringBuilder();
+                if (collectionObj instanceof java.lang.Iterable<?> iterable) {
+                    for (Object item : iterable) {
+                        // For each item, resolve ${varName.x.y} within inner HTML.
+                        String resolvedInner = resolveItemPlaceholders(inner, varName, item, resolvePath);
+                        repeated.append(openingTag.replace("data-repeat-over=\""+collectionPath+"\"", "")
+                                .replace("data-repeat-var=\""+varName+"\"", "")) // strip repeat attributes
+                                .append(resolvedInner)
+                                .append("</"+rm.group(2)+">");
+                    }
+                } else if (collectionObj != null && collectionObj.getClass().isArray()) {
+                    int length = java.lang.reflect.Array.getLength(collectionObj);
+                    for (int idx=0; idx<length; idx++) {
+                        Object item = java.lang.reflect.Array.get(collectionObj, idx);
+                        String resolvedInner = resolveItemPlaceholders(inner, varName, item, resolvePath);
+                        repeated.append(openingTag.replace("data-repeat-over=\""+collectionPath+"\"", "")
+                                .replace("data-repeat-var=\""+varName+"\"", ""))
+                                .append(resolvedInner)
+                                .append("</"+rm.group(2)+">");
+                    }
+                }
+                if (repeated.length() == 0) {
+                    // No collection or empty -> remove entire block
+                    rm.appendReplacement(sbRepeat, java.util.regex.Matcher.quoteReplacement(""));
+                } else {
+                    rm.appendReplacement(sbRepeat, java.util.regex.Matcher.quoteReplacement(repeated.toString()));
+                }
+            }
+            rm.appendTail(sbRepeat);
+            String afterRepeatExpansion = sbRepeat.toString();
+
+            // 2. Resolve remaining ${...} placeholders against root debiteur
+            StringBuilder out = new StringBuilder(afterRepeatExpansion.length());
+            int i=0; int len=afterRepeatExpansion.length();
             while (i < len) {
-                int start = htmlString.indexOf("${", i);
-                if (start < 0) { out.append(htmlString, i, len); break; }
-                int end = htmlString.indexOf('}', start+2);
-                if (end < 0) { out.append(htmlString, i, len); break; }
-                out.append(htmlString, i, start); // text before placeholder
-                String key = htmlString.substring(start+2, end).trim();
+                int start = afterRepeatExpansion.indexOf("${", i);
+                if (start < 0) { out.append(afterRepeatExpansion, i, len); break; }
+                int end = afterRepeatExpansion.indexOf('}', start+2);
+                if (end < 0) { out.append(afterRepeatExpansion, i, len); break; }
+                out.append(afterRepeatExpansion, i, start);
+                String key = afterRepeatExpansion.substring(start+2, end).trim();
                 String val = cache.get(key);
-                if (val == null && !cache.containsKey(key)) { // not computed yet
+                if (val == null && !cache.containsKey(key)) {
                     Object resolved = resolvePath.apply(debiteur, key);
                     val = resolved != null ? resolved.toString() : "";
                     cache.put(key, val);
@@ -183,6 +227,31 @@ public class HtmlToPdfController {
             log.warn("resolvePropertyPlaceholders failed: {}", e.getMessage());
             return htmlString;
         }
+    }
+
+    // Resolves ${var.prop.path} within an inner repeat section for a single item object.
+    private String resolveItemPlaceholders(String inner, String varName, Object item, java.util.function.BiFunction<Object,String,Object> resolvePath) {
+        if (inner == null || inner.isEmpty()) return inner;
+        StringBuilder out = new StringBuilder(inner.length());
+        int i=0; int len=inner.length();
+        while (i < len) {
+            int start = inner.indexOf("${", i);
+            if (start < 0) { out.append(inner, i, len); break; }
+            int end = inner.indexOf('}', start+2);
+            if (end < 0) { out.append(inner, i, len); break; }
+            out.append(inner, i, start);
+            String key = inner.substring(start+2, end).trim();
+            if (key.startsWith(varName + ".")) {
+                String path = key.substring(varName.length()+1);
+                Object resolved = resolvePath.apply(item, path);
+                out.append(resolved != null ? resolved.toString() : "");
+            } else {
+                // leave unresolved for later global pass
+                out.append("${"+key+"}");
+            }
+            i = end + 1;
+        }
+        return out.toString();
     }
 
     @ExceptionHandler(HtmlToPdfConversionException.class)

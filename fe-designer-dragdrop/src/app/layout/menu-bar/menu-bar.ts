@@ -24,6 +24,7 @@ export class MenuBarComponent {
   // Output events
   onNew = output<void>();
   onExportAsXhtml = output<void>();
+  onPublishTemplate = output<void>();
   onSaveDesign = output<void>();
   onLoadDesign = output<void>();
   onOpen = output<void>();
@@ -60,6 +61,13 @@ export class MenuBarComponent {
    */
   handleExportAsXhtml() {
     this.onExportAsXhtml.emit();
+    this.closeMenu();
+  }
+  /**
+   * Emits the publish-template action and closes the menu.
+   */
+  handlePublishTemplate() {
+    this.onPublishTemplate.emit();
     this.closeMenu();
   }
 
