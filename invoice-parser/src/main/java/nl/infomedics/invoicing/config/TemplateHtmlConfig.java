@@ -32,6 +32,6 @@ public class TemplateHtmlConfig {
                 }
             }
         }
-        return Map.copyOf(map); // return immutable map
+        return map; // return mutable map for runtime updates
     }
 }
