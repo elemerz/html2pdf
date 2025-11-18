@@ -216,6 +216,7 @@ export class CellEditorDialogComponent implements OnInit, OnDestroy {
   onEditorCreated(q: Quill) {
     this.quill = q;
     this.normalizeLogoPlaceholders();
+    this.bindLogoPlaceholderSelection();
     // Autofocus editor so user can type immediately (ensure contenteditable root gets focus)
     setTimeout(() => { try { this.quill.focus(); (this.quill.root as HTMLElement).focus(); } catch {} }, 0);
     
@@ -589,6 +590,27 @@ export class CellEditorDialogComponent implements OnInit, OnDestroy {
   }
 
   private handleQuillKeydown(event: KeyboardEvent): void {
+    // Delete selected logo placeholder
+    if (event.key === 'Delete' && !event.shiftKey && !event.ctrlKey && !event.altKey) {
+      const root = this.quill?.root;
+      if (root) {
+        const sel = root.querySelector('p[data-type="logo-placeholder"].lp-selected') as HTMLParagraphElement | null;
+        if (sel) {
+          try {
+            const blot = this.quill.scroll.find(sel);
+            if (blot) {
+              const index = this.quill.getIndex(blot);
+              const length = blot.length();
+              this.quill.deleteText(index, length, 'user');
+            }
+          } catch {}
+          sel.remove();
+          event.preventDefault();
+          return;
+        }
+      }
+    }
+
     // Ctrl+Space to trigger intellisense
     if (event.ctrlKey && event.key === ' ') {
       event.preventDefault();
@@ -1178,6 +1200,21 @@ export class CellEditorDialogComponent implements OnInit, OnDestroy {
     this.showLogoDialog = true;
   }
   cancelLogoDialog(): void { this.showLogoDialog = false; }
+  private bindLogoPlaceholderSelection(): void {
+    if (!this.quill) return;
+    const root = this.quill.root;
+    // Click to select
+    root.addEventListener('click', (ev) => {
+      const t = ev.target as HTMLElement | null;
+      if (!t) return;
+      const p = t.closest('p[data-type="logo-placeholder"]') as HTMLParagraphElement | null;
+      Array.from(root.querySelectorAll('p[data-type="logo-placeholder"].lp-selected')).forEach(el => el.classList.remove('lp-selected'));
+      if (p) {
+        p.classList.add('lp-selected');
+      }
+    });
+  }
+
   private normalizeLogoPlaceholders(): void {
     if (!this.quill) return;
     const paras = Array.from(this.quill.root.querySelectorAll('p')) as HTMLParagraphElement[];
