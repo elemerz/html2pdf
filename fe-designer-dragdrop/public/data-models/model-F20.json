@@ -1,11 +1,24 @@
     {
       "debiteur": {
-        "invoiceNumber": "119154695",
-        "practiceName": "Samenwerkende Tandartsen Made",
-        "practiceCity": "Made",
+        "invoiceNumber": "12300164715071",
+        "printDate": "26-09-2025",
+        "hcpName": "Samenwerkende Tandartsen Made",
+        "hcpStreet": "Duinstraat",
+        "hcpHouseNr": "6",
+        "hcpZipCode": "4921EA",
+        "hcpCity": "Made",
+        "hcpAgb": "",
+        "practiceAgb": "38000182",
         "insuredId": "12300164715071",
         "patientName": "EAM Hessels",
-        "patientDob": "2004-02-12",
+        "street": "Antwerpsestraat\n",
+        "houseNr": "35",
+        "zipCode": "4921DD",
+        "city": "MADE",
+        "patientDob": "12-02-2004",
+        "invoiceAmountCents": 6035,
+        "openImfCents": 2345,
+        "firstExpirationDate": "19-11-2025",
         "insurer": "Centrale Verwerkingseenheid CZ: CZ,  Nationale Nederlanden en OHRA",
         "periodFrom": "2025-09-26",
         "periodTo": "2025-10-26",
@@ -29,12 +42,14 @@
       },
       "treatments": [
         {
-          "insuredId": "12300164715071",
+          "invoiceNumber": "12300164715071",
           "date": "2023-10-25",
           "treatmentCode": "Q241",
           "description": "Perio*Aid mondspoelmiddel 0.12% chlx 500ml",
-          "tariffCode": "895",
-          "reference": "38000182"
+          "treatmentProvider": "38000182",
+          "amountCents": "895",
+          "vatIndicator": "19",
+          "vatValueCents": "178"
         }
       ],
       "totaalBedrag": 71.46

@@ -9,11 +9,12 @@ import lombok.Setter;
 
 @NoArgsConstructor @AllArgsConstructor @Getter @Setter
 public class Specificatie {
-	private String insuredId; // join key
-	private LocalDate date;
-	private String treatmentCode; // renamed from toothOrJaw (e.g., "Bovenkaak C90")
-	private String description; // full Dutch description
-	private String tariffCode; // 1099 / 6723 etc
-	private String reference; // optional reference code
-	private Integer amountCents; // fallback if present; adapt if amount is formatted elsewhere
+	private String invoiceNumber; // join key Excel: 0/A
+	private LocalDate date; //Excel: 1/B
+	private String treatmentCode; // Excel: 2/C
+	private String description; //Excel: 3/D
+	private Integer amountCents; // Excel: 4/E
+	private String treatmentProvider; //Excel: 5/F
+	private String vatIndicator; //Excel: 8/I
+	private String vatValueCents; //Excel: 9/J
 }

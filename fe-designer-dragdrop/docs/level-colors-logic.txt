@@ -1,0 +1,50 @@
+I’d like to select “n – 1” additional colors—each as visually distinct as possible—next to a given base color, using the following logic:
+
+The Hue is treated as a full circle, and I locate the point corresponding to the given base color. This will be the so-called “reference point” on the Hue circle.
+
+If n = 2:
+One additional color must be selected beside the given base color.
+Its Hue value corresponds to the diametrically opposite point of the base color’s Hue.
+The other two parameters (Saturation and Brightness) are the same as those of the base color.
+
+If n = 3:
+Two additional colors must be selected beside the given base color.
+Their Hue values correspond to the other two vertices of an equilateral triangle, where the first vertex represents the base color’s Hue.
+The other two parameters (Saturation, Brightness) are identical to those of the base color.
+
+If n = K:
+(K – 1) colors must be selected beside the given base color.
+Their Hue values correspond to the vertices of a regular K-sided polygon, where the first vertex represents the base color’s Hue.
+The other two parameters (Saturation, Brightness) are identical to those of the base color.
+
+#bbcde7
+
+Let’s now apply the rule with n = 5, meaning we need 4 additional colors.
+
+Convert the base color (#446b88) from HEX to HSL:
+HSL(206°, 34%, 40%)
+
+To form a regular 5-gon on the Hue circle:
+Each color’s hue is separated by 360 / 5 = 72°.
+
+Thus, the five hues are:
+
+206° (base color)
+
+278° (206 + 72)
+
+350° (278 + 72)
+
+62° (350 + 72 → wraps around)
+
+134° (62 + 72)
+
+Keeping S = 34%, L = 40%, we get:
+
+Color	HSL	Approx. HEX
+Base	hsl(206, 34%, 40%)	#446b88
+1	hsl(278, 34%, 40%)	#664488
+2	hsl(350, 34%, 40%)	#884457
+3	hsl(62, 34%, 40%)	#808844
+4	hsl(134, 34%, 40%)	#44885d
+

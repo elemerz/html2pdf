@@ -219,10 +219,10 @@ export class CellEditorDialogComponent implements OnInit, OnDestroy {
     this.bindLogoPlaceholderSelection();
     // Autofocus editor so user can type immediately (ensure contenteditable root gets focus)
     setTimeout(() => { try { this.quill.focus(); (this.quill.root as HTMLElement).focus(); } catch {} }, 0);
-    
+
     // Attach keydown listener for intellisense in CAPTURE phase to intercept before Quill
     (this.quill.root as HTMLElement).addEventListener('keydown', this.boundQuillKeydown, true);
-    
+
     // Also add Quill keyboard bindings to handle Enter when intellisense is visible
     const keyboard = this.quill.getModule('keyboard') as any;
     if (keyboard) {
@@ -235,7 +235,7 @@ export class CellEditorDialogComponent implements OnInit, OnDestroy {
         return true; // Allow Quill to handle Enter normally
       });
     }
-    
+
     // Track selection to update spinner
     // Inject custom font size spinner into toolbar after font picker
     try {
@@ -664,10 +664,10 @@ export class CellEditorDialogComponent implements OnInit, OnDestroy {
 
     const textBeforeCursor = this.quill.getText(0, range.index);
     const textAfterCursor = this.quill.getText(range.index, this.quill.getLength());
-    
+
     // Check if we're editing inside an existing ${} expression
     const insideExpression = this.detectExpressionContext(textBeforeCursor, textAfterCursor);
-    
+
     const currentPath = this.extractPathBeforeCursor(textBeforeCursor, insideExpression);
 
     // Map iterator variable (cycle variable) to underlying data path when present
@@ -695,18 +695,6 @@ export class CellEditorDialogComponent implements OnInit, OnDestroy {
       }
     }
 
-    console.log('[Intellisense] Path detection:', {
-      textBeforeCursor: textBeforeCursor.slice(-30),
-      textAfterCursor: textAfterCursor.slice(0, 30),
-      insideExpression,
-      currentPath,
-      underlyingPath,
-      iteratorName,
-      bindingPath,
-      fieldsCount: fields.length,
-      sampleFields: fields.slice(0, 5)
-    });
-    
     if (fields.length === 0) {
       this.hideIntellisense();
       return;
@@ -731,7 +719,7 @@ export class CellEditorDialogComponent implements OnInit, OnDestroy {
 
   private hideIntellisense(): void {
     if (!this.intellisenseVisible) return;
-    
+
     if (this.intellisenseDropdownEl) {
       this.intellisenseDropdownEl.classList.remove('show');
       this.intellisenseDropdownEl.style.display = 'none';
@@ -750,13 +738,13 @@ export class CellEditorDialogComponent implements OnInit, OnDestroy {
     if (!this.intellisenseDropdownEl) return;
 
     this.intellisenseDropdownEl.innerHTML = '';
-    
+
     this.intellisenseItems.forEach((item, index) => {
       const itemEl = document.createElement('div');
       itemEl.className = 'intellisense-item';
       itemEl.textContent = item;
       itemEl.style.cssText = 'padding:4px 8px;cursor:pointer;font-size:12px;';
-      
+
       if (index === this.intellisenseSelectedIndex) {
         itemEl.style.backgroundColor = '#0078d4';
         itemEl.style.color = '#fff';
@@ -807,26 +795,26 @@ export class CellEditorDialogComponent implements OnInit, OnDestroy {
 
     const textBeforeCursor = this.quill.getText(0, range.index);
     const textAfterCursor = this.quill.getText(range.index, this.quill.getLength());
-    
+
     // Detect if we're inside an existing ${} expression
     const insideExpression = this.detectExpressionContext(textBeforeCursor, textAfterCursor);
-    
+
     // Hide dropdown immediately
     this.hideIntellisense();
-    
+
     // Small delay to ensure Quill is ready
     setTimeout(() => {
       if (!this.quill) return;
-      
+
       if (insideExpression.isInside) {
         // We're editing inside an existing expression
         // Just insert the field name at current position
         const fullPath = this.intellisenseCurrentPath ? `${this.intellisenseCurrentPath}.${selectedField}` : selectedField;
-        
+
         // Delete the partial path we've typed and insert the complete field
         const deleteStart = insideExpression.pathStart!;
         const deleteLength = range.index - deleteStart;
-        
+
         this.quill.deleteText(deleteStart, deleteLength, 'user');
         this.quill.insertText(deleteStart, fullPath, 'user');
         this.quill.setSelection(deleteStart + fullPath.length, 0, 'user');
@@ -834,7 +822,7 @@ export class CellEditorDialogComponent implements OnInit, OnDestroy {
         // New expression - wrap in ${}
         const fullPath = this.intellisenseCurrentPath ? `${this.intellisenseCurrentPath}.${selectedField}` : selectedField;
         const wrappedText = `\${${fullPath}}`;
-        
+
         // Find and delete any partial path before cursor
         const partialMatch = /[\w.]*$/.exec(textBeforeCursor);
         if (partialMatch && partialMatch[0].length > 0) {
@@ -847,7 +835,7 @@ export class CellEditorDialogComponent implements OnInit, OnDestroy {
           this.quill.setSelection(range.index + wrappedText.length, 0, 'user');
         }
       }
-      
+
       this.quill.focus();
     }, 10);
   }
@@ -860,7 +848,7 @@ export class CellEditorDialogComponent implements OnInit, OnDestroy {
 
     const bounds = this.quill.getBounds(range.index);
     if (!bounds) return;
-    
+
     const editorRect = this.quill.root.getBoundingClientRect();
 
     this.intellisenseDropdownEl.style.left = `${editorRect.left + bounds.left}px`;
@@ -871,22 +859,22 @@ export class CellEditorDialogComponent implements OnInit, OnDestroy {
     // If we're inside a ${} expression, extract the path from after ${
     if (insideExpression.isInside && insideExpression.openBrace !== undefined) {
       const expressionContent = text.substring(insideExpression.openBrace + 2); // +2 to skip ${
-      
+
       // If expression content ends with a dot, return everything before the dot as the path
       if (expressionContent.endsWith('.')) {
         return expressionContent.slice(0, -1);
       }
-      
+
       // Otherwise, find the last dot and return everything before it
       const lastDotIndex = expressionContent.lastIndexOf('.');
       if (lastDotIndex === -1) {
         // No dot found, so we're at root level inside ${}
         return '';
       }
-      
+
       return expressionContent.slice(0, lastDotIndex);
     }
-    
+
     // Not inside expression - look for partial path at cursor
     const match = /[\w.]+$/.exec(text);
     if (!match) return '';
@@ -908,7 +896,7 @@ export class CellEditorDialogComponent implements OnInit, OnDestroy {
     // Look backwards for ${ and forwards for }
     const lastOpenBrace = textBefore.lastIndexOf('${');
     const lastCloseBrace = textBefore.lastIndexOf('}');
-    
+
     // Check if there's an unclosed ${ before cursor
     if (lastOpenBrace !== -1 && (lastCloseBrace === -1 || lastOpenBrace > lastCloseBrace)) {
       // Check if there's a } after cursor
@@ -920,7 +908,7 @@ export class CellEditorDialogComponent implements OnInit, OnDestroy {
         return { isInside: true, pathStart, openBrace: lastOpenBrace };
       }
     }
-    
+
     return { isInside: false };
   }
 
@@ -1287,11 +1275,11 @@ export class CellEditorDialogComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.teardownSymbolPalette();
     this.qrEditImg = null;
-    
+
     if (this.quill && this.quill.root) {
       (this.quill.root as HTMLElement).removeEventListener('keydown', this.boundQuillKeydown, true);
     }
-    
+
     if (this.intellisenseDropdownEl) {
       this.intellisenseDropdownEl.remove();
       this.intellisenseDropdownEl = null;

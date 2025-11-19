@@ -41,7 +41,7 @@ export class ToolbarPanelComponent {
 
   // Report data model loaded from selectable JSON files in /public/data-models
   protected reportDataModel: any = {};
-  protected dataModelOptions: string[] = ['report-model-A.json'];
+  protected dataModelOptions: string[] = ['model-F20.json'];
   protected selectedModel = signal<string>('');
   protected selectPlaceholder = '<select model>';
 

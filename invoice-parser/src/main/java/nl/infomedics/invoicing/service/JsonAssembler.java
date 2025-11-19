@@ -21,40 +21,14 @@ public class JsonAssembler {
 
 
 	public InvoiceBundle assemble(MetaInfo meta, Practitioner practitioner, Map<String, Debiteur> debi, Map<String, List<Specificatie>> specs) {
-		debi.forEach((id, d) -> d.setTreatments(specs.getOrDefault(id, List.of())));
 		List<DebiteurWithPractitioner> list = new ArrayList<>();
 		for (Debiteur d : debi.values()) {
-			DebiteurWithPractitioner w = new DebiteurWithPractitioner();
-			if (w.getDebiteur()==null) w.setDebiteur(new Debiteur());
-			w.getDebiteur().setInvoiceNumber(d.getInvoiceNumber());
-			w.getDebiteur().setPracticeName(d.getPracticeName());
-			w.getDebiteur().setPracticeCity(d.getPracticeCity());
-			w.getDebiteur().setInsuredId(d.getInsuredId());
-			w.getDebiteur().setPatientName(d.getPatientName());
-			w.getDebiteur().setPatientDob(d.getPatientDob());
-			w.getDebiteur().setInsurer(d.getInsurer());
-			w.getDebiteur().setPeriodFrom(d.getPeriodFrom());
-			w.getDebiteur().setPeriodTo(d.getPeriodTo());
-			w.getDebiteur().setInvoiceType(d.getInvoiceType());
-			w.getDebiteur().setTotals(d.getTotals());
-			w.getDebiteur().setImageUrl(d.getImageUrl());
-			w.setTreatments(d.getTreatments());
-			if (practitioner != null) {
-				if (w.getPractitioner()==null) w.setPractitioner(new Practitioner());
-				if (w.getPractitioner().getPractice()==null) w.getPractitioner().setPractice(new Practice());
-				if (w.getPractitioner().getAddress()==null) w.getPractitioner().setAddress(new Address());
-				w.getPractitioner().setAgbCode(practitioner.getAgbCode());
-				w.getPractitioner().setLogoNr(practitioner.getLogoNr());
-				w.getPractitioner().getPractice().setName(practitioner.getPractice().getName());
-				w.getPractitioner().getPractice().setCode(practitioner.getPractice().getCode());
-				w.getPractitioner().getPractice().setPhone(practitioner.getPractice().getPhone());
-				w.getPractitioner().getAddress().setCountry(practitioner.getAddress().getCountry());
-				w.getPractitioner().getAddress().setPostcode(practitioner.getAddress().getPostcode());
-				w.getPractitioner().getAddress().setStreet(practitioner.getAddress().getStreet());
-				w.getPractitioner().getAddress().setHouseNr(practitioner.getAddress().getHouseNr());
-			}
-			w.setTotaalBedrag(meta!=null?meta.getTotaalBedrag():null);
-			list.add(w);
+			DebiteurWithPractitioner dwp = new DebiteurWithPractitioner();
+			
+			dwp.setDebiteur(d);
+			dwp.setTreatments(specs.get(d.getInvoiceNumber()));
+			dwp.setPractitioner(practitioner);
+			list.add(dwp);
 		}
 		return new InvoiceBundle(list);
 	}
@@ -65,22 +39,10 @@ public class JsonAssembler {
 		: om.writeValueAsString(bundle);
 	}
 
-	public SingleDebtorInvoice createSingleDebtorInvoice(MetaInfo meta, Practitioner practitioner, Debiteur debiteur) {
+	public SingleDebtorInvoice createSingleDebtorInvoice(MetaInfo meta, Practitioner practitioner, Debiteur debiteur, List<Specificatie> specs) {
 		DebiteurWithPractitioner w = new DebiteurWithPractitioner();
-		if (w.getDebiteur()==null) w.setDebiteur(new Debiteur());
-		w.getDebiteur().setInvoiceNumber(debiteur.getInvoiceNumber());
-		w.getDebiteur().setPracticeName(debiteur.getPracticeName());
-		w.getDebiteur().setPracticeCity(debiteur.getPracticeCity());
-		w.getDebiteur().setInsuredId(debiteur.getInsuredId());
-		w.getDebiteur().setPatientName(debiteur.getPatientName());
-		w.getDebiteur().setPatientDob(debiteur.getPatientDob());
-		w.getDebiteur().setInsurer(debiteur.getInsurer());
-		w.getDebiteur().setPeriodFrom(debiteur.getPeriodFrom());
-		w.getDebiteur().setPeriodTo(debiteur.getPeriodTo());
-		w.getDebiteur().setInvoiceType(debiteur.getInvoiceType());
-		w.getDebiteur().setTotals(debiteur.getTotals());
-		w.getDebiteur().setImageUrl(debiteur.getImageUrl());
-		w.setTreatments(debiteur.getTreatments());
+		if (w.getDebiteur()==null) w.setDebiteur(debiteur);
+		w.setTreatments(specs);
 		if (practitioner != null) {
 			if (w.getPractitioner()==null) w.setPractitioner(new Practitioner());
 			if (w.getPractitioner().getPractice()==null) w.getPractitioner().setPractice(new Practice());
@@ -95,7 +57,6 @@ public class JsonAssembler {
 			w.getPractitioner().getAddress().setStreet(practitioner.getAddress().getStreet());
 			w.getPractitioner().getAddress().setHouseNr(practitioner.getAddress().getHouseNr());
 		}
-		w.setTotaalBedrag(meta!=null?meta.getTotaalBedrag():null);
 		return new SingleDebtorInvoice(w);
 	}
 

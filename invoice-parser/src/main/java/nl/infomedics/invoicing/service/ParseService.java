@@ -31,7 +31,7 @@ import nl.infomedics.invoicing.model.Specificatie;
 public class ParseService {
 	private static final DateTimeFormatter NL = DateTimeFormatter.ofPattern("dd-MM-yyyy");
 
-private static String get(com.univocity.parsers.common.record.Record r, int idx) {
+	private static String get(com.univocity.parsers.common.record.Record r, int idx) {
 		return idx < r.getValues().length ? r.getString(idx) : null;
 	}
 
@@ -92,48 +92,60 @@ private static String get(com.univocity.parsers.common.record.Record r, int idx)
 		List<com.univocity.parsers.common.record.Record> rows = new ArrayList<>();
 		p.iterateRecords(reader).forEach(rows::add);
 		Map<String, Debiteur> map = new LinkedHashMap<>();
-		for (int i=0;i<rows.size();i++) {
+		for (int i=0;i<rows.size() -1 ;i++) {
 			var r = rows.get(i);
 			String zorgId = get(r, 6); // debiteur/insured id used to join with specificaties
 			Debiteur d = new Debiteur();
-			d.setInvoiceNumber(get(r, 0));
-			d.setPracticeName(get(r, 1));
-			d.setPracticeCity(get(r, 5));
+			d.setInvoiceNumber(get(r, 6));
+			d.setHcpName(get(r, 1));
+			d.setHcpStreet(get(r, 2));
+			d.setHcpHouseNr(get(r, 3));
+			d.setHcpZipCode(get(r, 4));
+			d.setHcpCity(get(r, 5));
+			d.setPracticeAgb(get(r, 84));
+			d.setHcpAgb(get(r, 85));
 			d.setInsuredId(zorgId);
 			d.setPatientName(get(r, 7));
 			d.setPatientDob(parseDate(get(r, 8)));
 			d.setInsurer(get(r, 10));
+			d.setStreet(get(r, 12));
+			d.setHouseNr(get(r, 13));
+			d.setZipCode(get(r, 14));
+			d.setCity(get(r, 15));
+			d.setPrintDate(get(r,16));
 			d.setPeriodFrom(parseDate(get(r, 16)));
-			d.setPeriodTo(parseDate(get(r, 17)));
+			d.setFirstExpirationDate(get(r, 17));
 			d.setInvoiceType(safeInt(get(r, 18))); // e.g., 20
-			d.setTotals(listAllowingNulls(safeInt(get(r, 21)), safeInt(get(r, 22)), safeInt(get(r, 64)), safeInt(get(r, 65))));
+			d.setInvoiceAmountCents(safeInt(get(r, 20)));
+			d.setOpenImfCents(safeInt(get(r,22)));
 			d.setImageUrl(get(r, 70));
-			if (i == rows.size()-1) {
-				// Last line -> practitioner (doctor)
-				// Last classic row is practitioner: extract directly from columns
-				this.practitioner = new Practitioner();
-				// Defensive: practitioner now initializes nested objects, but guard anyway
-				if (this.practitioner.getPractice()==null) this.practitioner.setPractice(new nl.infomedics.invoicing.model.Practice());
-				if (this.practitioner.getAddress()==null) this.practitioner.setAddress(new nl.infomedics.invoicing.model.Address());
-				this.practitioner.getPractice().setName(get(r,1));
-				this.practitioner.getAddress().setStreet(get(r,2));
-				String house = get(r,3);
-				this.practitioner.getAddress().setHouseNr(house);
-				this.practitioner.getAddress().setPostcode(get(r,4));
-				this.practitioner.getAddress().setCity(get(r,5));
-				this.practitioner.setAgbCode(get(r,6));
-				this.practitioner.getPractice().setCode(""); // unknown in classic line
-				this.practitioner.getAddress().setCountry("");
-				this.practitioner.getPractice().setPhone("");
-				this.practitioner.setLogoNr(0);
-				this.practitioner.normalize();
-				continue; // skip adding as debtor
-			}
 			if (zorgId!=null && !zorgId.isBlank()) {
 				map.put(zorgId, d);
 			}
 		}
+
+		// Last classic row is practitioner(doctor): extract directly from columns
+		parsePractitioner(rows.get(rows.size() -1));
 		return map;
+	}
+
+	private void parsePractitioner(com.univocity.parsers.common.record.Record r) {
+		this.practitioner = new Practitioner();
+		// Defensive: practitioner now initializes nested objects, but guard anyway
+		if (this.practitioner.getPractice()==null) this.practitioner.setPractice(new nl.infomedics.invoicing.model.Practice());
+		if (this.practitioner.getAddress()==null) this.practitioner.setAddress(new nl.infomedics.invoicing.model.Address());
+		this.practitioner.getPractice().setName(get(r,1));
+		this.practitioner.getAddress().setStreet(get(r,2));
+		String house = get(r,3);
+		this.practitioner.getAddress().setHouseNr(house);
+		this.practitioner.getAddress().setPostcode(get(r,4));
+		this.practitioner.getAddress().setCity(get(r,5));
+		this.practitioner.setAgbCode(get(r,6));
+		this.practitioner.getPractice().setCode(""); // unknown in classic line
+		this.practitioner.getAddress().setCountry("");
+		this.practitioner.getPractice().setPhone("");
+		this.practitioner.setLogoNr(0);
+		this.practitioner.normalize();
 	}
 
 	public Map<String, List<Specificatie>> parseSpecificaties(Reader reader) {
@@ -144,17 +156,18 @@ private static String get(com.univocity.parsers.common.record.Record r, int idx)
 		CsvParser p = new CsvParser(st);
 		Map<String, List<Specificatie>> map = new LinkedHashMap<>();
 		for (com.univocity.parsers.common.record.Record r : p.iterateRecords(reader)) {
-			String zorgId = get(r, 0);
-			if (zorgId==null) continue;
+			String invoiceNumber = get(r, 0);
+			if (invoiceNumber==null) continue;
 			Specificatie s = new Specificatie();
-			s.setInsuredId(zorgId);
+			s.setInvoiceNumber(invoiceNumber);
 			s.setDate(parseDate(get(r, 1)));
 			s.setTreatmentCode(get(r, 2));
 			s.setDescription(get(r, 3));
-			s.setTariffCode(get(r, 4));
-			s.setReference(get(r, 5));
-			s.setAmountCents(safeInt(get(r, 15))); // fall back to last column where needed
-			map.computeIfAbsent(zorgId, _ -> new ArrayList<>()).add(s);
+			s.setAmountCents(safeInt(get(r, 4)));
+			s.setTreatmentProvider(get(r, 5));
+			s.setVatIndicator(get(r, 8));
+			s.setVatValueCents(get(r, 9));
+			map.computeIfAbsent(invoiceNumber, _ -> new ArrayList<>()).add(s);
 		}
 		return map;
 	}
@@ -227,8 +240,8 @@ private static String get(com.univocity.parsers.common.record.Record r, int idx)
 						if (debiteurNum!=null) {
 							Debiteur d = new Debiteur();
 							d.setInvoiceNumber(currentNotaInvoiceNumber);
-							d.setPracticeName(practitionerName);
-							d.setPracticeCity(practitionerCity);
+							d.setHcpName(practitionerName);
+							d.setHcpCity(practitionerCity);
 							d.setInsuredId(debiteurNum);
 							d.setPatientName(patientName!=null?patientName:debiteurName);
 							d.setPatientDob(dob);
@@ -243,12 +256,11 @@ private static String get(com.univocity.parsers.common.record.Record r, int idx)
 					else if ("Prestatie".equals(local)) {
 						String bedrag = attr(xr, "Bedrag");
 						Specificatie s = new Specificatie();
-						s.setInsuredId(debiteurNum);
+						s.setInvoiceNumber(debiteurNum);
 						s.setDate(parseDateIso(attr(xr, "Datum")));
 						s.setTreatmentCode(attr(xr, "Prestatiecode"));
 						s.setDescription(attr(xr, "Omschrijving"));
-						s.setTariffCode(attr(xr, "Prestatiecode"));
-						s.setReference(attr(xr, "id"));
+						s.setTreatmentProvider(attr(xr, "id"));
 						if (bedrag!=null) {
 							try { s.setAmountCents(new BigDecimal(bedrag).movePointRight(2).intValue()); } catch(Exception ignored) {}
 						}
