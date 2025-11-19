@@ -1,0 +1,6 @@
+- Kix Barcode-ot javitani, hogy a designerben &quot; => '
+- Page margin TOP/Botoom-ot kiszamolni
+- Quill Editor-ban: ${propName} => transformToPlainText
+- Export as Xhtml: if <footer> element is present => it should be placed before <body> elements.
+- On Export as Xhtml: <footer> content elements: transform margin-top into margin-bottom
+- Watch invoice-parser's src/main/resources/templates/for-pdf => reload Templates bean automatically

@@ -67,7 +67,7 @@ table {
     </style>
   </head>
   <body>
-    <div class="report-body">
+    <header>
       <table id="DebugLine" class="element element-table" style="margin-top:10mm;margin-left:10mm;width:190mm;height:9mm;">
     <tbody>
       <tr style="height:9mm;">
@@ -94,7 +94,7 @@ table {
       <table id="KixPostCode" class="element element-table" style="margin-top:0mm;margin-left:10mm;width:190mm;height:21mm;">
     <tbody>
       <tr style="height:21mm;">
-        <td style="width:190mm;height:21mm;padding:0mm 0mm 0mm 18mm;text-align:left;vertical-align:top;border-top:none;border-right:none;border-bottom:none;border-left:none;font-style:normal;font-weight:normal;font-size:9pt;line-height:1;font-family:Roboto, sans-serif;text-decoration:none;"><p><span style="font-size: 7.75pt; font-family: &quot;KIX Barcode&quot;;">449999XA124</span></p></td>
+        <td style="width:190mm;height:21mm;padding:0mm 0mm 0mm 18mm;text-align:left;vertical-align:top;border-top:none;border-right:none;border-bottom:none;border-left:none;font-style:normal;font-weight:normal;font-size:9pt;line-height:1;font-family:Roboto, sans-serif;text-decoration:none;"><p><span style="font-family: &quot;KIX Barcode&quot;;">${debiteur.zipCode}${debiteur.houseNr}</span></p></td>
       </tr>
     </tbody>
   </table>
@@ -108,23 +108,25 @@ table {
           <td style="width:74.884mm;height:5.021mm;padding:0mm 0mm 0mm 0mm;text-align:left;vertical-align:top;border-top:none;border-right:none;border-bottom:none;border-left:none;font-style:normal;font-weight:normal;font-size:9pt;line-height:1;font-family:Roboto, sans-serif;text-decoration:none;">&#160;</td>
         </tr>
         <tr style="height:7.979mm;">
-          <td style="width:74.884mm;height:7.979mm;padding:0mm 0mm 0mm 0mm;text-align:left;vertical-align:top;border-top:none;border-right:none;border-bottom:none;border-left:none;font-style:normal;font-weight:normal;font-size:9pt;line-height:1;font-family:Roboto, sans-serif;text-decoration:none;"><p>${debiteur.invoiceNumber}</p><p>${<span style="font-family: Arial, Helvetica, sans-serif;">debiteur.printDate</span>}<span style="font-family: Arial, Helvetica, sans-serif;"><span class="ql-cursor">﻿</span></span></p></td>
+          <td style="width:74.884mm;height:7.979mm;padding:0mm 0mm 0mm 0mm;text-align:left;vertical-align:top;border-top:none;border-right:none;border-bottom:none;border-left:none;font-style:normal;font-weight:normal;font-size:9pt;line-height:1;font-family:Roboto, sans-serif;text-decoration:none;"><p>${debiteur.invoiceNumber}</p><p><span style="font-family: Arial, Helvetica, sans-serif;">${debiteur.printDate}</span></p></td>
         </tr>
       </tbody>
     </table></td>
         <td style="width:32.165mm;height:13mm;padding:0mm 0mm 0mm 0mm;text-align:left;vertical-align:top;border-top:none;border-right:none;border-bottom:none;border-left:none;font-style:normal;font-weight:normal;font-size:9pt;line-height:1;font-family:Roboto, sans-serif;text-decoration:none;"><p><strong style="font-size: 9pt;">Patiëntgegevens</strong></p><p><span style="font-family: Roboto, sans-serif; font-size: 9pt;">Naam:</span></p><p><span style="font-family: Roboto, sans-serif; font-size: 9pt;">Geb.datum:</span></p><p><span style="font-family: Roboto, sans-serif; font-size: 9pt;">BSN:</span></p></td>
-        <td style="width:45.309mm;height:13mm;padding:0mm 0mm 0mm 0mm;text-align:right;vertical-align:top;border-top:none;border-right:none;border-bottom:1px solid #000000;border-left:none;font-style:normal;font-weight:normal;font-size:9pt;line-height:1;font-family:Roboto, sans-serif;text-decoration:none;"><p><br/></p><p><span style="font-family: Arial, Helvetica, sans-serif;">${debiteur.</span><span style="font-family: Arial, Helvetica, sans-serif; color: rgb(0, 0, 192); background-color: rgb(240, 216, 168); font-size: 10pt;">patientName</span><span style="font-family: Arial, Helvetica, sans-serif;">}</span></p><p><span style="font-family: Arial, Helvetica, sans-serif;">${debiteur.</span><span style="font-size: 10pt; font-family: Arial, Helvetica, sans-serif; background-color: rgb(240, 216, 168); color: rgb(0, 0, 192);">patientDob</span><span style="font-family: Arial, Helvetica, sans-serif;">}</span></p></td>
+        <td style="width:45.309mm;height:13mm;padding:0mm 0mm 0mm 0mm;text-align:right;vertical-align:top;border-top:none;border-right:none;border-bottom:1px solid #000000;border-left:none;font-style:normal;font-weight:normal;font-size:9pt;line-height:1;font-family:Roboto, sans-serif;text-decoration:none;"><p><br/></p><p><span style="font-family: Roboto, sans-serif;">${debiteur.patientName}</span></p><p><span style="font-family: Roboto, sans-serif;">${debiteur.patientDob}</span></p></td>
       </tr>
     </tbody>
   </table>
-      <table id="InvoiceAndPatientSuf" class="element element-table" style="margin-top:0mm;margin-left:10mm;width:190mm;height:36mm;">
+      <table id="InvoiceAndPatientSuf" class="element element-table" style="margin-top:0mm;margin-left:10mm;width:190mm;height:20mm;">
     <tbody>
-      <tr style="height:36mm;">
-        <td style="width:112.8mm;height:36mm;padding:0mm 0mm 0mm 0mm;text-align:left;vertical-align:top;border-top:none;border-right:none;border-bottom:none;border-left:none;font-style:normal;font-weight:normal;font-size:9pt;line-height:1;font-family:Roboto, sans-serif;text-decoration:none;">&#160;</td>
-        <td style="width:77.2mm;height:36mm;padding:0mm 0mm 0mm 0mm;text-align:left;vertical-align:top;border-top:none;border-right:none;border-bottom:none;border-left:none;font-style:normal;font-weight:normal;font-size:9pt;line-height:1;font-family:Roboto, sans-serif;text-decoration:none;"><p><span style="font-size: 8pt;">(invullen voor declaratie bij uw zorgverzekeraar)</span></p></td>
+      <tr style="height:20mm;">
+        <td style="width:112.8mm;height:20mm;padding:0mm 0mm 0mm 0mm;text-align:left;vertical-align:top;border-top:none;border-right:none;border-bottom:none;border-left:none;font-style:normal;font-weight:normal;font-size:9pt;line-height:1;font-family:Roboto, sans-serif;text-decoration:none;">&#160;</td>
+        <td style="width:77.2mm;height:20mm;padding:0mm 0mm 0mm 0mm;text-align:left;vertical-align:top;border-top:none;border-right:none;border-bottom:none;border-left:none;font-style:normal;font-weight:normal;font-size:9pt;line-height:1;font-family:Roboto, sans-serif;text-decoration:none;"><p><span style="font-size: 8pt;">(invullen voor declaratie bij uw zorgverzekeraar)</span></p></td>
       </tr>
     </tbody>
   </table>
+    </header>
+    <div class="report-body">
       <table id="InvoiceLines" class="element element-table" style="margin-top:0mm;margin-left:10mm;width:190mm;height:19mm;">
     <tbody>
       <tr style="height:4.44mm;">
@@ -147,7 +149,9 @@ table {
       </tr>
     </tbody>
   </table>
-      <table class="element element-table" style="margin-top:56mm;margin-left:10mm;width:190mm;height:9mm;">
+    </div>
+    <footer>
+      <table class="element element-table" style="margin-left:10mm;width:190mm;height:9mm;">
     <tbody>
       <tr style="height:9mm;">
         <td style="width:190mm;height:9mm;padding:0mm 0mm 0mm 0mm;text-align:left;vertical-align:top;border-top:none;border-right:none;border-bottom:none;border-left:none;font-style:normal;font-weight:normal;font-size:9pt;line-height:1;font-family:Roboto, sans-serif;text-decoration:none;"><p><span style="font-family: Roboto, sans-serif; font-size: 9pt;">Wij vragen u vriendelijk het bedrag binnen 30 dagen aan ons over te maken. Hieronder treft u de betaalgegevens aan.</span></p><p><span style="font-family: Roboto, sans-serif; font-size: 9pt;">Vermeld bij uw betaling altijd het betalingskenmerk.</span></p></td>
@@ -189,6 +193,6 @@ table {
       </tr>
     </tbody>
   </table>
-    </div>
+    </footer>
   </body>
 </html>
