@@ -222,6 +222,29 @@ export class CellEditorDialogComponent implements OnInit, OnDestroy {
 
     // Attach keydown listener for intellisense in CAPTURE phase to intercept before Quill
     (this.quill.root as HTMLElement).addEventListener('keydown', this.boundQuillKeydown, true);
+    // Intercept paste events to ensure plain-text insertion inside ${} expressions
+    (this.quill.root as HTMLElement).addEventListener('paste', (e: ClipboardEvent) => {
+      try {
+        const range = this.quill.getSelection();
+        if (!range) return; // let default
+        const textBeforeCursor = this.quill.getText(0, range.index);
+        const textAfterCursor = this.quill.getText(range.index, this.quill.getLength());
+        const ctx = this.detectExpressionContext(textBeforeCursor, textAfterCursor);
+        if (!ctx.isInside) return; // only modify when inside ${...}
+        // Prevent rich content paste
+        e.preventDefault();
+        e.stopPropagation();
+        // Acquire plain text
+        const plain = e.clipboardData?.getData('text/plain') ?? '';
+        if (!plain) return;
+        // Sanitize: allow only [A-Za-z0-9_.] removing spaces and other formatting characters
+        const sanitized = plain.replace(/[^A-Za-z0-9_.]/g, '');
+        if (!sanitized) return;
+        // Insert at cursor
+        this.quill.insertText(range.index, sanitized, 'user');
+        this.quill.setSelection(range.index + sanitized.length, 0, 'silent');
+      } catch {}
+    }, true);
 
     // Also add Quill keyboard bindings to handle Enter when intellisense is visible
     const keyboard = this.quill.getModule('keyboard') as any;
@@ -1305,6 +1328,11 @@ export class CellEditorDialogComponent implements OnInit, OnDestroy {
     let xhtml = raw;
     try {
       xhtml = this.quillHtmlToXhtml(raw);
+      // Sanitize ${} expressions: keep only A-Za-z_. inside braces
+      xhtml = xhtml.replace(/\$\{([^}]*)\}/g, (m, inner) => {
+        const cleaned = (inner || '').replace(/[^A-Za-z_.]/g, '');
+        return '${' + cleaned + '}';
+      });
     } catch {
       // fallback to raw if parsing fails
     }
