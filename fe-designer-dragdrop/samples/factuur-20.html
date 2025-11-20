@@ -71,7 +71,7 @@ table {
       <table id="DebugLine" class="element element-table" style="margin-top:10mm;margin-left:10mm;width:190mm;height:9mm;">
     <tbody>
       <tr style="height:9mm;">
-        <td style="width:190mm;height:9mm;padding:0mm 0mm 0mm 82mm;text-align:left;vertical-align:top;border-top:none;border-right:none;border-bottom:none;border-left:none;font-style:normal;font-weight:normal;font-size:9pt;line-height:1;font-family:Roboto, sans-serif;text-decoration:none;"><p><span style="color: rgb(230, 0, 0); font-family: Roboto, sans-serif; font-size: 9pt;">Factuurtype: 20</span></p><p><span style="color: rgb(230, 0, 0); font-family: Roboto, sans-serif; font-size: 9pt;">Customer in run: 3</span></p></td>
+        <td style="width:190mm;height:9mm;padding:0mm 0mm 0mm 82mm;text-align:left;vertical-align:top;border-top:none;border-right:none;border-bottom:none;border-left:none;font-style:normal;font-weight:normal;font-size:9pt;line-height:1;font-family:Roboto, sans-serif;text-decoration:none;"><p><span style="font-size: 9pt; font-family: Roboto, sans-serif; color: rgb(230, 0, 0);">Factuurtype: 20</span></p><p><span style="font-size: 9pt; font-family: Roboto, sans-serif; color: rgb(230, 0, 0);">Customer in run: 667</span></p></td>
       </tr>
     </tbody>
   </table>
@@ -126,32 +126,8 @@ table {
     </tbody>
   </table>
     </header>
-    <div class="report-body">
-      <table id="InvoiceLines" class="element element-table" style="margin-top:0mm;margin-left:10mm;width:190mm;height:19mm;">
-    <tbody>
-      <tr style="height:4.44mm;">
-        <td style="width:37.642mm;height:4.44mm;padding:0mm 0mm 1mm 0mm;text-align:left;vertical-align:top;border-top:none;border-right:none;border-bottom:1px solid #000000;border-left:none;font-style:normal;font-weight:normal;font-size:9pt;line-height:1;font-family:Roboto, sans-serif;text-decoration:none;"><p><strong style="font-family: Roboto, sans-serif; font-size: 8pt;">Behandelingsdatum</strong></p></td>
-        <td style="width:127.462mm;height:4.44mm;padding:0mm 0mm 1mm 0mm;text-align:left;vertical-align:top;border-top:none;border-right:none;border-bottom:1px solid #000000;border-left:none;font-style:normal;font-weight:normal;font-size:9pt;line-height:1;font-family:Roboto, sans-serif;text-decoration:none;"><p><strong style="font-size: 8pt; font-family: Roboto, sans-serif;">Omschrijving</strong></p></td>
-        <td style="width:5.876mm;height:4.44mm;padding:0mm 0mm 1mm 0mm;text-align:left;vertical-align:top;border-top:none;border-right:none;border-bottom:1px solid #000000;border-left:none;font-style:normal;font-weight:normal;font-size:9pt;line-height:1;font-family:Roboto, sans-serif;text-decoration:none;">&#160;</td>
-        <td style="width:19.02mm;height:4.44mm;padding:0mm 0mm 1mm 0mm;text-align:right;vertical-align:top;border-top:none;border-right:none;border-bottom:1px solid #000000;border-left:none;font-style:normal;font-weight:normal;font-size:9pt;line-height:1;font-family:Roboto, sans-serif;text-decoration:none;"><p><strong style="font-family: Roboto, sans-serif; font-size: 8pt;">Bedrag</strong></p></td>
-      </tr>
-      <tr data-repeat-over="treatments" data-repeat-var="t" style="height:9.109mm;">
-        <td style="width:37.642mm;height:9.109mm;padding:1mm 0mm 1mm 0mm;text-align:left;vertical-align:top;border-top:none;border-right:none;border-bottom:1px solid #000000;border-left:none;font-style:normal;font-weight:normal;font-size:9pt;line-height:1;font-family:Roboto, sans-serif;text-decoration:none;"><p><span style="font-size: 8pt; font-family: Roboto, sans-serif;">${t.date}</span></p><p><span style="font-size: 8pt;">Behandelaar: ${</span><span style="font-size: 8pt; font-family: Arial, Helvetica, sans-serif;">t.treatmentProvider</span><span style="font-size: 8pt;">}</span><span style="font-size: 8pt; font-family: Arial, Helvetica, sans-serif;"> </span></p></td>
-        <td style="width:127.462mm;height:9.109mm;padding:1mm 0mm 1mm 0mm;text-align:left;vertical-align:top;border-top:none;border-right:none;border-bottom:1px solid #000000;border-left:none;font-style:normal;font-weight:normal;font-size:9pt;line-height:1;font-family:Roboto, sans-serif;text-decoration:none;"><p><span style="font-family: Arial, Helvetica, sans-serif;">${t.treatmentCode} </span>${t.description}</p><p>${<span style="font-family: Arial, Helvetica, sans-serif;">t.vatIndicator</span>}<span style="font-family: Arial, Helvetica, sans-serif;"> %BTW</span></p></td>
-        <td style="width:5.876mm;height:9.109mm;padding:1mm 0mm 1mm 0mm;text-align:left;vertical-align:top;border-top:none;border-right:none;border-bottom:1px solid #000000;border-left:none;font-style:normal;font-weight:normal;font-size:9pt;line-height:1;font-family:Roboto, sans-serif;text-decoration:none;"><p><span style="font-size: 8pt;">€</span></p></td>
-        <td style="width:19.02mm;height:9.109mm;padding:1mm 0mm 1mm 0mm;text-align:right;vertical-align:top;border-top:none;border-right:none;border-bottom:1px solid #000000;border-left:none;font-style:normal;font-weight:normal;font-size:9pt;line-height:1;font-family:Roboto, sans-serif;text-decoration:none;"><p>${t.amountCents}</p><p><span style="font-family: Arial, Helvetica, sans-serif;">${t.vatValueCents}</span></p></td>
-      </tr>
-      <tr style="height:5.451mm;">
-        <td style="width:37.642mm;height:5.451mm;padding:0mm 0mm 0mm 0mm;text-align:left;vertical-align:top;border-top:none;border-right:none;border-bottom:none;border-left:none;font-style:normal;font-weight:normal;font-size:9pt;line-height:1;font-family:Roboto, sans-serif;text-decoration:none;">&#160;</td>
-        <td style="width:127.462mm;height:5.451mm;padding:0mm 0mm 0mm 74mm;text-align:left;vertical-align:top;border-top:none;border-right:none;border-bottom:none;border-left:none;font-style:normal;font-weight:normal;font-size:9pt;line-height:1;font-family:Roboto, sans-serif;text-decoration:none;"><p><strong style="font-family: Roboto, sans-serif; font-size: 8pt;">Totaal</strong></p></td>
-        <td style="width:5.876mm;height:5.451mm;padding:0mm 0mm 0mm 0mm;text-align:left;vertical-align:top;border-top:none;border-right:none;border-bottom:none;border-left:none;font-style:normal;font-weight:normal;font-size:9pt;line-height:1;font-family:Roboto, sans-serif;text-decoration:none;"><p><span style="font-size: 8pt; font-family: Roboto, sans-serif;">€</span></p></td>
-        <td style="width:19.02mm;height:5.451mm;padding:0mm 0mm 0mm 0mm;text-align:right;vertical-align:top;border-top:none;border-right:none;border-bottom:none;border-left:none;font-style:normal;font-weight:normal;font-size:9pt;line-height:1;font-family:Roboto, sans-serif;text-decoration:none;"><p><span style="font-family: Arial, Helvetica, sans-serif;">${debiteur.invoiceAmountCents}</span></p></td>
-      </tr>
-    </tbody>
-  </table>
-    </div>
     <footer>
-      <table class="element element-table" style="margin-left:10mm;width:190mm;height:9mm;">
+      <table class="element element-table" style="margin-top:91mm;margin-left:10mm;width:190mm;height:9mm;">
     <tbody>
       <tr style="height:9mm;">
         <td style="width:190mm;height:9mm;padding:0mm 0mm 0mm 0mm;text-align:left;vertical-align:top;border-top:none;border-right:none;border-bottom:none;border-left:none;font-style:normal;font-weight:normal;font-size:9pt;line-height:1;font-family:Roboto, sans-serif;text-decoration:none;"><p><span style="font-family: Roboto, sans-serif; font-size: 9pt;">Wij vragen u vriendelijk het bedrag binnen 30 dagen aan ons over te maken. Hieronder treft u de betaalgegevens aan.</span></p><p><span style="font-family: Roboto, sans-serif; font-size: 9pt;">Vermeld bij uw betaling altijd het betalingskenmerk.</span></p></td>
@@ -194,5 +170,29 @@ table {
     </tbody>
   </table>
     </footer>
+    <div class="report-body">
+      <table id="InvoiceLines" class="element element-table" style="margin-top:0mm;margin-left:10mm;width:190mm;height:19mm;">
+    <tbody>
+      <tr style="height:4.44mm;">
+        <td style="width:37.642mm;height:4.44mm;padding:0mm 0mm 1mm 0mm;text-align:left;vertical-align:top;border-top:none;border-right:none;border-bottom:1px solid #000000;border-left:none;font-style:normal;font-weight:normal;font-size:9pt;line-height:1;font-family:Roboto, sans-serif;text-decoration:none;"><p><strong style="font-family: Roboto, sans-serif; font-size: 8pt;">Behandelingsdatum</strong></p></td>
+        <td style="width:127.462mm;height:4.44mm;padding:0mm 0mm 1mm 0mm;text-align:left;vertical-align:top;border-top:none;border-right:none;border-bottom:1px solid #000000;border-left:none;font-style:normal;font-weight:normal;font-size:9pt;line-height:1;font-family:Roboto, sans-serif;text-decoration:none;"><p><strong style="font-size: 8pt; font-family: Roboto, sans-serif;">Omschrijving</strong></p></td>
+        <td style="width:5.876mm;height:4.44mm;padding:0mm 0mm 1mm 0mm;text-align:left;vertical-align:top;border-top:none;border-right:none;border-bottom:1px solid #000000;border-left:none;font-style:normal;font-weight:normal;font-size:9pt;line-height:1;font-family:Roboto, sans-serif;text-decoration:none;">&#160;</td>
+        <td style="width:19.02mm;height:4.44mm;padding:0mm 0mm 1mm 0mm;text-align:right;vertical-align:top;border-top:none;border-right:none;border-bottom:1px solid #000000;border-left:none;font-style:normal;font-weight:normal;font-size:9pt;line-height:1;font-family:Roboto, sans-serif;text-decoration:none;"><p><strong style="font-family: Roboto, sans-serif; font-size: 8pt;">Bedrag</strong></p></td>
+      </tr>
+      <tr data-repeat-over="treatments" data-repeat-var="t" style="height:9.109mm;">
+        <td style="width:37.642mm;height:9.109mm;padding:1mm 0mm 1mm 0mm;text-align:left;vertical-align:top;border-top:none;border-right:none;border-bottom:1px solid #000000;border-left:none;font-style:normal;font-weight:normal;font-size:9pt;line-height:1;font-family:Roboto, sans-serif;text-decoration:none;"><p><span style="font-size: 8pt; font-family: Roboto, sans-serif;">${t.date}</span></p><p><span style="font-size: 8pt;">Behandelaar: ${</span><span style="font-size: 8pt; font-family: Arial, Helvetica, sans-serif;">t.treatmentProvider</span><span style="font-size: 8pt;">}</span><span style="font-size: 8pt; font-family: Arial, Helvetica, sans-serif;"> </span></p></td>
+        <td style="width:127.462mm;height:9.109mm;padding:1mm 0mm 1mm 0mm;text-align:left;vertical-align:top;border-top:none;border-right:none;border-bottom:1px solid #000000;border-left:none;font-style:normal;font-weight:normal;font-size:9pt;line-height:1;font-family:Roboto, sans-serif;text-decoration:none;"><p><span style="font-family: Arial, Helvetica, sans-serif;">${t.treatmentCode} </span>${t.description}</p><p>${<span style="font-family: Arial, Helvetica, sans-serif;">t.vatIndicator</span>}<span style="font-family: Arial, Helvetica, sans-serif;"> %BTW</span></p></td>
+        <td style="width:5.876mm;height:9.109mm;padding:1mm 0mm 1mm 0mm;text-align:left;vertical-align:top;border-top:none;border-right:none;border-bottom:1px solid #000000;border-left:none;font-style:normal;font-weight:normal;font-size:9pt;line-height:1;font-family:Roboto, sans-serif;text-decoration:none;"><p><span style="font-size: 8pt;">€</span></p></td>
+        <td style="width:19.02mm;height:9.109mm;padding:1mm 0mm 1mm 0mm;text-align:right;vertical-align:top;border-top:none;border-right:none;border-bottom:1px solid #000000;border-left:none;font-style:normal;font-weight:normal;font-size:9pt;line-height:1;font-family:Roboto, sans-serif;text-decoration:none;"><p>${t.amountCents}</p><p><span style="font-family: Arial, Helvetica, sans-serif;">${t.vatValueCents}</span></p></td>
+      </tr>
+      <tr style="height:5.451mm;">
+        <td style="width:37.642mm;height:5.451mm;padding:0mm 0mm 0mm 0mm;text-align:left;vertical-align:top;border-top:none;border-right:none;border-bottom:none;border-left:none;font-style:normal;font-weight:normal;font-size:9pt;line-height:1;font-family:Roboto, sans-serif;text-decoration:none;">&#160;</td>
+        <td style="width:127.462mm;height:5.451mm;padding:0mm 0mm 0mm 74mm;text-align:left;vertical-align:top;border-top:none;border-right:none;border-bottom:none;border-left:none;font-style:normal;font-weight:normal;font-size:9pt;line-height:1;font-family:Roboto, sans-serif;text-decoration:none;"><p><strong style="font-family: Roboto, sans-serif; font-size: 8pt;">Totaal</strong></p></td>
+        <td style="width:5.876mm;height:5.451mm;padding:0mm 0mm 0mm 0mm;text-align:left;vertical-align:top;border-top:none;border-right:none;border-bottom:none;border-left:none;font-style:normal;font-weight:normal;font-size:9pt;line-height:1;font-family:Roboto, sans-serif;text-decoration:none;"><p><span style="font-size: 8pt; font-family: Roboto, sans-serif;">€</span></p></td>
+        <td style="width:19.02mm;height:5.451mm;padding:0mm 0mm 0mm 0mm;text-align:right;vertical-align:top;border-top:none;border-right:none;border-bottom:none;border-left:none;font-style:normal;font-weight:normal;font-size:9pt;line-height:1;font-family:Roboto, sans-serif;text-decoration:none;"><p><span style="font-family: Arial, Helvetica, sans-serif;">${debiteur.invoiceAmountCents}</span></p></td>
+      </tr>
+    </tbody>
+  </table>
+    </div>
   </body>
 </html>

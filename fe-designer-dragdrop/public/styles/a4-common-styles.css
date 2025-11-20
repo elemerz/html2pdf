@@ -7,9 +7,15 @@ html, body {
 /*** Page-level definitions ***/
 @page {
   size: A4 portrait;
+  @top-center    { content: element(hdr-odd); }
+  @bottom-center { content: element(ftr-odd); }
   /* MARGINS: __TOP__ __RIGHT__ __BOTTOM__ __LEFT__ */
-  margin: 0 0 0 0;
+  margin: 0 /*${pageMarginTop} ${pageMarginRight} ${pageMarginBottom} ${pageMarginLeft}*/;
 }
+/* Define the running elements */
+.hdr-odd  { position: running(hdr-odd);}
+.ftr-odd  { position: running(ftr-odd);}
+
 .page { position: relative; min-height: 276.7mm; }
 .page + .page { page-break-before: always; }
 

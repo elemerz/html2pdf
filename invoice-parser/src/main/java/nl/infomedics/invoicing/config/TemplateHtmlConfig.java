@@ -1,37 +1,83 @@
 package nl.infomedics.invoicing.config;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.io.Resource;
-import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Configuration
 public class TemplateHtmlConfig {
+    private static final Logger log = LoggerFactory.getLogger(TemplateHtmlConfig.class);
+    private static final String TEMPLATE_PATTERN = "factuur-*.html";
+
+    @Value("${templates.for-pdf.path:for-pdf}")
+    private String templatesPath;
+
     @Bean
-    public Map<Integer, String> templateHtmlMap() throws IOException {
-        Map<Integer, String> map = new HashMap<>();
-        PathMatchingResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
-        Resource[] resources = resolver.getResources("classpath:/templates/for-pdf/factuur-*.html");
-        for (Resource r : resources) {
-            String filename = r.getFilename();
-            if (filename == null) continue;
-            int dash = filename.indexOf('-');
-            int dot = filename.lastIndexOf('.');
-            if (dash >= 0 && dot > dash) {
-                try {
-                    Integer type = Integer.valueOf(filename.substring(dash + 1, dot));
-                    String html = new String(r.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
-                    map.put(type, html);
-                } catch (Exception ignored) {
-                    // Ignore malformed file names or read errors
+    public Path templateDirectory() throws IOException {
+        Path dir = Paths.get(templatesPath).toAbsolutePath().normalize();
+        if (Files.exists(dir) && !Files.isDirectory(dir)) {
+            throw new IOException("Configured template path is not a directory: " + dir);
+        }
+        Files.createDirectories(dir);
+        return dir;
+    }
+
+    @Bean
+    public Map<Integer, String> templateHtmlMap(Path templateDirectory) throws IOException {
+        Map<Integer, String> map = new ConcurrentHashMap<>();
+        reloadTemplates(templateDirectory, map);
+        return map; // return mutable map for runtime updates
+    }
+
+    @Bean
+    public TemplateHtmlWatcher templateHtmlWatcher(Path templateDirectory,
+                                                   Map<Integer, String> templateHtmlMap) {
+        return new TemplateHtmlWatcher(templateDirectory, () -> {
+            try {
+                reloadTemplates(templateDirectory, templateHtmlMap);
+            } catch (IOException e) {
+                log.warn("Failed to reload templates after change: {}", e.getMessage(), e);
+            }
+        });
+    }
+
+    static synchronized void reloadTemplates(Path templateDirectory,
+                                             Map<Integer, String> target) throws IOException {
+        Map<Integer, String> fresh = new HashMap<>();
+        if (!Files.isDirectory(templateDirectory)) {
+            log.warn("Template directory {} does not exist; clearing in-memory templates", templateDirectory);
+        } else {
+            try (DirectoryStream<Path> stream = Files.newDirectoryStream(templateDirectory, TEMPLATE_PATTERN)) {
+                for (Path path : stream) {
+                    String filename = path.getFileName().toString();
+                    int dash = filename.indexOf('-');
+                    int dot = filename.lastIndexOf('.');
+                    if (dash >= 0 && dot > dash) {
+                        try {
+                            Integer type = Integer.valueOf(filename.substring(dash + 1, dot));
+                            String html = Files.readString(path, StandardCharsets.UTF_8);
+                            fresh.put(type, html);
+                        } catch (Exception e) {
+                            log.warn("Skipping template {}: {}", filename, e.getMessage());
+                        }
+                    }
                 }
             }
         }
-        return map; // return mutable map for runtime updates
+        target.clear();
+        target.putAll(fresh);
+        log.info("Loaded {} HTML template(s) from {}", fresh.size(), templateDirectory.toAbsolutePath());
     }
 }
