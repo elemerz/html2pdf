@@ -581,7 +581,10 @@ export class DesignerStateService {
     let lastFlowBottom = 0;
     let firstFlow = true;
 
-    const bodyContent = groups
+    // Enforce required export order: header, footer, body
+    const roleOrder = ['report-header','report-footer','report-body'];
+    const orderedGroups = [...groups].sort((a,b) => roleOrder.indexOf(a.role || '') - roleOrder.indexOf(b.role || ''));
+    const bodyContent = orderedGroups
       .map(group => {
         const groupMarkup: string[] = [];
 
