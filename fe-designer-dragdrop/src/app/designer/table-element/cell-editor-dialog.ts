@@ -940,7 +940,7 @@ export class CellEditorDialogComponent implements OnInit, OnDestroy {
         'arial': 'Arial, Helvetica, sans-serif',
         'calibri': '"Calibri", sans-serif',
         'helvetica': 'Helvetica, sans-serif',
-        'kix-barcode': '"KIX Barcode"',
+        'kix-barcode': "'KIX Barcode'", // single quotes to avoid &quot; in XHTML
         'open-sans': '"Open Sans", sans-serif',
         'bariol': '"Bariol", sans-serif',
         'roboto': 'Roboto, sans-serif',
@@ -954,6 +954,7 @@ export class CellEditorDialogComponent implements OnInit, OnDestroy {
         'Helvetica, Arial, sans-serif': 'helvetica',
         'Helvetica, sans-serif': 'helvetica',
         '"KIX Barcode"': 'kix-barcode',
+        "'KIX Barcode'": 'kix-barcode',
         'KIX Barcode': 'kix-barcode',
         '"Open Sans", sans-serif': 'open-sans',
         '"Bariol", sans-serif': 'bariol',
@@ -979,10 +980,19 @@ export class CellEditorDialogComponent implements OnInit, OnDestroy {
         // When writing to DOM - override to set the CSS value directly
         add(node: HTMLElement, value: string): boolean {
           // Convert identifier to CSS value
-          const cssValue = fontMap[value] || value;
-          // Set the style attribute directly
+          let cssValue = fontMap[value] || value;
+          // Force single quotes for font families with spaces to avoid &quot; serialization
+          if (/\s/.test(cssValue)) {
+            // Normalize any double quotes to single quotes
+            cssValue = cssValue.replace(/"/g, "'");
+          }
           if (cssValue && cssValue !== 'false' && node.style) {
-            node.style.fontFamily = cssValue;
+            // Directly set attribute string to preserve single quotes during Quill's HTML serialization
+            // Some browsers may normalize style.fontFamily to double quotes; setting style attribute avoids that.
+            const existing = node.getAttribute('style') || '';
+            const cleaned = existing.replace(/font-family:[^;]*;?/gi,'').trim();
+            const prefix = cleaned.length ? (cleaned.endsWith(';') ? cleaned : cleaned + ';') : '';
+            node.setAttribute('style', `${prefix}font-family:${cssValue};`);
             return true;
           }
           return false;

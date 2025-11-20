@@ -2517,7 +2517,9 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
   protected getCellFontFamily(row: number, col: number): string {
     const key = `${row}_${col}`;
     const map = this.element.properties?.['tableCellFontFamily'] as Record<string, string> | undefined;
-    return map?.[key] || 'Roboto, sans-serif';
+    // Replace double quotes with single quotes to avoid &quot; in exported XHTML
+    const fam = map?.[key] || 'Roboto, sans-serif';
+    return fam.replace(/"/g, "'");
   }
 
   /**

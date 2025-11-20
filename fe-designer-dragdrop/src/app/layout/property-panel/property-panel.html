@@ -2,7 +2,7 @@
   @if (selectedElement(); as element) {
     <div class="panel-content">
       <h3 class="panel-title">Element Properties</h3>
-      
+
       <section class="property-section">
         <header class="section-header" (click)="toggleSection('general')">
           <span>General</span>
@@ -18,8 +18,8 @@
           <div class="property-grid" style="grid-template-columns:repeat(2,minmax(0,1fr));">
             <div class="property-field">
               <label class="property-label">Rows</label>
-              <input 
-                type="number" 
+              <input
+                type="number"
                 min="1"
                 step="1"
                 class="property-input"
@@ -29,8 +29,8 @@
             </div>
             <div class="property-field">
               <label class="property-label">Columns</label>
-              <input 
-                type="number" 
+              <input
+                type="number"
                 min="1"
                 step="1"
                 class="property-input"
@@ -43,17 +43,17 @@
           <div class="property-field">
             <label class="property-label">Position (mm)</label>
             <div class="property-row">
-              <input 
-                type="number" 
-                class="property-input" 
-                [value]="element.x" 
+              <input
+                type="number"
+                class="property-input"
+                [value]="element.x"
                 (input)="updatePosition(+$any($event.target).value, element.y)"
                 placeholder="X"
                 data-testid="input-x" />
-              <input 
-                type="number" 
-                class="property-input" 
-                [value]="element.y" 
+              <input
+                type="number"
+                class="property-input"
+                [value]="element.y"
                 (input)="updatePosition(element.x, +$any($event.target).value)"
                 placeholder="Y"
                 data-testid="input-y" />
@@ -63,17 +63,17 @@
           <div class="property-field">
             <label class="property-label">Size (mm)</label>
             <div class="property-row">
-              <input 
-                type="number" 
-                class="property-input" 
-                [value]="element.width" 
+              <input
+                type="number"
+                class="property-input"
+                [value]="element.width"
                 (input)="updateSize(+$any($event.target).value, element.height)"
                 placeholder="Width"
                 data-testid="input-width" />
-              <input 
-                type="number" 
-                class="property-input" 
-                [value]="element.height" 
+              <input
+                type="number"
+                class="property-input"
+                [value]="element.height"
                 (input)="updateSize(element.width, +$any($event.target).value)"
                 placeholder="Height"
                 data-testid="input-height" />
@@ -82,9 +82,9 @@
 
           <div class="property-field">
             <label class="property-label">ID</label>
-            <input 
-              type="text" 
-              class="property-input" 
+            <input
+              type="text"
+              class="property-input"
               maxlength="20"
               [value]="getElementId(element)"
               (input)="updateElementId($any($event.target).value)"
@@ -94,7 +94,7 @@
 
           <div class="property-field">
             <label class="property-label">Role</label>
-            <select 
+            <select
               class="property-input"
               [value]="getElementRole(element)"
               (change)="updateElementRole($any($event.target).value)"
@@ -338,10 +338,10 @@
                           [value]="getSelectedCellFontFamily() || 'Roboto, sans-serif'"
                           (change)="updateSelectedCellFont('family', $any($event.target).value)">
                     <option value="Arial, Helvetica, sans-serif">Arial</option>
-                    <option value="&quot;Times New Roman&quot;, Times, serif">Times New Roman</option>
-                    <option value="&quot;Calibri&quot;, sans-serif">Calibri</option>
+                    <option value="'Times New Roman', Times, serif">Times New Roman</option>
+                    <option value="Calibri, sans-serif">Calibri</option>
                     <option value="Roboto, sans-serif">Roboto (Default)</option>
-                    <option value="&quot;KIX Barcode&quot;">KIX Barcode</option>
+                    <option value="'KIX Barcode'">KIX Barcode</option>
                   </select>
                 </div>
                 <div class="property-field">
@@ -425,8 +425,8 @@
         </section>
       }
 
-      <button 
-        class="delete-button" 
+      <button
+        class="delete-button"
         (click)="deleteElement()"
         data-testid="button-delete">
         Delete Element

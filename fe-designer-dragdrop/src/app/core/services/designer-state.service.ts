@@ -1029,12 +1029,12 @@ export class DesignerStateService {
    * Escapes special characters for safe embedding in XHTML.
    */
   private escapeHtml(value: string): string {
+    // Do not escape single quotes so font-family:'Name' is preserved.
     return value
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#39;');
+      .replace(/"/g, '&quot;');
   }
 
   /**
