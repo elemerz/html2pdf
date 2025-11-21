@@ -1329,9 +1329,15 @@ export class CellEditorDialogComponent implements OnInit, OnDestroy {
     let xhtml = raw;
     try {
       xhtml = this.quillHtmlToXhtml(raw);
-      // Sanitize ${} expressions: keep only A-Za-z_. inside braces (will be applied to saved XHTML)
+      // Sanitize ${} expressions using only the leading valid path (discard any injected markup/styles)
+      // This avoids cases where Quill wraps expression text in <span> tags, producing concatenated artifacts like spanstylefontfamily...
       xhtml = xhtml.replace(/\$\{([^}]*)\}/g, (m, inner) => {
-        const cleaned = (inner || '').replace(/[^\w.]/g, '');
+        let rawInner = (inner || '').trim();
+        // Strip any HTML tags Quill may have injected inside the ${ } expression
+        const noTags = rawInner.replace(/<[^>]*>/g, ' ');
+        // Find first valid dotted identifier path (e.g. t.date or t.treatmentProvider)
+        const pathMatch = /([A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)*)/.exec(noTags);
+        const cleaned = pathMatch ? pathMatch[1] : '';
         return '${' + cleaned + '}';
       });
       // Validate placeholders using plain text (avoids markup pollution)
