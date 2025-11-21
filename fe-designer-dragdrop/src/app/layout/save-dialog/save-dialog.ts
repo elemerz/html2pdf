@@ -16,9 +16,10 @@ export class SaveDialogComponent {
   isOpen = input.required<boolean>();
   initialFileName = input<string>();
   onClose = output<void>();
-  onExportAsXhtml = output<string>();
+  onExportAsXhtml = output<{fileName: string; minify: boolean}>();
 
   fileName = signal('');
+  minifyXhtml = signal(false);
   private previousOpen = false;
   constructor() {
     effect(() => {
@@ -39,8 +40,9 @@ export class SaveDialogComponent {
   handleExportAsXhtml(): void {
     const name = this.fileName().trim();
     if (name) {
-      this.onExportAsXhtml.emit(name);
+      this.onExportAsXhtml.emit({ fileName: name, minify: this.minifyXhtml() });
       this.fileName.set('');
+      this.minifyXhtml.set(false);
     }
   }
 

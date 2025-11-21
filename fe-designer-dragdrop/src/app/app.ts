@@ -190,18 +190,35 @@ export class App {
   /**
    * Generates the XHTML export for the provided name and triggers file download.
    */
-  handleSave(name: string): void {
-    const trimmedName = name.trim() || 'layout';
+  async handleSave(payload: string | { fileName: string; minify: boolean }): Promise<void> {
+    const trimmedName = (typeof payload === 'string' ? payload : payload.fileName).trim() || 'layout';
+    const shouldMinify = typeof payload === 'object' && !!payload.minify;
     try {
-      const xhtml = this.designerState.generateXhtmlDocument(trimmedName);
+      let xhtml = this.designerState.generateXhtmlDocument(trimmedName);
+      if (shouldMinify) {
+        console.log(`HTML Minification call will be put here...`);
+        try {
+          const response = await fetch('/api/templates/compress', {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+            body: xhtml
+          });
+          if (response.ok) {
+            xhtml = await response.text();
+          } else {
+            console.warn('HTML compression failed, skipping minification.', response.statusText);
+          }
+        } catch (compressionError) {
+          console.error('Error calling compression endpoint:', compressionError);
+        }
+      }
       this.triggerDownload(`${trimmedName}.html`, xhtml, 'application/xhtml+xml');
-      this.designerState.setStatusMessage(`Layout "${trimmedName}" exported`);
+      this.designerState.setStatusMessage(`Layout "${trimmedName}" exported${shouldMinify ? ' (minified)' : ''}`);
       this.showSaveDialog.set(false);
     } catch (error) {
       console.error('Failed to export layout:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to export layout';
       this.designerState.setStatusMessage(errorMessage);
-      // Don't close dialog on validation error so user can fix it
       if (errorMessage.includes('Validation Error')) {
         alert(errorMessage);
       } else {

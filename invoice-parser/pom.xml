@@ -34,6 +34,8 @@
 		<maven-compiler-plugin.version>3.14.1</maven-compiler-plugin.version>
 		<lombok.version>1.18.42</lombok.version>
 		<univocity-parsers.version>2.9.1</univocity-parsers.version>
+		<htmlcompressor.version>2.3.0</htmlcompressor.version>
+		<yuicompressor.version>2.4.8</yuicompressor.version>
 		<invoice-models.version>1.0.0</invoice-models.version>
 	</properties>
 
@@ -72,6 +74,16 @@
 			<groupId>com.univocity</groupId>
 			<artifactId>univocity-parsers</artifactId>
 			<version>${univocity-parsers.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.github.hazendaz</groupId>
+			<artifactId>htmlcompressor</artifactId>
+			<version>${htmlcompressor.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.yahoo.platform.yui</groupId>
+			<artifactId>yuicompressor</artifactId>
+			<version>${yuicompressor.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>

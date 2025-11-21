@@ -20,6 +20,18 @@
           data-testid="input-file-name"
           autofocus
         />
+        <div class="minify-option">
+          <label for="minify-xhtml">
+            <input
+              id="minify-xhtml"
+              type="checkbox"
+              [ngModel]="minifyXhtml()"
+              (ngModelChange)="minifyXhtml.set($event)"
+              data-testid="checkbox-minify-xhtml"
+            />
+            Minify Xhtml
+          </label>
+        </div>
       </div>
 
       <div class="dialog-footer">
