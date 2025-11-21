@@ -571,7 +571,6 @@ export class DesignerStateService {
             firstFlow = false;
             const tableStyle = [
               `margin-top:${this.formatMillimeters(topMargin)}mm`,
-              `margin-left:${this.formatMillimeters(leftMargin)}mm`,
               `width:${this.formatMillimeters(el.width)}mm`,
               `height:${this.formatMillimeters(el.height)}mm`
             ].join(';') + ';';
@@ -611,8 +610,8 @@ export class DesignerStateService {
       .filter(Boolean)
       .join('\n');
 
-    const headerHeight = this.calculateRoleHeight(elements, 'report-header');
-    const footerHeight = this.calculateRoleHeight(elements, 'report-footer');
+    const headerHeight = this.calculateRoleHeight(elements, 'report-header') + this.pageGutters().top;
+    const footerHeight = this.calculateRoleHeight(elements, 'report-footer')+ this.pageGutters().bottom;
     const leftMargin = 10;
     const rightMargin = 10;
 
