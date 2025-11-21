@@ -1,4 +1,4 @@
-import { Component, signal, output, input } from '@angular/core';
+import { Component, signal, output, input, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 
@@ -14,10 +14,24 @@ import { FormsModule } from '@angular/forms';
 })
 export class SaveDialogComponent {
   isOpen = input.required<boolean>();
+  initialFileName = input<string>();
   onClose = output<void>();
   onExportAsXhtml = output<string>();
 
   fileName = signal('');
+  private previousOpen = false;
+  constructor() {
+    effect(() => {
+      const open = this.isOpen();
+      if (open && !this.previousOpen) {
+        const init = this.initialFileName?.();
+        if (typeof init === 'string' && init.trim().length) {
+          this.fileName.set(init.trim());
+        }
+      }
+      this.previousOpen = open;
+    });
+  }
 
   /**
    * Emits the export event when a non-empty filename is provided.

@@ -66,6 +66,7 @@
 <!-- Dialogs -->
 <app-save-dialog
   [isOpen]="showSaveDialog()"
+  [initialFileName]="exportDefaultFileName()"
   (onClose)="closeSaveDialog()"
   (onExportAsXhtml)="handleSave($event)">
 </app-save-dialog>

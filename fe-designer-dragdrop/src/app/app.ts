@@ -43,6 +43,7 @@ export class App {
   protected showSettingsDialog = signal(false);
   protected showCalibrationDialog = signal(false);
   protected showPublishDialog = signal(false);
+  protected exportDefaultFileName = signal('');
 
   // Expose signals to template
   protected westCollapsed = this.designerState.westCollapsed;
@@ -69,6 +70,8 @@ export class App {
    * Opens the save dialog to capture export parameters.
    */
   onSaveLayout(): void {
+    const currentLayoutName = this.designerState.currentLayout().name?.trim() || 'Untitled Layout';
+    this.exportDefaultFileName.set(this.computeDefaultFileBase(currentLayoutName));
     this.showSaveDialog.set(true);
   }
 

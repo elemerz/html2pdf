@@ -1,0 +1,81 @@
+Github Copilot CLI, Per month copilot quota:
+URL: https://github.com/settings/copilot/features
+Endava AI User: Elemer-Zagoni_endava
+Copilot budget is / month
+
+If Copilot account is not working => use the following URL:
+https://github.com/enterprises/endavaco
+
+OpenAI codex quota: 
+https://platform.openai.com/account/limits
+UserName: Elemer.Zagoni@endava.com
+Code: Microsoft Authenticator / OpenAI
+
+Install Copilot agent for prompts on remote workstation.
+=====
+
+1. install Windows Terminal.
+------
+1.1		Start powershell in Admin mode
+		Start button -  powershell
+
+1.2		Check the New powershell version (cross platform)
+	>	pwsh --version
+		if red text appear that does not exist
+		
+	>	winget install --id Microsoft.Powershell --source winget
+
+1.3		Start pwsh as admin (what was freshly installed)
+		Win+R  pwsh and Ctrl-Shift Enter
+
+1.4		In powershell window, install windows terminal
+	>	winget install --id Microsoft.WindowsTerminal --source winget
+
+		close pwsh with exit
+
+2.  Install packages under windows terminal
+======
+2.1	Start windows terminal
+------
+Win+R	wt and Ctrl-Shift Enter
+
+2.2 Update a newer version of nvm 
+------
+2.2A	Remove node and nvm
+	> nvm list
+	and unistall each node version
+
+2.2B	>	winget uninstall --id CoreyButler.NVMforWindows --source winget
+or use appwiz.cpl if winget does not succeed
+
+2.2C	NVM for windows: 
+	>	winget install --id CoreyButler.NVMforWindows --source winget
+
+2.3 Close terminal: exit
+
+2.4 Start new terminal to load paths
+Win+R	wt and Ctrl-Shift Enter
+	try out: nvm -v
+	try out: nvm list   should be empty
+
+-----
+2.5	install node, npm, angular, yarn, npm-check-updates
+
+	>	nvm install 24.11.1  (in time upgrade)
+	>	nvm use 24.11.1
+	>	npm i -g npm@latest
+	>	npm i -g yarn@latest
+	>	npm i -g npm-check-updates@latest
+	>	npm i -g @angular/cli@latest
+
+	>	ng --version		2.3.10
+
+
+3.  Install OKOS
+======
+Keep wt open in admin mode
+	>	npm i -g @openai/codex@latest
+	>	npm i -g @github/copilot@latest
+
+	>	codex --version
+	>	copilot --version
