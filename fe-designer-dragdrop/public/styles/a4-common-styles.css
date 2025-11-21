@@ -10,7 +10,6 @@ html, body {
   @top-center    { content: element(hdr-odd); }
   @bottom-center { content: element(ftr-odd); }
   /* MARGINS: __TOP__ __RIGHT__ __BOTTOM__ __LEFT__ */
-  margin: 0 /*${pageMarginTop} ${pageMarginRight} ${pageMarginBottom} ${pageMarginLeft}*/;
 }
 /* Define the running elements */
 .hdr-odd  { position: running(hdr-odd);}

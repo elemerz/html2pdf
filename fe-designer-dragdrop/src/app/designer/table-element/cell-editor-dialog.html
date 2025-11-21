@@ -14,6 +14,7 @@
     [styles]="{height: '384px'}"
     placeholder="Enter cell content..."
   ></quill-editor>
+  <div class="placeholder-error" *ngIf="placeholderErrorMsg" style="color:#b00;font-size:12px;margin:4px 0;">{{placeholderErrorMsg}}</div>
   <div class="dialog-actions">
     <button type="button" (click)="save()" class="primary">Save</button>
     <button type="button" (click)="close()">Cancel</button>

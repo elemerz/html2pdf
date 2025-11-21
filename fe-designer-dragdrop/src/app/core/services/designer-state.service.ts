@@ -125,11 +125,7 @@ export class DesignerStateService {
     this.canvasZoomMode.set('actual');
 
     // Auto-save to localStorage on element changes
-    effect(() => {
-      const layout = this.currentLayoutSignal();
-      const elements = this.elementsSignal();
-      // Could implement auto-save logic here
-    });
+    effect(() => {/*Could be implemented*/ });
   }
 
   // Layout management
@@ -242,17 +238,6 @@ export class DesignerStateService {
    */
   clearTableCellSelection() {
     this.selectedTableCellSignal.set(null);
-  }
-
-  /**
-   * Removes all canvas elements and resets history and selection state.
-   */
-  clearElements() {
-    this.elementsSignal.set([]);
-    this.selectedElementIdSignal.set(null);
-    this.clearHistory();
-    this.addToHistory([]);
-    this.clearTableCellSelection();
   }
 
   /**
@@ -412,20 +397,6 @@ export class DesignerStateService {
     this.eastCollapsed.update(v => !v);
   }
 
-  /**
-   * Sets the width of the west panel.
-   */
-  setWestWidth(width: number) {
-    this.westWidth.set(width);
-  }
-
-  /**
-   * Sets the width of the east panel.
-   */
-  setEastWidth(width: number) {
-    this.eastWidth.set(width);
-  }
-
   // Grid configuration
   /**
    * Updates the visible grid spacing in millimeters.
@@ -460,7 +431,7 @@ export class DesignerStateService {
   }
   // Sets vertical resize-only flag for table elements
   setAllowVerticalResizeOnly(value: boolean) {
-    this.allowVerticalResizeOnly.set(!!value);
+    this.allowVerticalResizeOnly.set(value);
   }
 
   /**
@@ -590,7 +561,11 @@ export class DesignerStateService {
 
         for (const el of group.elements) {
           if (el.type === 'table') {
-            const topMargin = firstFlow ? el.y : Math.max(0, el.y - lastFlowBottom);
+            const isFirstFooterElement = group.role === 'report-footer' && groupMarkup.length === 0;
+            let topMargin = firstFlow ? el.y : Math.max(0, el.y - lastFlowBottom);
+            if (isFirstFooterElement) {
+              topMargin = 0;
+            }
             const leftMargin = el.x;
             lastFlowBottom = el.y + el.height;
             firstFlow = false;
@@ -615,13 +590,17 @@ export class DesignerStateService {
           }
         }
 
+        if (group.role === 'report-footer' && groupMarkup.length) {
+          groupMarkup[0] = this.ensureMarginTopZero(groupMarkup[0]);
+        }
+
         // Wrap group in appropriate parent tag based on role
         const groupContent = groupMarkup.join('\n      ');
 
         if (group.role === 'report-header') {
-          return `    <header>\n      ${groupContent}\n    </header>`;
+          return `    <header class="hdr-odd">\n      ${groupContent}\n    </header>`;
         } else if (group.role === 'report-footer') {
-          return `    <footer>\n      ${groupContent}\n    </footer>`;
+          return `    <footer class="ftr-odd">\n      ${groupContent}\n    </footer>`;
         } else if (group.role === 'report-body') {
           return `    <div class="report-body">\n      ${groupContent}\n    </div>`;
         } else {
@@ -632,15 +611,28 @@ export class DesignerStateService {
       .filter(Boolean)
       .join('\n');
 
-    const margins = this.pageGutters();
-    const commonStylesRaw = this.getA4CommonStyles();
-    const commonStyles = commonStylesRaw
-      .replace(/__TOP__/g, `${margins.top}mm`)
-      .replace(/__RIGHT__/g, `${margins.right}mm`)
-      .replace(/__BOTTOM__/g, `${margins.bottom}mm`)
-      .replace(/__LEFT__/g, `${margins.left}mm`);
+    const headerHeight = this.calculateRoleHeight(elements, 'report-header');
+    const footerHeight = this.calculateRoleHeight(elements, 'report-footer');
+    const leftMargin = 10;
+    const rightMargin = 10;
 
-    let xhtml = `<html xmlns="http://www.w3.org/1999/xhtml">\n` +
+    // Always use the template version (with placeholders) for export so margins can be substituted.
+    const commonStylesRaw = this.getA4CommonStyles(true);
+    const formattedTop = `${this.formatMillimeters(headerHeight)}mm`;
+    const formattedRight = `${this.formatMillimeters(rightMargin)}mm`;
+    const formattedBottom = `${this.formatMillimeters(footerHeight)}mm`;
+    const formattedLeft = `${this.formatMillimeters(leftMargin)}mm`;
+    const marginLine = `margin: ${formattedTop} ${formattedRight} ${formattedBottom} ${formattedLeft};`;
+
+    const commonStyles = commonStylesRaw
+      .replace(/\/\* MARGINS: __TOP__ __RIGHT__ __BOTTOM__ __LEFT__ \*\//g, marginLine)
+      .replace(/margin:\s*0\s*\/\*[^*]*\*\/;/g, marginLine)
+      .replace(/__TOP__/g, formattedTop)
+      .replace(/__RIGHT__/g, formattedRight)
+      .replace(/__BOTTOM__/g, formattedBottom)
+      .replace(/__LEFT__/g, formattedLeft);
+
+    let xhtml = `<html lang="nl" xmlns="http://www.w3.org/1999/xhtml">\n` +
       `  <head>\n` +
       `    <title>${safeTitle}</title>\n` +
       `    <style type="text/css" media="all">\n` +
@@ -657,6 +649,54 @@ export class DesignerStateService {
     // Transform QR code <img> placeholders into <object type="application/qrcode"> for OpenHTMLtoPDF
     xhtml = this.transformQrImages(xhtml);
     return xhtml;
+  }
+
+  /**
+   * Computes the vertical span of all header/footer elements to expand margins.
+   */
+  private calculateRoleHeight(
+    elements: CanvasElement[],
+    role: 'report-header' | 'report-footer'
+  ): number {
+    const matched = elements.filter(el => this.resolveElementRole(el) === role);
+    if (!matched.length) {
+      return 0;
+    }
+
+    let minTop = Number.POSITIVE_INFINITY;
+    let maxBottom = 0;
+
+    for (const element of matched) {
+      const top = element.y;
+      const bottom = element.y + element.height;
+      if (top < minTop) {
+        minTop = top;
+      }
+      if (bottom > maxBottom) {
+        maxBottom = bottom;
+      }
+    }
+
+    return Math.max(0, maxBottom - minTop);
+  }
+
+  /**
+   * Forces margin-top:0 on the first footer child element if not already set.
+   */
+  private ensureMarginTopZero(markup: string): string {
+    const styleRegex = /style="([^"]*)"/i;
+    const match = styleRegex.exec(markup);
+    if (!match) {
+      // No style attribute; add one with margin-top:0
+      return markup.replace(/^<(\w+)(\s|>)/, '<$1 style="margin-top:0;"$2');
+    }
+
+    const existingStyles = match[1];
+    const marginTopRegex = /margin-top\s*:\s*[^;"]*;?/i;
+    const updatedStyles = marginTopRegex.test(existingStyles)
+      ? existingStyles.replace(marginTopRegex, 'margin-top:0;')
+      : `margin-top:0;${existingStyles}`;
+    return markup.replace(styleRegex, `style="${updatedStyles}"`);
   }
 
   /**
@@ -722,26 +762,33 @@ export class DesignerStateService {
     });
   }
 
-  private a4StylesCache: string | null = null; // Set by preload provider
+  private a4StylesRuntimeCache: string | null = null; // normalized for runtime preview
+  private a4StylesTemplateCache: string | null = null; // raw with placeholders for export
   /**
    * Caches the common A4 stylesheet shared across exports.
    */
-  setA4CommonStyles(css: string): void {
-    if (css && css.trim().length) {
-      this.a4StylesCache = css;
+  setA4CommonStyles(css: string, rawTemplate?: string): void {
+    if (!css || !css.trim().length) {
+      return;
     }
+    this.a4StylesRuntimeCache = css;
+    this.a4StylesTemplateCache = (rawTemplate && rawTemplate.trim().length) ? rawTemplate : css;
   }
 
   /**
    * Retrieves the cached A4 stylesheet, falling back to defaults.
    */
-  private getA4CommonStyles(): string {
-    if (this.a4StylesCache) {
-      return this.a4StylesCache;
+  private getA4CommonStyles(forExport: boolean = false): string {
+    if (forExport && this.a4StylesTemplateCache) {
+      return this.a4StylesTemplateCache;
     }
-    // Fallback minimal if not preloaded by startup APP_INITIALIZER
-    this.a4StylesCache = this.a4StylesCache || `/*** Page-level definitions ***/\n@page {\n  size: A4 portrait;\n  /* MARGINS: __TOP__ __RIGHT__ __BOTTOM__ __LEFT__ */\n  margin: __TOP__ __RIGHT__ __BOTTOM__ __LEFT__;\n}`;
-    return this.a4StylesCache;
+    if (this.a4StylesRuntimeCache) {
+      return this.a4StylesRuntimeCache;
+    }
+    const fallback = `/*** Page-level definitions ***/\n@page {\n  size: A4 portrait;\n  /* MARGINS: __TOP__ __RIGHT__ __BOTTOM__ __LEFT__ */\n  margin: __TOP__ __RIGHT__ __BOTTOM__ __LEFT__;\n}`;
+    this.a4StylesRuntimeCache = fallback;
+    this.a4StylesTemplateCache = fallback;
+    return forExport ? this.a4StylesTemplateCache : this.a4StylesRuntimeCache;
   }
 
   /**
@@ -908,7 +955,7 @@ export class DesignerStateService {
     const repeatMap = subTable.repeatBindings as Record<string, any> | undefined;
     let tableRepeat: any = undefined;
     let tbodyRepeat: any = undefined;
-    
+
     // Find table and tbody repeat bindings (apply to entire sub-table)
     if (repeatMap) {
       for (const key in repeatMap) {
@@ -1794,8 +1841,8 @@ export class DesignerStateService {
     }
     return {
       width: Number.isFinite(spec.width) ? spec.width : 0,
-      style: typeof spec.style === 'string' ? spec.style : 'solid',
-      color: typeof spec.color === 'string' ? spec.color : '#000000'
+      style: spec.style,
+      color: spec.color
     };
   }
 
@@ -1933,4 +1980,3 @@ export class DesignerStateService {
     this.savedHistoryIndexSignal.set(this.historyIndexSignal());
   }
 }
-

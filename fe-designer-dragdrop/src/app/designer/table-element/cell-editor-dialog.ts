@@ -168,6 +168,7 @@ export class CellEditorDialogComponent implements OnInit, OnDestroy {
   private dragAccumX = 0; // accumulated transform translation
   private dragAccumY = 0;
   contentValue = '';
+  placeholderErrorMsg: string | null = null; // set when validation of ${} paths fails
 
   private intellisenseDropdownEl: HTMLDivElement | null = null;
   private intellisenseVisible = false;
@@ -1323,16 +1324,68 @@ export class CellEditorDialogComponent implements OnInit, OnDestroy {
    * Emits sanitized editor contents and closes the dialog.
    */
   save(): void {
-    //const raw = this.contentValue && this.contentValue.trim().length ? this.contentValue : '&nbsp;';
+    this.placeholderErrorMsg = null;
     const raw = this.contentValue && this.contentValue.trim().length ? this.quill.root.innerHTML : '&nbsp;';
     let xhtml = raw;
     try {
       xhtml = this.quillHtmlToXhtml(raw);
-      // Sanitize ${} expressions: keep only A-Za-z_. inside braces
+      // Sanitize ${} expressions: keep only A-Za-z_. inside braces (will be applied to saved XHTML)
       xhtml = xhtml.replace(/\$\{([^}]*)\}/g, (m, inner) => {
-        const cleaned = (inner || '').replace(/[^A-Za-z_.]/g, '');
+        const cleaned = (inner || '').replace(/[^\w.]/g, '');
         return '${' + cleaned + '}';
       });
+      // Validate placeholders using plain text (avoids markup pollution)
+      const dataModel = this.reportDataService.reportDataModel();
+      const plainText = this.quill.getText();
+      const placeholderRegex = /\$\{([^}]+)\}/g;
+      const self = this;
+      let match;
+      while ((match = placeholderRegex.exec(plainText))) {
+        const rawPath = match[1].trim();
+        const cleanedPath = rawPath.replace(/[^\w.]/g, '');
+        if (cleanedPath && !pathExists(dataModel, cleanedPath)) {
+          const textIndex = match.index ?? plainText.indexOf(match[0]);
+          if (textIndex >= 0) {
+            try { this.quill.setSelection(textIndex + 2, cleanedPath.length); } catch {}
+          }
+          this.placeholderErrorMsg = `Unknown data path: ${cleanedPath}`;
+          return; // prevent closing & emitting
+        }
+      }
+      function pathExists(obj: any, path: string): boolean {
+        if (!path) return false;
+        const iteratorName = self.repeatBinding?.iteratorName;
+        const repeatBindingPath = self.repeatBinding?.binding;
+        if (iteratorName && (path === iteratorName || path.startsWith(iteratorName + '.'))) {
+          let repeatObj: any = obj;
+          if (repeatBindingPath) {
+            const baseParts = repeatBindingPath.split('.').filter(p => p.length);
+            for (const bp of baseParts) {
+              if (repeatObj == null) return false;
+              repeatObj = repeatObj[bp];
+            }
+            if (Array.isArray(repeatObj)) repeatObj = repeatObj[0];
+          }
+            if (path === iteratorName) return repeatObj != null;
+            path = path.substring(iteratorName.length + 1);
+            obj = repeatObj;
+        }
+        if (!obj) return false;
+        path = path.replace(/\[(\d+)\]/g, '.$1');
+        const parts = path.split('.').filter(p => p.length);
+        let current: any = obj;
+        for (const part of parts) {
+          if (current == null) return false;
+          if (Array.isArray(current)) {
+            if (/^\d+$/.test(part)) { current = current[Number(part)]; continue; }
+            current = current[0] && current[0][part];
+            continue;
+          }
+          if (!Object.prototype.hasOwnProperty.call(current, part)) return false;
+          current = current[part];
+        }
+        return current !== undefined;
+      }
     } catch {
       // fallback to raw if parsing fails
     }
