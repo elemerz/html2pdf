@@ -1,5 +1,5 @@
 import { Component, inject, signal, output } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { DesignerStateService, CanvasZoomMode } from '../../core/services/designer-state.service';
 
 /**
@@ -7,7 +7,7 @@ import { DesignerStateService, CanvasZoomMode } from '../../core/services/design
  */
 @Component({
   selector: 'app-menu-bar',
-  imports: [CommonModule],
+  imports: [],
   templateUrl: './menu-bar.html',
   styleUrl: './menu-bar.less',
   standalone: true

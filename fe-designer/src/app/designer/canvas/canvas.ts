@@ -1,5 +1,5 @@
 import { AfterViewInit, Component, ElementRef, HostListener, OnDestroy, ViewChild, computed, effect, inject, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { DesignerStateService } from '../../core/services/designer-state.service';
 import { DragDropService } from '../../core/services/drag-drop.service';
 import { CanvasElementComponent } from '../canvas-element/canvas-element';
@@ -10,7 +10,7 @@ import { createDefaultCanvasElement, MM_TO_PX, A4_WIDTH_MM, A4_HEIGHT_MM } from 
  */
 @Component({
   selector: 'app-canvas',
-  imports: [CommonModule, CanvasElementComponent],
+  imports: [CanvasElementComponent],
   templateUrl: './canvas.html',
   styleUrl: './canvas.less',
   standalone: true

@@ -8,103 +8,101 @@
           <span>General</span>
           <button type="button" class="section-toggle" (click)="toggleSection('general'); $event.stopPropagation()">{{ collapsed('general') ? '▸' : '▾' }}</button>
         </header>
-        <div class="section-body" *ngIf="!collapsed('general')">
-          <div class="property-field">
-            <label class="property-label">Type</label>
-            <input class="property-input" [value]="element.type" disabled />
-          </div>
-
-          @if (isTable(element)) {
-          <div class="property-grid" style="grid-template-columns:repeat(2,minmax(0,1fr));">
+        @if (!collapsed('general')) {
+          <div class="section-body">
             <div class="property-field">
-              <label class="property-label">Rows</label>
-              <input
-                type="number"
-                min="1"
-                step="1"
-                class="property-input"
-                [value]="tableProperty(element, 'rows')"
-                (input)="updateTableProperty('rows', +$any($event.target).value)"
-                data-testid="input-table-rows" />
+              <label class="property-label">Type</label>
+              <input class="property-input" [value]="element.type" disabled />
+            </div>
+            @if (isTable(element)) {
+              <div class="property-grid" style="grid-template-columns:repeat(2,minmax(0,1fr));">
+                <div class="property-field">
+                  <label class="property-label">Rows</label>
+                  <input
+                    type="number"
+                    min="1"
+                    step="1"
+                    class="property-input"
+                    [value]="tableProperty(element, 'rows')"
+                    (input)="updateTableProperty('rows', +$any($event.target).value)"
+                    data-testid="input-table-rows" />
+                </div>
+                <div class="property-field">
+                  <label class="property-label">Columns</label>
+                  <input
+                    type="number"
+                    min="1"
+                    step="1"
+                    class="property-input"
+                    [value]="tableProperty(element, 'cols')"
+                    (input)="updateTableProperty('cols', +$any($event.target).value)"
+                    data-testid="input-table-cols" />
+                </div>
+              </div>
+            }
+            <div class="property-field">
+              <label class="property-label">Position (mm)</label>
+              <div class="property-row">
+                <input
+                  type="number"
+                  class="property-input"
+                  [value]="element.x"
+                  (input)="updatePosition(+$any($event.target).value, element.y)"
+                  placeholder="X"
+                  data-testid="input-x" />
+                <input
+                  type="number"
+                  class="property-input"
+                  [value]="element.y"
+                  (input)="updatePosition(element.x, +$any($event.target).value)"
+                  placeholder="Y"
+                  data-testid="input-y" />
+              </div>
             </div>
             <div class="property-field">
-              <label class="property-label">Columns</label>
+              <label class="property-label">Size (mm)</label>
+              <div class="property-row">
+                <input
+                  type="number"
+                  class="property-input"
+                  [value]="element.width"
+                  (input)="updateSize(+$any($event.target).value, element.height)"
+                  placeholder="Width"
+                  data-testid="input-width" />
+                <input
+                  type="number"
+                  class="property-input"
+                  [value]="element.height"
+                  (input)="updateSize(element.width, +$any($event.target).value)"
+                  placeholder="Height"
+                  data-testid="input-height" />
+              </div>
+            </div>
+            <div class="property-field">
+              <label class="property-label">ID</label>
               <input
-                type="number"
-                min="1"
-                step="1"
+                type="text"
                 class="property-input"
-                [value]="tableProperty(element, 'cols')"
-                (input)="updateTableProperty('cols', +$any($event.target).value)"
-                data-testid="input-table-cols" />
+                maxlength="20"
+                [value]="getElementId(element)"
+                (input)="updateElementId($any($event.target).value)"
+                placeholder="element-id"
+                data-testid="input-element-id" />
+            </div>
+            <div class="property-field">
+              <label class="property-label">Role</label>
+              <select
+                class="property-input"
+                [value]="getElementRole(element)"
+                (change)="updateElementRole($any($event.target).value)"
+                data-testid="input-element-role">
+                <option value="report-header">Header</option>
+                <option value="report-body">Body</option>
+                <option value="report-footer">Footer</option>
+              </select>
             </div>
           </div>
-          }
-          <div class="property-field">
-            <label class="property-label">Position (mm)</label>
-            <div class="property-row">
-              <input
-                type="number"
-                class="property-input"
-                [value]="element.x"
-                (input)="updatePosition(+$any($event.target).value, element.y)"
-                placeholder="X"
-                data-testid="input-x" />
-              <input
-                type="number"
-                class="property-input"
-                [value]="element.y"
-                (input)="updatePosition(element.x, +$any($event.target).value)"
-                placeholder="Y"
-                data-testid="input-y" />
-            </div>
-          </div>
-
-          <div class="property-field">
-            <label class="property-label">Size (mm)</label>
-            <div class="property-row">
-              <input
-                type="number"
-                class="property-input"
-                [value]="element.width"
-                (input)="updateSize(+$any($event.target).value, element.height)"
-                placeholder="Width"
-                data-testid="input-width" />
-              <input
-                type="number"
-                class="property-input"
-                [value]="element.height"
-                (input)="updateSize(element.width, +$any($event.target).value)"
-                placeholder="Height"
-                data-testid="input-height" />
-            </div>
-          </div>
-
-          <div class="property-field">
-            <label class="property-label">ID</label>
-            <input
-              type="text"
-              class="property-input"
-              maxlength="20"
-              [value]="getElementId(element)"
-              (input)="updateElementId($any($event.target).value)"
-              placeholder="element-id"
-              data-testid="input-element-id" />
-          </div>
-
-          <div class="property-field">
-            <label class="property-label">Role</label>
-            <select
-              class="property-input"
-              [value]="getElementRole(element)"
-              (change)="updateElementRole($any($event.target).value)"
-              data-testid="input-element-role">
-              <option value="report-header">Header</option>
-              <option value="report-body">Body</option>
-              <option value="report-footer">Footer</option>
-            </select>
-          </div>
-        </div>
+        }
       </section>
 
 
@@ -113,315 +111,340 @@
         @let padding = getSelectedCellPadding();
         <section class="property-section">
           <header class="section-header" (click)="toggleSection('cell')"><span>Cell</span><button type="button" class="section-toggle" (click)="toggleSection('cell'); $event.stopPropagation()">{{ collapsed('cell') ? '▸' : '▾' }}</button></header>
-          <div class="section-body" *ngIf="!collapsed('cell')">
-            <div class="property-grid">
-              <div class="property-field">
-                <label class="property-label">Pad Top (mm)</label>
-                <input type="number" min="0" step="1" class="property-input"
-                       [value]="padding?.top"
-                       (input)="updateSelectedCellPadding('top', +$any($event.target).value)" />
-              </div>
-              <div class="property-field">
-                <label class="property-label">Pad Right (mm)</label>
-                <input type="number" min="0" step="1" class="property-input"
-                       [value]="padding?.right"
-                       (input)="updateSelectedCellPadding('right', +$any($event.target).value)" />
-              </div>
-              <div class="property-field">
-                <label class="property-label">Pad Bottom (mm)</label>
-                <input type="number" min="0" step="1" class="property-input"
-                       [value]="padding?.bottom"
-                       (input)="updateSelectedCellPadding('bottom', +$any($event.target).value)" />
-              </div>
-              <div class="property-field">
-                <label class="property-label">Pad Left (mm)</label>
-                <input type="number" min="0" step="1" class="property-input"
-                       [value]="padding?.left"
-                       (input)="updateSelectedCellPadding('left', +$any($event.target).value)" />
-              </div>
-            </div>
-
-            <div class="property-subsection">
-              <header class="subsection-header" (click)="toggleSubsection('alignment')">
-                <span>Alignment</span>
-                <button type="button" class="subsection-toggle" (click)="toggleSubsection('alignment'); $event.stopPropagation()">{{ collapsedSubsection('alignment') ? '▸' : '▾' }}</button>
-              </header>
-              <div class="subsection-body" *ngIf="!collapsedSubsection('alignment')">
-                <div class="property-grid" style="grid-template-columns:1fr 1fr;">
-                  <div class="property-field">
-                    <label class="property-label">Horizontal</label>
-                    <div class="align-buttons-row">
-                      <button type="button" class="align-btn" [class.active]="getSelectedCellHAlign()==='left'" (click)="updateSelectedCellAlignment('h','left')"><span class="ico-align_horizontal_left"></span></button>
-                      <button type="button" class="align-btn" [class.active]="getSelectedCellHAlign()==='center'" (click)="updateSelectedCellAlignment('h','center')"><span class="ico-align_horizontal_center"></span></button>
-                      <button type="button" class="align-btn" [class.active]="getSelectedCellHAlign()==='right'" (click)="updateSelectedCellAlignment('h','right')"><span class="ico-align_horizontal_right"></span></button>
-                    </div>
-                  </div>
-                  <div class="property-field">
-                    <label class="property-label">Vertical</label>
-                    <div class="align-buttons-row">
-                      <button type="button" class="align-btn" [class.active]="getSelectedCellVAlign()==='top'" (click)="updateSelectedCellAlignment('v','top')"><span class="ico-align_vertical_top"></span></button>
-                      <button type="button" class="align-btn" [class.active]="getSelectedCellVAlign()==='middle'" (click)="updateSelectedCellAlignment('v','middle')"><span class="ico-align_vertical_center"></span></button>
-                      <button type="button" class="align-btn" [class.active]="getSelectedCellVAlign()==='bottom'" (click)="updateSelectedCellAlignment('v','bottom')"><span class="ico-align_vertical_bottom"></span></button>
-                    </div>
-                  </div>
+          @if (!collapsed('cell')) {
+            <div class="section-body">
+              <div class="property-grid">
+                <div class="property-field">
+                  <label class="property-label">Pad Top (mm)</label>
+                  <input type="number" min="0" step="1" class="property-input"
+                    [value]="padding?.top"
+                    (input)="updateSelectedCellPadding('top', +$any($event.target).value)" />
+                </div>
+                <div class="property-field">
+                  <label class="property-label">Pad Right (mm)</label>
+                  <input type="number" min="0" step="1" class="property-input"
+                    [value]="padding?.right"
+                    (input)="updateSelectedCellPadding('right', +$any($event.target).value)" />
+                </div>
+                <div class="property-field">
+                  <label class="property-label">Pad Bottom (mm)</label>
+                  <input type="number" min="0" step="1" class="property-input"
+                    [value]="padding?.bottom"
+                    (input)="updateSelectedCellPadding('bottom', +$any($event.target).value)" />
+                </div>
+                <div class="property-field">
+                  <label class="property-label">Pad Left (mm)</label>
+                  <input type="number" min="0" step="1" class="property-input"
+                    [value]="padding?.left"
+                    (input)="updateSelectedCellPadding('left', +$any($event.target).value)" />
                 </div>
               </div>
-            </div>
-
-            <div class="property-subsection">
-              <header class="subsection-header" (click)="toggleSubsection('cellBorder')">
-                <span>Cell Border</span>
-                <button type="button" class="subsection-toggle" (click)="toggleSubsection('cellBorder'); $event.stopPropagation()">{{ collapsedSubsection('cellBorder') ? '▸' : '▾' }}</button>
-              </header>
-              <div class="subsection-body" *ngIf="!collapsedSubsection('cellBorder')">
-                <div class="border-settings">
-                <div class="border-row border-row-top">
-                  <div class="border-button">
-                    <button type="button" class="border-btn border-btn-top"
+              <div class="property-subsection">
+                <header class="subsection-header" (click)="toggleSubsection('alignment')">
+                  <span>Alignment</span>
+                  <button type="button" class="subsection-toggle" (click)="toggleSubsection('alignment'); $event.stopPropagation()">{{ collapsedSubsection('alignment') ? '▸' : '▾' }}</button>
+                </header>
+                @if (!collapsedSubsection('alignment')) {
+                  <div class="subsection-body">
+                    <div class="property-grid" style="grid-template-columns:1fr 1fr;">
+                      <div class="property-field">
+                        <label class="property-label">Horizontal</label>
+                        <div class="align-buttons-row">
+                          <button type="button" class="align-btn" [class.active]="getSelectedCellHAlign()==='left'" (click)="updateSelectedCellAlignment('h','left')"><span class="ico-align_horizontal_left"></span></button>
+                          <button type="button" class="align-btn" [class.active]="getSelectedCellHAlign()==='center'" (click)="updateSelectedCellAlignment('h','center')"><span class="ico-align_horizontal_center"></span></button>
+                          <button type="button" class="align-btn" [class.active]="getSelectedCellHAlign()==='right'" (click)="updateSelectedCellAlignment('h','right')"><span class="ico-align_horizontal_right"></span></button>
+                        </div>
+                      </div>
+                      <div class="property-field">
+                        <label class="property-label">Vertical</label>
+                        <div class="align-buttons-row">
+                          <button type="button" class="align-btn" [class.active]="getSelectedCellVAlign()==='top'" (click)="updateSelectedCellAlignment('v','top')"><span class="ico-align_vertical_top"></span></button>
+                          <button type="button" class="align-btn" [class.active]="getSelectedCellVAlign()==='middle'" (click)="updateSelectedCellAlignment('v','middle')"><span class="ico-align_vertical_center"></span></button>
+                          <button type="button" class="align-btn" [class.active]="getSelectedCellVAlign()==='bottom'" (click)="updateSelectedCellAlignment('v','bottom')"><span class="ico-align_vertical_bottom"></span></button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                }
+              </div>
+              <div class="property-subsection">
+                <header class="subsection-header" (click)="toggleSubsection('cellBorder')">
+                  <span>Cell Border</span>
+                  <button type="button" class="subsection-toggle" (click)="toggleSubsection('cellBorder'); $event.stopPropagation()">{{ collapsedSubsection('cellBorder') ? '▸' : '▾' }}</button>
+                </header>
+                @if (!collapsedSubsection('cellBorder')) {
+                  <div class="subsection-body">
+                    <div class="border-settings">
+                      <div class="border-row border-row-top">
+                        <div class="border-button">
+                          <button type="button" class="border-btn border-btn-top"
                             [class.active]="isBorderPopoverOpen('top')"
                             (click)="toggleBorderPopover('top', $event)">
-                      Top Border
-                    </button>
-                    <div class="border-popover" *ngIf="isBorderPopoverOpen('top')" (click)="onBorderPopoverClick($event)">
-                      <div class="border-field">
-                        <label>Style</label>
-                        <select class="property-input" [value]="getBorderSpec('top').style"
-                                (change)="onBorderInput('top','style',$any($event.target).value)">
-                          <option *ngFor="let option of borderStyleOptions" [value]="option">{{ option }}</option>
-                        </select>
+                            Top Border
+                          </button>
+                          @if (isBorderPopoverOpen('top')) {
+                            <div class="border-popover" (click)="onBorderPopoverClick($event)">
+                              <div class="border-field">
+                                <label>Style</label>
+                                <select class="property-input" [value]="getBorderSpec('top').style"
+                                  (change)="onBorderInput('top','style',$any($event.target).value)">
+                                  @for (option of borderStyleOptions; track option) {
+                                    <option [value]="option">{{ option }}</option>
+                                  }
+                                </select>
+                              </div>
+                              <div class="border-field">
+                                <label>Width (px)</label>
+                                <input class="property-input" type="number" min="0" step="1"
+                                  [value]="getBorderSpec('top').width"
+                                  (input)="onBorderInput('top','width',$any($event.target).value)" />
+                              </div>
+                              <div class="border-field">
+                                <label>Color</label>
+                                <input class="property-input" type="color"
+                                  [value]="getBorderSpec('top').color"
+                                  (input)="onBorderInput('top','color',$any($event.target).value)" />
+                              </div>
+                            </div>
+                          }
+                        </div>
                       </div>
-                      <div class="border-field">
-                        <label>Width (px)</label>
-                        <input class="property-input" type="number" min="0" step="1"
-                               [value]="getBorderSpec('top').width"
-                               (input)="onBorderInput('top','width',$any($event.target).value)" />
-                      </div>
-                      <div class="border-field">
-                        <label>Color</label>
-                        <input class="property-input" type="color"
-                               [value]="getBorderSpec('top').color"
-                               (input)="onBorderInput('top','color',$any($event.target).value)" />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div class="border-row border-row-middle">
-                  <div class="border-button">
-                    <button type="button" class="border-btn border-btn-left"
+                      <div class="border-row border-row-middle">
+                        <div class="border-button">
+                          <button type="button" class="border-btn border-btn-left"
                             [class.active]="isBorderPopoverOpen('left')"
                             (click)="toggleBorderPopover('left', $event)">
-                      Left
-                    </button>
-                    <div class="border-popover" *ngIf="isBorderPopoverOpen('left')" (click)="onBorderPopoverClick($event)">
-                      <div class="border-field">
-                        <label>Style</label>
-                        <select class="property-input" [value]="getBorderSpec('left').style"
-                                (change)="onBorderInput('left','style',$any($event.target).value)">
-                          <option *ngFor="let option of borderStyleOptions" [value]="option">{{ option }}</option>
-                        </select>
-                      </div>
-                      <div class="border-field">
-                        <label>Width (px)</label>
-                        <input class="property-input" type="number" min="0" step="1"
-                               [value]="getBorderSpec('left').width"
-                               (input)="onBorderInput('left','width',$any($event.target).value)" />
-                      </div>
-                      <div class="border-field">
-                        <label>Color</label>
-                        <input class="property-input" type="color"
-                               [value]="getBorderSpec('left').color"
-                               (input)="onBorderInput('left','color',$any($event.target).value)" />
-                      </div>
-                    </div>
-                  </div>
-                  <div class="border-button">
-                    <button type="button" class="border-btn border-btn-all"
+                            Left
+                          </button>
+                          @if (isBorderPopoverOpen('left')) {
+                            <div class="border-popover" (click)="onBorderPopoverClick($event)">
+                              <div class="border-field">
+                                <label>Style</label>
+                                <select class="property-input" [value]="getBorderSpec('left').style"
+                                  (change)="onBorderInput('left','style',$any($event.target).value)">
+                                  @for (option of borderStyleOptions; track option) {
+                                    <option [value]="option">{{ option }}</option>
+                                  }
+                                </select>
+                              </div>
+                              <div class="border-field">
+                                <label>Width (px)</label>
+                                <input class="property-input" type="number" min="0" step="1"
+                                  [value]="getBorderSpec('left').width"
+                                  (input)="onBorderInput('left','width',$any($event.target).value)" />
+                              </div>
+                              <div class="border-field">
+                                <label>Color</label>
+                                <input class="property-input" type="color"
+                                  [value]="getBorderSpec('left').color"
+                                  (input)="onBorderInput('left','color',$any($event.target).value)" />
+                              </div>
+                            </div>
+                          }
+                        </div>
+                        <div class="border-button">
+                          <button type="button" class="border-btn border-btn-all"
                             [class.active]="isBorderPopoverOpen('all')"
                             (click)="toggleBorderPopover('all', $event)">
-                      All
-                    </button>
-                    <div class="border-popover" *ngIf="isBorderPopoverOpen('all')" (click)="onBorderPopoverClick($event)">
-                      <div class="border-field">
-                        <label>Style</label>
-                        <select class="property-input" [value]="getBorderSpec('all').style"
-                                (change)="onBorderInput('all','style',$any($event.target).value)">
-                          <option *ngFor="let option of borderStyleOptions" [value]="option">{{ option }}</option>
-                        </select>
-                      </div>
-                      <div class="border-field">
-                        <label>Width (px)</label>
-                        <input class="property-input" type="number" min="0" step="1"
-                               [value]="getBorderSpec('all').width"
-                               (input)="onBorderInput('all','width',$any($event.target).value)" />
-                      </div>
-                      <div class="border-field">
-                        <label>Color</label>
-                        <input class="property-input" type="color"
-                               [value]="getBorderSpec('all').color"
-                               (input)="onBorderInput('all','color',$any($event.target).value)" />
-                      </div>
-                    </div>
-                  </div>
-                  <div class="border-button">
-                    <button type="button" class="border-btn border-btn-right"
+                            All
+                          </button>
+                          @if (isBorderPopoverOpen('all')) {
+                            <div class="border-popover" (click)="onBorderPopoverClick($event)">
+                              <div class="border-field">
+                                <label>Style</label>
+                                <select class="property-input" [value]="getBorderSpec('all').style"
+                                  (change)="onBorderInput('all','style',$any($event.target).value)">
+                                  @for (option of borderStyleOptions; track option) {
+                                    <option [value]="option">{{ option }}</option>
+                                  }
+                                </select>
+                              </div>
+                              <div class="border-field">
+                                <label>Width (px)</label>
+                                <input class="property-input" type="number" min="0" step="1"
+                                  [value]="getBorderSpec('all').width"
+                                  (input)="onBorderInput('all','width',$any($event.target).value)" />
+                              </div>
+                              <div class="border-field">
+                                <label>Color</label>
+                                <input class="property-input" type="color"
+                                  [value]="getBorderSpec('all').color"
+                                  (input)="onBorderInput('all','color',$any($event.target).value)" />
+                              </div>
+                            </div>
+                          }
+                        </div>
+                        <div class="border-button">
+                          <button type="button" class="border-btn border-btn-right"
                             [class.active]="isBorderPopoverOpen('right')"
                             (click)="toggleBorderPopover('right', $event)">
-                      Right
-                    </button>
-                    <div class="border-popover" *ngIf="isBorderPopoverOpen('right')" (click)="onBorderPopoverClick($event)">
-                      <div class="border-field">
-                        <label>Style</label>
-                        <select class="property-input" [value]="getBorderSpec('right').style"
-                                (change)="onBorderInput('right','style',$any($event.target).value)">
-                          <option *ngFor="let option of borderStyleOptions" [value]="option">{{ option }}</option>
-                        </select>
+                            Right
+                          </button>
+                          @if (isBorderPopoverOpen('right')) {
+                            <div class="border-popover" (click)="onBorderPopoverClick($event)">
+                              <div class="border-field">
+                                <label>Style</label>
+                                <select class="property-input" [value]="getBorderSpec('right').style"
+                                  (change)="onBorderInput('right','style',$any($event.target).value)">
+                                  @for (option of borderStyleOptions; track option) {
+                                    <option [value]="option">{{ option }}</option>
+                                  }
+                                </select>
+                              </div>
+                              <div class="border-field">
+                                <label>Width (px)</label>
+                                <input class="property-input" type="number" min="0" step="1"
+                                  [value]="getBorderSpec('right').width"
+                                  (input)="onBorderInput('right','width',$any($event.target).value)" />
+                              </div>
+                              <div class="border-field">
+                                <label>Color</label>
+                                <input class="property-input" type="color"
+                                  [value]="getBorderSpec('right').color"
+                                  (input)="onBorderInput('right','color',$any($event.target).value)" />
+                              </div>
+                            </div>
+                          }
+                        </div>
                       </div>
-                      <div class="border-field">
-                        <label>Width (px)</label>
-                        <input class="property-input" type="number" min="0" step="1"
-                               [value]="getBorderSpec('right').width"
-                               (input)="onBorderInput('right','width',$any($event.target).value)" />
-                      </div>
-                      <div class="border-field">
-                        <label>Color</label>
-                        <input class="property-input" type="color"
-                               [value]="getBorderSpec('right').color"
-                               (input)="onBorderInput('right','color',$any($event.target).value)" />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div class="border-row border-row-bottom">
-                  <div class="border-button">
-                    <button type="button" class="border-btn border-btn-bottom"
+                      <div class="border-row border-row-bottom">
+                        <div class="border-button">
+                          <button type="button" class="border-btn border-btn-bottom"
                             [class.active]="isBorderPopoverOpen('bottom')"
                             (click)="toggleBorderPopover('bottom', $event)">
-                      Bottom Border
-                    </button>
-                    <div class="border-popover" *ngIf="isBorderPopoverOpen('bottom')" (click)="onBorderPopoverClick($event)">
-                      <div class="border-field">
-                        <label>Style</label>
-                        <select class="property-input" [value]="getBorderSpec('bottom').style"
-                                (change)="onBorderInput('bottom','style',$any($event.target).value)">
-                          <option *ngFor="let option of borderStyleOptions" [value]="option">{{ option }}</option>
-                        </select>
-                      </div>
-                      <div class="border-field">
-                        <label>Width (px)</label>
-                        <input class="property-input" type="number" min="0" step="1"
-                               [value]="getBorderSpec('bottom').width"
-                               (input)="onBorderInput('bottom','width',$any($event.target).value)" />
-                      </div>
-                      <div class="border-field">
-                        <label>Color</label>
-                        <input class="property-input" type="color"
-                               [value]="getBorderSpec('bottom').color"
-                               (input)="onBorderInput('bottom','color',$any($event.target).value)" />
+                            Bottom Border
+                          </button>
+                          @if (isBorderPopoverOpen('bottom')) {
+                            <div class="border-popover" (click)="onBorderPopoverClick($event)">
+                              <div class="border-field">
+                                <label>Style</label>
+                                <select class="property-input" [value]="getBorderSpec('bottom').style"
+                                  (change)="onBorderInput('bottom','style',$any($event.target).value)">
+                                  @for (option of borderStyleOptions; track option) {
+                                    <option [value]="option">{{ option }}</option>
+                                  }
+                                </select>
+                              </div>
+                              <div class="border-field">
+                                <label>Width (px)</label>
+                                <input class="property-input" type="number" min="0" step="1"
+                                  [value]="getBorderSpec('bottom').width"
+                                  (input)="onBorderInput('bottom','width',$any($event.target).value)" />
+                              </div>
+                              <div class="border-field">
+                                <label>Color</label>
+                                <input class="property-input" type="color"
+                                  [value]="getBorderSpec('bottom').color"
+                                  (input)="onBorderInput('bottom','color',$any($event.target).value)" />
+                              </div>
+                            </div>
+                          }
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-                </div>
+                }
               </div>
-            </div>
-
-            <div class="property-subsection">
-              <header class="subsection-header" (click)="toggleSubsection('font')">
-                <span>Font</span>
-                <button type="button" class="subsection-toggle" (click)="toggleSubsection('font'); $event.stopPropagation()">{{ collapsedSubsection('font') ? '▸' : '▾' }}</button>
-              </header>
-              <div class="subsection-body" *ngIf="!collapsedSubsection('font')">
-                <div class="property-grid">
-                <div class="property-field">
-                  <label class="property-label">Font Family</label>
-                  <select class="property-input"
+              <div class="property-subsection">
+                <header class="subsection-header" (click)="toggleSubsection('font')">
+                  <span>Font</span>
+                  <button type="button" class="subsection-toggle" (click)="toggleSubsection('font'); $event.stopPropagation()">{{ collapsedSubsection('font') ? '▸' : '▾' }}</button>
+                </header>
+                @if (!collapsedSubsection('font')) {
+                  <div class="subsection-body">
+                    <div class="property-grid">
+                      <div class="property-field">
+                        <label class="property-label">Font Family</label>
+                        <select class="property-input"
                           [value]="getSelectedCellFontFamily() || 'Roboto, sans-serif'"
                           (change)="updateSelectedCellFont('family', $any($event.target).value)">
-                    <option value="Arial, Helvetica, sans-serif">Arial</option>
-                    <option value="'Times New Roman', Times, serif">Times New Roman</option>
-                    <option value="Calibri, sans-serif">Calibri</option>
-                    <option value="Roboto, sans-serif">Roboto (Default)</option>
-                    <option value="'KIX Barcode'">KIX Barcode</option>
-                  </select>
-                </div>
-                <div class="property-field">
-                  <label class="property-label">Font Weight</label>
-                  <select class="property-input"
+                          <option value="Arial, Helvetica, sans-serif">Arial</option>
+                          <option value="'Times New Roman', Times, serif">Times New Roman</option>
+                          <option value="Calibri, sans-serif">Calibri</option>
+                          <option value="Roboto, sans-serif">Roboto (Default)</option>
+                          <option value="'KIX Barcode'">KIX Barcode</option>
+                        </select>
+                      </div>
+                      <div class="property-field">
+                        <label class="property-label">Font Weight</label>
+                        <select class="property-input"
                           [value]="getSelectedCellFontWeight()"
                           (change)="updateSelectedCellFont('weight', $any($event.target).value)">
-                    <option value="normal">normal</option>
-                    <option value="bold">bold</option>
-                    <option value="bolder">bolder</option>
-                    <option value="lighter">lighter</option>
-                  </select>
-                </div>
-                <div class="property-field">
-                  <label class="property-label">Font Style</label>
-                  <select class="property-input"
+                          <option value="normal">normal</option>
+                          <option value="bold">bold</option>
+                          <option value="bolder">bolder</option>
+                          <option value="lighter">lighter</option>
+                        </select>
+                      </div>
+                      <div class="property-field">
+                        <label class="property-label">Font Style</label>
+                        <select class="property-input"
                           [value]="getSelectedCellFontStyle()"
                           (change)="updateSelectedCellFont('style', $any($event.target).value)">
-                    <option value="normal">normal</option>
-                    <option value="italic">italic</option>
-                    <option value="oblique">oblique</option>
-                  </select>
-                </div>
-                <div class="property-field">
-                  <label class="property-label">Decoration</label>
-                  <select class="property-input"
+                          <option value="normal">normal</option>
+                          <option value="italic">italic</option>
+                          <option value="oblique">oblique</option>
+                        </select>
+                      </div>
+                      <div class="property-field">
+                        <label class="property-label">Decoration</label>
+                        <select class="property-input"
                           [value]="getSelectedCellTextDecoration()"
                           (change)="updateSelectedCellFont('decoration', $any($event.target).value)">
-                    <option value="none">None</option>
-                    <option value="underline">Underline</option>
-                    <option value="overline">Overline</option>
-                    <option value="line-through">StrikeThrough</option>
-                  </select>
-                </div>
-                <div class="property-field">
-                  <label class="property-label">Font Size (pt)</label>
-                  <input type="number" min="1" step="1" class="property-input"
-                         [value]="getSelectedCellFontSize()"
-                         (input)="updateSelectedCellFont('size', $any($event.target).value)" />
-                </div>
-                <div class="property-field">
-                  <label class="property-label">Line Height</label>
-                  <input type="number" min="0.5" step="0.1" class="property-input"
-                         [value]="getSelectedCellLineHeight()"
-                         (input)="updateSelectedCellFont('lineHeight', $any($event.target).value)" />
-                </div>
-                <div class="property-field" style="grid-column: span 2;">
-                  <label class="property-label">Font Family</label>
-                  <select class="property-input"
+                          <option value="none">None</option>
+                          <option value="underline">Underline</option>
+                          <option value="overline">Overline</option>
+                          <option value="line-through">StrikeThrough</option>
+                        </select>
+                      </div>
+                      <div class="property-field">
+                        <label class="property-label">Font Size (pt)</label>
+                        <input type="number" min="1" step="1" class="property-input"
+                          [value]="getSelectedCellFontSize()"
+                          (input)="updateSelectedCellFont('size', $any($event.target).value)" />
+                      </div>
+                      <div class="property-field">
+                        <label class="property-label">Line Height</label>
+                        <input type="number" min="0.5" step="0.1" class="property-input"
+                          [value]="getSelectedCellLineHeight()"
+                          (input)="updateSelectedCellFont('lineHeight', $any($event.target).value)" />
+                      </div>
+                      <div class="property-field" style="grid-column: span 2;">
+                        <label class="property-label">Font Family</label>
+                        <select class="property-input"
                           [value]="getSelectedCellFontFamily()"
                           (change)="updateSelectedCellFont('family', $any($event.target).value)">
-                    <option value="serif">serif</option>
-                    <option value="sans-serif">sans-serif</option>
-                    <option value="monospace">monospace</option>
-                    <option value="cursive">cursive</option>
-                    <option value="Arial, Helvetica, sans-serif">Arial</option>
-                    <option value="Verdana, Geneva, sans-serif">Verdana</option>
-                    <option value="Tahoma, Geneva, sans-serif">Tahoma</option>
-                    <option value="'Trebuchet MS', sans-serif">Trebuchet MS</option>
-                    <option value="'Segoe UI', Tahoma, sans-serif">Segoe UI</option>
-                    <option value="Calibri, sans-serif">Calibri</option>
-                    <option value="'Times New Roman', Times, serif">Times New Roman</option>
-                    <option value="Georgia, serif">Georgia</option>
-                    <option value="'Courier New', Courier, monospace">Courier New</option>
-                    <option value="Consolas, monospace">Consolas</option>
-                    <option value="Symbol">Symbol</option>
-                    <option value="Webdings">Webdings</option>
-                    <option value="Wingdings">Wingdings</option>
-                    <option value="Roboto, sans-serif">Roboto</option>
-                    <option value="'Open Sans', sans-serif">Open Sans</option>
-                    <option value="Lato, sans-serif">Lato</option>
-                    <option value="Montserrat, sans-serif">Montserrat</option>
-                    <option value="Poppins, sans-serif">Poppins</option>
-                    <option value="Raleway, sans-serif">Raleway</option>
-                  </select>
-                </div>
-              </div>
+                          <option value="serif">serif</option>
+                          <option value="sans-serif">sans-serif</option>
+                          <option value="monospace">monospace</option>
+                          <option value="cursive">cursive</option>
+                          <option value="Arial, Helvetica, sans-serif">Arial</option>
+                          <option value="Verdana, Geneva, sans-serif">Verdana</option>
+                          <option value="Tahoma, Geneva, sans-serif">Tahoma</option>
+                          <option value="'Trebuchet MS', sans-serif">Trebuchet MS</option>
+                          <option value="'Segoe UI', Tahoma, sans-serif">Segoe UI</option>
+                          <option value="Calibri, sans-serif">Calibri</option>
+                          <option value="'Times New Roman', Times, serif">Times New Roman</option>
+                          <option value="Georgia, serif">Georgia</option>
+                          <option value="'Courier New', Courier, monospace">Courier New</option>
+                          <option value="Consolas, monospace">Consolas</option>
+                          <option value="Symbol">Symbol</option>
+                          <option value="Webdings">Webdings</option>
+                          <option value="Wingdings">Wingdings</option>
+                          <option value="Roboto, sans-serif">Roboto</option>
+                          <option value="'Open Sans', sans-serif">Open Sans</option>
+                          <option value="Lato, sans-serif">Lato</option>
+                          <option value="Montserrat, sans-serif">Montserrat</option>
+                          <option value="Poppins, sans-serif">Poppins</option>
+                          <option value="Raleway, sans-serif">Raleway</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                }
               </div>
             </div>
-          </div>
+          }
         </section>
       }
 

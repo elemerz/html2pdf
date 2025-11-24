@@ -1,23 +1,31 @@
-<div class="dialog-backdrop" *ngIf="isOpen()" (click)="close()">
-  <div class="dialog" (click)="$event.stopPropagation()">
-    <h2>Publish Template</h2>
-    <label class="field">
-      <span class="label">Template Id</span>
-      <select [value]="invoiceType()" (change)="invoiceType.set(+$any($event.target).value)">
-        <option *ngFor="let id of templateIds" [value]="id">{{id}}</option>
-      </select>
-    </label>
-    <label class="field">
-      <span class="label">Version</span>
-      <input type="text" maxlength="6" [value]="version()" (input)="version.set($any($event.target).value)" />
-    </label>
-    <div class="messages">
-      <div class="error" *ngIf="errorMessage()">{{errorMessage()}}</div>
-      <div class="success" *ngIf="successMessage()">{{successMessage()}}</div>
-    </div>
-    <div class="actions">
-      <button (click)="handlePublish()" [disabled]="submitting()">Publish</button>
-      <button (click)="close()" [disabled]="submitting()">Cancel</button>
+@if (isOpen()) {
+  <div class="dialog-backdrop" (click)="close()">
+    <div class="dialog" (click)="$event.stopPropagation()">
+      <h2>Publish Template</h2>
+      <label class="field">
+        <span class="label">Template Id</span>
+        <select [value]="invoiceType()" (change)="invoiceType.set(+$any($event.target).value)">
+          @for (id of templateIds; track id) {
+            <option [value]="id">{{id}}</option>
+          }
+        </select>
+      </label>
+      <label class="field">
+        <span class="label">Version</span>
+        <input type="text" maxlength="6" [value]="version()" (input)="version.set($any($event.target).value)" />
+      </label>
+      <div class="messages">
+        @if (errorMessage()) {
+          <div class="error">{{errorMessage()}}</div>
+        }
+        @if (successMessage()) {
+          <div class="success">{{successMessage()}}</div>
+        }
+      </div>
+      <div class="actions">
+        <button (click)="handlePublish()" [disabled]="submitting()">Publish</button>
+        <button (click)="close()" [disabled]="submitting()">Cancel</button>
+      </div>
     </div>
   </div>
-</div>
+}

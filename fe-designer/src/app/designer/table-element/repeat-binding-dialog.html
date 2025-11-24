@@ -75,7 +75,9 @@
               }
             </ul>
           </div>
-          <div class="selected-path-display" *ngIf="selectedPath()">Selected: <code>{{ selectedPath() }}</code></div>
+          @if (selectedPath()) {
+            <div class="selected-path-display">Selected: <code>{{ selectedPath() }}</code></div>
+          }
         </fieldset>
 
         <div class="form-field">
@@ -85,7 +87,9 @@
       </form>
     </div>
     <div class="dialog-footer">
-      <button *ngIf="initialBinding" type="button" class="button button-secondary" (click)="onClearClicked()">Clear</button>
+      @if (initialBinding) {
+        <button type="button" class="button button-secondary" (click)="onClearClicked()">Clear</button>
+      }
       <button type="button" class="button button-secondary" (click)="onCancelClicked()">Cancel</button>
       <button type="button" class="button button-primary" [disabled]="!canSave()" (click)="onSaveClicked($event)">Save</button>
     </div>

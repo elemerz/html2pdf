@@ -1,6 +1,6 @@
 import {Component, Input, Output, EventEmitter, OnInit, ElementRef, ViewChild, HostListener, OnDestroy, inject} from '@angular/core';
 import Quill from 'quill';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { QuillModule } from 'ngx-quill';
 import QRCode from 'qrcode-svg';
@@ -145,7 +145,7 @@ function isDiacriticalLetter(code: number, char: string): boolean {
 @Component({
   selector: 'app-cell-editor-dialog',
   standalone: true,
-  imports: [CommonModule, FormsModule, QuillModule],
+  imports: [FormsModule, QuillModule],
   templateUrl: './cell-editor-dialog.html',
   styleUrl: './cell-editor-dialog.less'
 })

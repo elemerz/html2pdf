@@ -75,7 +75,9 @@
   (onSave)="handleSaveReport($event)"
   (onCancel)="handleCancelSaveReport()">
 </app-save-report-dialog>
-<app-publish-template-dialog *ngIf="showPublishDialog()" (onClose)="handlePublishDialogClosed()"></app-publish-template-dialog>
+@if (showPublishDialog()) {
+  <app-publish-template-dialog (onClose)="handlePublishDialogClosed()"></app-publish-template-dialog>
+}
 
 @if (showSettingsDialog()) {
   <app-options-dialog

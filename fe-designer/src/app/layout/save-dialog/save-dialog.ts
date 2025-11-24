@@ -1,5 +1,5 @@
 import { Component, signal, output, input, effect } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 
 /**
@@ -8,7 +8,7 @@ import { FormsModule } from '@angular/forms';
 @Component({
   selector: 'app-save-dialog',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [FormsModule],
   templateUrl: './save-dialog.html',
   styleUrl: './save-dialog.less'
 })

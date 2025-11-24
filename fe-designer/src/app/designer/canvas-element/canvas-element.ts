@@ -1,5 +1,5 @@
 import { Component, Input, inject, HostListener, HostBinding, ElementRef, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { CanvasElement, A4_WIDTH_MM, A4_HEIGHT_MM } from '../../shared/models/schema';
 import { DesignerStateService, PageGutters } from '../../core/services/designer-state.service';
 import { TableElementComponent } from '../table-element/table-element';
@@ -20,7 +20,7 @@ type ResizeHandle =
  */
 @Component({
   selector: 'app-canvas-element',
-  imports: [CommonModule, TableElementComponent, CellEditorDialogComponent],
+  imports: [TableElementComponent, CellEditorDialogComponent],
   templateUrl: './canvas-element.html',
   styleUrl: './canvas-element.less',
   standalone: true,

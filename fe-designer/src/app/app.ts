@@ -1,5 +1,5 @@
 import { Component, ViewChild, inject, signal, HostListener } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { DesignerStateService } from './core/services/designer-state.service';
 import { MenuBarComponent } from './layout/menu-bar/menu-bar';
 import { StatusBarComponent } from './layout/status-bar/status-bar';
@@ -18,7 +18,6 @@ import { SaveReportDialogComponent } from './layout/save-report-dialog/save-repo
 @Component({
   selector: 'app-root',
   imports: [
-    CommonModule,
     MenuBarComponent,
     StatusBarComponent,
     ToolbarPanelComponent,
@@ -29,7 +28,7 @@ import { SaveReportDialogComponent } from './layout/save-report-dialog/save-repo
     OptionsDialogComponent,
     ScreenCalibrationDialogComponent,
     PublishTemplateDialogComponent
-  ],
+],
   templateUrl: './app.html',
   styleUrl: './app.less',
   standalone: true

@@ -1,5 +1,5 @@
 import { Component, EventEmitter, Output, signal, inject, OnInit, Input, ElementRef, ViewChild, AfterViewInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { ReportDataService } from '../../core/services/report-data.service';
 
 interface JsonTreeNode {
@@ -14,7 +14,7 @@ interface JsonTreeNode {
 @Component({
   selector: 'app-repeat-binding-dialog',
   standalone: true,
-  imports: [CommonModule],
+  imports: [],
   templateUrl: './repeat-binding-dialog.html',
   styleUrl: './repeat-binding-dialog.less'
 })

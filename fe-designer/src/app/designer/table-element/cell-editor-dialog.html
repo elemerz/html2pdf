@@ -14,57 +14,65 @@
     [styles]="{height: '384px'}"
     placeholder="Enter cell content..."
   ></quill-editor>
-  <div class="placeholder-error" *ngIf="placeholderErrorMsg" style="color:#b00;font-size:12px;margin:4px 0;">{{placeholderErrorMsg}}</div>
+  @if (placeholderErrorMsg) {
+    <div class="placeholder-error" style="color:#b00;font-size:12px;margin:4px 0;">{{placeholderErrorMsg}}</div>
+  }
   <div class="dialog-actions">
     <button type="button" (click)="save()" class="primary">Save</button>
     <button type="button" (click)="close()">Cancel</button>
   </div>
 
   <!-- QR Code popover -->
-  <div class="qr-popover" *ngIf="showQrDialog" (mousedown)="$event.stopPropagation()" (click)="$event.stopPropagation()">
-    <form (ngSubmit)="submitQrDialog()" #qrF="ngForm">
-      <h3>Insert QR Code</h3>
-      <label>
-        Data
-        <textarea name="data" rows="3" maxlength="2048" [(ngModel)]="qrForm.data" required autofocus></textarea>
-      </label>
-      <label>
-        Size (mm)
-        <input name="size" type="number" min="16" max="1024" [(ngModel)]="qrForm.size" required />
-      </label>
-      <label>
-        EC Level
-        <select name="ec" [(ngModel)]="qrForm.ec">
-          <option *ngFor="let l of ['L','M','Q','H']" [value]="l">{{l}}</option>
-        </select>
-      </label>
-      <label>
-        Margin
-        <input name="margin" type="number" min="0" max="64" [(ngModel)]="qrForm.margin" />
-      </label>
-      <div class="btns">
-        <button type="button" (click)="cancelQrDialog()">Cancel</button>
-        <button type="submit" [disabled]="!qrF.form.valid">Ok</button>
-      </div>
-    </form>
-  </div>
+  @if (showQrDialog) {
+    <div class="qr-popover" (mousedown)="$event.stopPropagation()" (click)="$event.stopPropagation()">
+      <form (ngSubmit)="submitQrDialog()" #qrF="ngForm">
+        <h3>Insert QR Code</h3>
+        <label>
+          Data
+          <textarea name="data" rows="3" maxlength="2048" [(ngModel)]="qrForm.data" required autofocus></textarea>
+        </label>
+        <label>
+          Size (mm)
+          <input name="size" type="number" min="16" max="1024" [(ngModel)]="qrForm.size" required />
+        </label>
+        <label>
+          EC Level
+          <select name="ec" [(ngModel)]="qrForm.ec">
+            @for (l of ['L','M','Q','H']; track l) {
+              <option [value]="l">{{l}}</option>
+            }
+          </select>
+        </label>
+        <label>
+          Margin
+          <input name="margin" type="number" min="0" max="64" [(ngModel)]="qrForm.margin" />
+        </label>
+        <div class="btns">
+          <button type="button" (click)="cancelQrDialog()">Cancel</button>
+          <button type="submit" [disabled]="!qrF.form.valid">Ok</button>
+        </div>
+      </form>
+    </div>
+  }
   <!-- Logo placeholder popover -->
-  <div class="logo-popover" *ngIf="showLogoDialog" (mousedown)="$event.stopPropagation()" (click)="$event.stopPropagation()">
-    <form (ngSubmit)="submitLogoDialog()" #logoF="ngForm">
-      <h3>Insert Logo Placeholder</h3>
-      <label>
-        Width (mm)
-        <input name="width" type="number" min="1" max="1024" [(ngModel)]="logoForm.width" required autofocus />
-      </label>
-      <label>
-        Height (mm)
-        <input name="height" type="number" min="1" max="1024" [(ngModel)]="logoForm.height" required />
-      </label>
-      <div class="btns">
-        <button type="button" (click)="cancelLogoDialog()">Cancel</button>
-        <button type="submit" [disabled]="!logoF.form.valid">Ok</button>
-      </div>
-    </form>
-  </div>
+  @if (showLogoDialog) {
+    <div class="logo-popover" (mousedown)="$event.stopPropagation()" (click)="$event.stopPropagation()">
+      <form (ngSubmit)="submitLogoDialog()" #logoF="ngForm">
+        <h3>Insert Logo Placeholder</h3>
+        <label>
+          Width (mm)
+          <input name="width" type="number" min="1" max="1024" [(ngModel)]="logoForm.width" required autofocus />
+        </label>
+        <label>
+          Height (mm)
+          <input name="height" type="number" min="1" max="1024" [(ngModel)]="logoForm.height" required />
+        </label>
+        <div class="btns">
+          <button type="button" (click)="cancelLogoDialog()">Cancel</button>
+          <button type="submit" [disabled]="!logoF.form.valid">Ok</button>
+        </div>
+      </form>
+    </div>
+  }
 
 </div>

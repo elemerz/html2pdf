@@ -1,9 +1,9 @@
 import { Component, ElementRef, OnDestroy, ViewChild, signal, output } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 
 @Component({
   selector: 'app-save-report-dialog',
-  imports: [CommonModule],
+  imports: [],
   templateUrl: './save-report-dialog.html',
   styleUrl: './save-report-dialog.less',
   standalone: true

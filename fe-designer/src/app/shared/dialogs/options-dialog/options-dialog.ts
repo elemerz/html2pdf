@@ -1,5 +1,5 @@
 import { Component, EventEmitter, Output, inject, signal, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { DesignerStateService, PageGutters } from '../../../core/services/designer-state.service';
 
@@ -10,7 +10,7 @@ type OptionsSection = 'page' | 'grid' | 'layout';
  */
 @Component({
   selector: 'app-options-dialog',
-  imports: [CommonModule, FormsModule],
+  imports: [FormsModule],
   templateUrl: './options-dialog.html',
   styleUrl: './options-dialog.less',
   standalone: true

@@ -1,7 +1,7 @@
 import { Component, HostListener, Input, signal, inject, ElementRef, AfterViewInit, AfterViewChecked, OnDestroy, OnChanges, SimpleChanges } from '@angular/core';
 import { CellEditorDialogComponent } from './cell-editor-dialog';
 import { RepeatBindingDialogComponent } from './repeat-binding-dialog';
-import { CommonModule } from '@angular/common';
+
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { CanvasElement, TableCellBorderConfig, TableCellBorderSpec } from '../../shared/models/schema';
 import { DesignerStateService } from '../../core/services/designer-state.service';
@@ -27,7 +27,7 @@ interface ContextMenuCell {
 @Component({
   selector: 'app-table-element',
   standalone: true,
-  imports: [CommonModule, CellEditorDialogComponent, RepeatBindingDialogComponent],
+  imports: [CellEditorDialogComponent, RepeatBindingDialogComponent],
   templateUrl: './table-element.html',
   styleUrl: './table-element.less',
 })

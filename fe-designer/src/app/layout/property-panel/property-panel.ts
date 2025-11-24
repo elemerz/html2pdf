@@ -1,5 +1,5 @@
 import { Component, HostListener, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { DesignerStateService, TableCellSelection } from '../../core/services/designer-state.service';
 import { CanvasElement, TableCellBorderConfig, TableCellBorderSpec } from '../../shared/models/schema';
@@ -13,7 +13,7 @@ type BorderPart = 'width' | 'style' | 'color';
  */
 @Component({
   selector: 'app-property-panel',
-  imports: [CommonModule, FormsModule],
+  imports: [FormsModule],
   templateUrl: './property-panel.html',
   styleUrl: './property-panel.less',
   standalone: true

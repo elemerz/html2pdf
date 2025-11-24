@@ -1,5 +1,5 @@
 import { Component, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { DesignerStateService } from '../../core/services/designer-state.service';
 
 /**
@@ -7,7 +7,7 @@ import { DesignerStateService } from '../../core/services/designer-state.service
  */
 @Component({
   selector: 'app-status-bar',
-  imports: [CommonModule],
+  imports: [],
   templateUrl: './status-bar.html',
   styleUrl: './status-bar.less',
   standalone: true
