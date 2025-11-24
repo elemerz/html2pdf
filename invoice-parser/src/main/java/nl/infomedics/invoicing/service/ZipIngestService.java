@@ -49,6 +49,8 @@ public class ZipIngestService {
 	private final Semaphore pdfConversionPermits;
 	private final int maxConcurrentPdfConversions;
 	private final Map<Integer,String> templateHtmlMap;
+	// Guard against concurrent processing of the same zip name in this JVM
+	private static final java.util.Set<String> ACTIVE = java.util.concurrent.ConcurrentHashMap.newKeySet();
 
 	public ZipIngestService(ParseService parse, JsonAssembler json, AppProperties props, Xhtml2PdfClient pdfClient, Map<Integer,String> templateHtmlMap,
 			@Value("${json.output.folder}") String jsonOut, @Value("${json.pretty:false}") boolean pretty,
@@ -120,91 +122,104 @@ public class ZipIngestService {
 	}
 	public void processZip(Path zipPath) {
 		String name = zipPath.getFileName().toString();
+		// Prevent duplicate concurrent processing of same file
+		if (!ACTIVE.add(name)) {
+			log.warn("Duplicate processing detected, skipping {}", name);
+			return;
+		}
 		String stage = "open zip";
-		log.info("Processing {}", name);
 		int debiSize = 0;
 		int specSize = 0;
-		try (ZipFile zf = new ZipFile(zipPath.toFile(), StandardCharsets.UTF_8)) {
-			stage = "locate entries";
-			ZipEntry meta = find(zf, e -> e.getName().endsWith("_Meta.txt"));
-			ZipEntry debi = find(zf, e -> e.getName().endsWith("_Debiteuren.txt"));
-			ZipEntry spec = find(zf, e -> e.getName().endsWith("_Specificaties.txt"));
-			ZipEntry notas = find(zf, e -> e.getName().endsWith("_Notas.xml"));
-			if (meta == null) throw new IllegalStateException("Missing meta entry in " + name);
-			boolean xmlType = notas != null;
-			if (!xmlType && (debi == null || spec == null))
-				throw new IllegalStateException("Missing expected classic entries in " + name);
-			// debug: entries resolved (suppressed for performance)
-
-			stage = "parse meta";
-			var metaInfo = parseWithReader(zf, meta, parse::parseMeta);
-			Map<String, nl.infomedics.invoicing.model.Debiteur> debiteuren;
-			Map<String, java.util.List<nl.infomedics.invoicing.model.Specificatie>> specificaties;
-			var practitioner = (nl.infomedics.invoicing.model.Practitioner) null;
-			if (xmlType) {
-				stage = "parse notas xml";
-				var nr = parseWithReader(zf, notas, reader1 -> parse.parseNotas(reader1));
-				debiteuren = nr.debiteuren;
-				specificaties = nr.specificaties;
-				practitioner = nr.practitioner;
-			} else {
-				stage = "parse debiteuren";
-				debiteuren = parseWithReader(zf, debi, parse::parseDebiteuren);
-				stage = "parse specificaties";
-				specificaties = parseWithReader(zf, spec, parse::parseSpecificaties);
-				practitioner = parse.getPractitioner();
-			}
-			debiSize = debiteuren.size();
-			specSize = specificaties.size();
-
-			stage = "assemble json";
-			var bundle = json.assemble(metaInfo, practitioner, debiteuren, specificaties);
-			String jsonStr = json.stringify(bundle, jsonPretty);
-
-			stage = "write json";
-			Path out = jsonOutDir.resolve(stripZip(name) + ".json");
-			Files.writeString(out, jsonStr, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
-
-			// --- Generate PDFs for each debtor (one PDF per debtor) ---
-			Integer type = metaInfo!=null?metaInfo.getInvoiceType():null;
-			if (type != null && bundle.getDebiteuren() != null && !bundle.getDebiteuren().isEmpty()) {
-				generatePdfsPerDebtor(name, type, metaInfo, practitioner, bundle.getDebiteuren());
-			} else {
-				log.warn("PDF generation skipped for {}: invoiceType={}, debtorCount={}", 
-					name, type, bundle.getDebiteuren()!=null?bundle.getDebiteuren().size():0);
-			}
-		} catch (Exception ex) {
-			try {
-				Path err = Paths.get(props.getErrorFolder()).resolve(zipPath.getFileName());
-				Files.move(zipPath, err, StandardCopyOption.REPLACE_EXISTING);
-				log.warn("Moved {} to error folder after failure", name);
-			} catch (Exception moveEx) {
-				log.error("Failed to move {} to error folder: {}", name, moveEx.getMessage(), moveEx);
-			}
-			log.error("FAIL {} during {}: {}", name, stage, ex.getMessage(), ex);
-			return; // abort on failure
-		}
-		// Success path: archive after ZipFile is closed (Windows requires file handle released)
-		stage = "archive zip";
 		try {
-			Path archive = Paths.get(props.getArchiveFolder()).resolve(name);
-			if (attemptMoveWithRetry(zipPath, archive, 10, 250)) {
-				log.info("OK {} → {} ({} debiteuren, {} specificaties)", name, archive.getFileName(), debiSize, specSize);
-			} else {
-				log.error("FAIL {} during {} after retries: still locked", name, stage);
-				Path err = Paths.get(props.getErrorFolder()).resolve(zipPath.getFileName());
-				attemptMoveWithRetry(zipPath, err, 5, 500);
-				log.warn("Moved {} to error folder after archive failure", name);
+			log.info("Processing {}", name);
+			if (!Files.exists(zipPath)) { // file may have been moved already
+				log.warn("Zip {} no longer exists, treat as already processed", name);
+				return;
 			}
-		} catch (Exception ex) {
-			log.error("FAIL {} during {}: {}", name, stage, ex.getMessage(), ex);
+			// Parse phase (inner try-with-resources for zip)
+			try (ZipFile zf = new ZipFile(zipPath.toFile(), StandardCharsets.UTF_8)) {
+				stage = "locate entries";
+				ZipEntry meta = find(zf, e -> e.getName().endsWith("_Meta.txt"));
+				ZipEntry debi = find(zf, e -> e.getName().endsWith("_Debiteuren.txt"));
+				ZipEntry spec = find(zf, e -> e.getName().endsWith("_Specificaties.txt"));
+				ZipEntry notas = find(zf, e -> e.getName().endsWith("_Notas.xml"));
+				if (meta == null) throw new IllegalStateException("Missing meta entry in " + name);
+				boolean xmlType = notas != null;
+				if (!xmlType && (debi == null || spec == null))
+					throw new IllegalStateException("Missing expected classic entries in " + name);
+
+				stage = "parse meta";
+				var metaInfo = parseWithReader(zf, meta, parse::parseMeta);
+				Map<String, nl.infomedics.invoicing.model.Debiteur> debiteuren;
+				Map<String, java.util.List<nl.infomedics.invoicing.model.Specificatie>> specificaties;
+				var practitioner = (nl.infomedics.invoicing.model.Practitioner) null;
+				if (xmlType) {
+					stage = "parse notas xml";
+					var nr = parseWithReader(zf, notas, reader1 -> parse.parseNotas(reader1));
+					debiteuren = nr.debiteuren;
+					specificaties = nr.specificaties;
+					practitioner = nr.practitioner;
+				} else {
+					stage = "parse debiteuren";
+					debiteuren = parseWithReader(zf, debi, parse::parseDebiteuren);
+					stage = "parse specificaties";
+					specificaties = parseWithReader(zf, spec, parse::parseSpecificaties);
+					practitioner = parse.getPractitioner();
+				}
+				debiSize = debiteuren.size();
+				specSize = specificaties.size();
+
+				stage = "assemble json";
+				var bundle = json.assemble(metaInfo, practitioner, debiteuren, specificaties);
+				String jsonStr = json.stringify(bundle, jsonPretty);
+
+				stage = "write json";
+				Path out = jsonOutDir.resolve(stripZip(name) + ".json");
+				Files.writeString(out, jsonStr, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+
+				Integer type = metaInfo!=null?metaInfo.getInvoiceType():null;
+				if (type != null && bundle.getDebiteuren() != null && !bundle.getDebiteuren().isEmpty()) {
+					generatePdfsPerDebtor(name, type, metaInfo, practitioner, bundle.getDebiteuren());
+				} else {
+					log.warn("PDF generation skipped for {}: invoiceType={}, debtorCount={}", 
+						name, type, bundle.getDebiteuren()!=null?bundle.getDebiteuren().size():0);
+				}
+			} catch (Exception ex) { // parsing failure
+				try {
+					Path err = Paths.get(props.getErrorFolder()).resolve(zipPath.getFileName());
+					Files.move(zipPath, err, StandardCopyOption.REPLACE_EXISTING);
+					log.warn("Moved {} to error folder after failure", name);
+				} catch (Exception moveEx) {
+					log.error("Failed to move {} to error folder: {}", name, moveEx.getMessage(), moveEx);
+				}
+				log.error("FAIL {} during {}: {}", name, stage, ex.getMessage(), ex);
+				return; // abort
+			}
+
+			// Archive phase
+			stage = "archive zip";
 			try {
-				Path err = Paths.get(props.getErrorFolder()).resolve(zipPath.getFileName());
-				Files.move(zipPath, err, StandardCopyOption.REPLACE_EXISTING);
-				log.warn("Moved {} to error folder after failure", name);
-			} catch (Exception moveEx) {
-				log.error("Failed to move {} to error folder: {}", name, moveEx.getMessage(), moveEx);
+				Path archive = Paths.get(props.getArchiveFolder()).resolve(name);
+				if (attemptMoveWithRetry(zipPath, archive, 10, 250)) {
+					log.info("OK {} → {} ({} debiteuren, {} specificaties)", name, archive.getFileName(), debiSize, specSize);
+				} else {
+					log.error("FAIL {} during {} after retries: still locked", name, stage);
+					Path err = Paths.get(props.getErrorFolder()).resolve(zipPath.getFileName());
+					attemptMoveWithRetry(zipPath, err, 5, 500);
+					log.warn("Moved {} to error folder after archive failure", name);
+				}
+			} catch (Exception ex) {
+				log.error("FAIL {} during {}: {}", name, stage, ex.getMessage(), ex);
+				try {
+					Path err = Paths.get(props.getErrorFolder()).resolve(zipPath.getFileName());
+					Files.move(zipPath, err, StandardCopyOption.REPLACE_EXISTING);
+					log.warn("Moved {} to error folder after failure", name);
+				} catch (Exception moveEx) {
+					log.error("Failed to move {} to error folder: {}", name, moveEx.getMessage(), moveEx);
+				}
 			}
+		} finally {
+			ACTIVE.remove(name);
 		}
 	}
 

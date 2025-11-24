@@ -4,6 +4,9 @@ import com.google.zxing.BarcodeFormat;
 import com.openhtmltopdf.extend.FSObjectDrawer;
 import com.openhtmltopdf.objects.zxing.ZXingObjectDrawer;
 import com.openhtmltopdf.render.DefaultObjectDrawerFactory;
+
+import lombok.extern.slf4j.Slf4j;
+
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -19,6 +22,7 @@ import java.util.Optional;
  * Object drawer factory that prepares <object> tags for ZXing rendering so that OpenHTMLtoPDF can draw
  * QR codes and 1D barcodes during layout.
  */
+@Slf4j
 public class QrBarcodeObjectFactory extends DefaultObjectDrawerFactory {
 
     private static final String TYPE_QR = "application/qrcode";

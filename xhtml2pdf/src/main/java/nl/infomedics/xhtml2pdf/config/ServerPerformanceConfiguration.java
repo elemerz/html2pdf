@@ -17,9 +17,12 @@ import org.springframework.core.task.support.TaskExecutorAdapter;
 import org.springframework.web.servlet.config.annotation.AsyncSupportConfigurer;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
+import lombok.extern.slf4j.Slf4j;
+
 /**
  * Configures embedded Tomcat and MVC async handling to leverage virtual threads.
  */
+@Slf4j
 @Configuration
 public class ServerPerformanceConfiguration implements WebMvcConfigurer {
 
@@ -61,11 +64,8 @@ public class ServerPerformanceConfiguration implements WebMvcConfigurer {
             factory.addConnectorCustomizers(connector -> {
                 int maxSize = -1; // -1 = unlimited
                 connector.setMaxPostSize(maxSize);
-                System.out.println("============================================");
-                System.out.println("TOMCAT CONNECTOR CUSTOMIZATION APPLIED:");
-                System.out.println("Max POST Size set to: " + (maxSize == -1 ? "UNLIMITED" : maxSize + " bytes"));
-                System.out.println("Connector: " + connector);
-                System.out.println("============================================");
+                log.debug("Tomcat connector customization applied: maxPostSize={}, connector={}",
+                        maxSize == -1 ? "UNLIMITED" : maxSize + " bytes", connector);
             });
         };
     }

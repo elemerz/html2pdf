@@ -1,25 +1,10 @@
 package nl.infomedics.reporting.service;
 
-import com.openhtmltopdf.pdfboxout.PdfRendererBuilder;
-import com.openhtmltopdf.svgsupport.BatikSVGDrawer;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.ClassPathResource;
-import org.springframework.stereotype.Service;
-import org.w3c.dom.Document;
-
-import javax.xml.XMLConstants;
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.transform.OutputKeys;
-import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerFactory;
-import javax.xml.transform.dom.DOMSource;
-import javax.xml.transform.stream.StreamResult;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.LocalTime;
@@ -34,12 +19,31 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
+import javax.xml.XMLConstants;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.transform.OutputKeys;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.stereotype.Service;
+import org.w3c.dom.Document;
+
+import com.openhtmltopdf.pdfboxout.PdfRendererBuilder;
+import com.openhtmltopdf.svgsupport.BatikSVGDrawer;
+
+import lombok.extern.slf4j.Slf4j;
+
 /**
  * Converts XHTML input into PDF output and tracks conversion statistics.
  */
+@Slf4j
 @Service
 public class Html2PdfConverterService {
-
     private final QrBarcodeObjectFactory objectFactory = new QrBarcodeObjectFactory();
     private final FontRegistry fontRegistry;
     private static final long CONVERSION_IDLE_THRESHOLD_MS = 1_000L;
@@ -70,13 +74,12 @@ public class Html2PdfConverterService {
         this.fontRegistry = fontRegistry;
         this.srgbColorProfile = loadSrgbColorProfile();
         if (configuredMaxConcurrent < 1) {
-            System.err.println("Configured converter.max-concurrent " + configuredMaxConcurrent
-                    + " is invalid; defaulting to 1.");
+            log.warn("Configured converter.max-concurrent {} is invalid; defaulting to 1.", configuredMaxConcurrent);
         }
         this.maxConcurrentConversions = Math.max(1, configuredMaxConcurrent);
         this.conversionPermits = new Semaphore(this.maxConcurrentConversions);
-        System.out.println("Html2PdfConverterService concurrency limited to "
-                + this.maxConcurrentConversions + " simultaneous conversions.");
+        log.debug("Html2PdfConverterService concurrency limited to {} simultaneous conversions.",
+                this.maxConcurrentConversions);
     }
 
     /**
@@ -104,11 +107,11 @@ public class Html2PdfConverterService {
 
                 long duration = System.currentTimeMillis() - startMillis;
                 String timestamp = LocalTime.now().format(TIMESTAMP_FORMATTER);
-                System.out.println(timestamp + " Conversion time: " + duration + " ms");
+                log.info("{} Conversion time: {} ms", timestamp, duration);
 
                 return new PdfConversionResult(pdfBytes, sanitisedXhtml);
             } catch (Exception e) {
-                System.err.println("Error converting XHTML content: " + e.getMessage());
+                log.error("Error converting XHTML content", e);
                 throw new HtmlToPdfConversionException("Unable to convert XHTML content", e);
             } finally {
                 long finishMillis = System.currentTimeMillis();
@@ -127,7 +130,7 @@ public class Html2PdfConverterService {
         try (InputStream in = new ByteArrayInputStream(htmlContent.getBytes(StandardCharsets.UTF_8))) {
             return parseDocument(in);
         } catch (Exception ex) {
-            System.err.println("Unable to parse supplied XHTML content: " + ex.getMessage());
+            log.warn("Unable to parse supplied XHTML content: {}", ex.getMessage());
             return null;
         }
     }
@@ -195,7 +198,7 @@ public class Html2PdfConverterService {
     }
 
     private void logActiveConversions(int current, int peak) {
-        System.out.println("Active conversions: " + current + "/" + maxConcurrentConversions + " (peak: " + peak + ")");
+        log.info("Active conversions: {}/{} (peak: {})", current, maxConcurrentConversions, peak);
     }
 
     private void noteConversionStarted() {
@@ -236,8 +239,8 @@ public class Html2PdfConverterService {
         long finishMillis = Math.max(lastConversionFinishMillis.get(), scheduledFinishMillis);
         long elapsed = Math.max(finishMillis - start, 0L);
         String timestamp = LocalTime.now().format(TIMESTAMP_FORMATTER);
-        System.out.println(timestamp + " Conversion batch elapsed: " + elapsed + " ms (first at "
-                + formatClockTime(start) + ", last at " + formatClockTime(finishMillis) + ")");
+        log.info("{} Conversion batch elapsed: {} ms (first at {}, last at {})",
+                timestamp, elapsed, formatClockTime(start), formatClockTime(finishMillis));
         firstConversionStartMillis.compareAndSet(start, 0L);
     }
 
@@ -267,7 +270,7 @@ public class Html2PdfConverterService {
     public static class HtmlToPdfConversionException extends Exception {
         private static final long serialVersionUID = 7231358555978999078L;
 
-		public HtmlToPdfConversionException(String message) {
+        public HtmlToPdfConversionException(String message) {
             super(message);
         }
 

@@ -1,11 +1,5 @@
 package nl.infomedics.reporting.service;
 
-import com.openhtmltopdf.pdfboxout.PdfRendererBuilder;
-import org.springframework.core.io.Resource;
-import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
-import org.springframework.core.io.support.ResourcePatternResolver;
-import org.springframework.stereotype.Component;
-
 import java.awt.Font;
 import java.awt.FontFormatException;
 import java.io.ByteArrayInputStream;
@@ -20,9 +14,20 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
+import org.springframework.core.io.support.ResourcePatternResolver;
+import org.springframework.stereotype.Component;
+
+import com.openhtmltopdf.pdfboxout.PdfRendererBuilder;
+
+import jakarta.annotation.PostConstruct;
+import lombok.extern.slf4j.Slf4j;
+
 /**
  * Loads and caches font resources shipped with the application, exposing them to the PDF renderer.
  */
+@Slf4j
 @Component
 public class FontRegistry {
 
@@ -51,6 +56,18 @@ public class FontRegistry {
     }
 
     /**
+     * Eagerly loads embedded fonts on startup so repeated conversions do not pay I/O cost.
+     */
+    @PostConstruct
+    public void preloadEmbeddedFonts() {
+        Map<String, byte[]> fonts = loadEmbeddedFontData();
+        fonts.forEach((name, data) ->
+                aliasCache.computeIfAbsent(buildAliasCacheKey(name, data),
+                        _ -> deriveFontAliases(name, data)));
+        log.debug("Preloaded {} embedded fonts for OpenHTMLtoPDF.", fonts.size());
+    }
+
+    /**
      * Registers all embedded fonts with the renderer builder.
      *
      * @param builder PDF renderer builder used during conversion
@@ -75,14 +92,14 @@ public class FontRegistry {
             String fileName = entry.getKey();
             byte[] fontBytes = entry.getValue();
             if (fontBytes == null || fontBytes.length == 0) {
-                System.err.println("Skipping font " + fileName + " because it contains no data.");
+                log.warn("Skipping font {} because it contains no data.", fileName);
                 continue;
             }
             final byte[] fontBytesCopy = fontBytes;
             String cacheKey = buildAliasCacheKey(fileName, fontBytesCopy);
             Set<String> aliases = aliasCache.computeIfAbsent(cacheKey, _ -> deriveFontAliases(fileName, fontBytesCopy));
             if (aliases == null || aliases.isEmpty()) {
-                System.err.println("Skipping font " + fileName + " because no aliases could be derived.");
+                log.warn("Skipping font {} because no aliases could be derived.", fileName);
                 continue;
             }
             aliases.forEach(alias -> builder.useFont(() -> new ByteArrayInputStream(fontBytesCopy), alias));
@@ -133,7 +150,7 @@ public class FontRegistry {
                     }
                 }
             } catch (IOException e) {
-                System.err.println("Unable to load font resources for pattern " + pattern + ": " + e.getMessage());
+                log.warn("Unable to load font resources for pattern {}: {}", pattern, e.getMessage());
             }
         }
         return fonts;
@@ -157,7 +174,7 @@ public class FontRegistry {
                 addAliasVariant(aliases, font.getFontName(Locale.ROOT));
                 addAliasVariant(aliases, font.getPSName());
             } catch (FontFormatException | IOException e) {
-                System.err.println("Unable to read font metadata from " + fileName + ": " + e.getMessage());
+                log.warn("Unable to read font metadata from {}: {}", fileName, e.getMessage());
             }
         }
         return Collections.unmodifiableSet(aliases);
@@ -249,7 +266,7 @@ public class FontRegistry {
         DEFAULT_FONT_ALIASES.forEach((alias, backingFont) -> {
             byte[] fontData = fonts.get(backingFont);
             if (fontData == null || fontData.length == 0) {
-                System.err.println("Fallback font mapping for " + alias + " references missing font " + backingFont);
+                log.warn("Fallback font mapping for {} references missing font {}", alias, backingFont);
                 return;
             }
             registerAliasVariants(builder, alias, fontData);

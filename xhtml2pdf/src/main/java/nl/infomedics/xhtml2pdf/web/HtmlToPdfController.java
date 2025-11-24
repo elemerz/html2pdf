@@ -124,14 +124,14 @@ public class HtmlToPdfController {
                 log.warn("Failed to parse debiteur model for {}: {}", item.outputId(), parseEx.getMessage());
             }
             String htmlResolved = dwp != null ? resolvePropertyPlaceholders(sharedHtml, dwp) : sharedHtml;
-            log.info("\n\nsharedHtml =\n\n {}", sharedHtml);
-            log.info("\n\nhtmlResolved =\n\n {}", htmlResolved);
+//            log.info("\n\nsharedHtml =\n\n {}", sharedHtml);
+//            log.info("\n\nhtmlResolved =\n\n {}", htmlResolved);
             PdfConversionResult result = converterService.convertHtmlToPdf(htmlResolved);
             String pdfBase64 = Base64.getEncoder().encodeToString(result.pdfContent());
             String sanitised = includeSanitised ? result.sanitisedXhtml() : null;
             return BatchConversionResultItem.success(item.outputId(), pdfBase64, sanitised);
         } catch (Exception e) {
-            System.err.println("Batch item " + item.outputId() + " failed: " + e.getMessage());
+            log.error("Batch item {} failed: {}", item.outputId(), e.getMessage());
             return BatchConversionResultItem.failure(item.outputId(), e.getMessage());
         }
     }
