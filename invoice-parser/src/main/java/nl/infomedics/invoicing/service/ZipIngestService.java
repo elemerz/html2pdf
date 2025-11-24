@@ -30,6 +30,7 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import nl.infomedics.invoicing.config.AppProperties;
+import nl.infomedics.invoicing.model.BatchConversionItem;
 import nl.infomedics.invoicing.model.DebiteurWithPractitioner;
 import nl.infomedics.invoicing.model.MetaInfo;
 import nl.infomedics.invoicing.model.Practitioner;
@@ -250,13 +251,13 @@ public class ZipIngestService {
 			log.debug("Template type {} size {} bytes debtors {}", invoiceType, templateHtml.length(), debiteuren.size());
 			
 			stage = "prepare batch items";
-			List<Xhtml2PdfClient.BatchItem> batchItems = new ArrayList<>();
+			List<BatchConversionItem> batchItems = new ArrayList<>();
 			for (DebiteurWithPractitioner dwp : debiteuren) {
 				try {
 					String debtorJson = json.stringifySingleDebtor(new nl.infomedics.invoicing.model.SingleDebtorInvoice(dwp), false);
 					String outputId = sanitizeFilename(dwp.getDebiteur().getInvoiceNumber() != null ? 
 						dwp.getDebiteur().getInvoiceNumber() : dwp.getDebiteur().getInsuredId());
-					batchItems.add(new Xhtml2PdfClient.BatchItem(debtorJson, outputId));
+					batchItems.add(new BatchConversionItem(debtorJson, outputId));
 				} catch (Exception e) {
 					log.error("Failed to prepare batch item for debtor {} in {}: {}", 
 						dwp.getDebiteur().getInvoiceNumber(), zipName, e.getMessage(), e);
@@ -276,7 +277,7 @@ public class ZipIngestService {
 		}
 	}
 
-	private void submitBatchPdfConversion(String zipName, List<Xhtml2PdfClient.BatchItem> batchItems, String templateHtml) { // templateHtml propagated
+	private void submitBatchPdfConversion(String zipName, List<BatchConversionItem> batchItems, String templateHtml) { // templateHtml propagated
 		try {
 			pdfConversionExecutor.submit(() -> {
 				boolean acquired = false;

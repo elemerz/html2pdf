@@ -18,21 +18,19 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
+import nl.infomedics.invoicing.model.BatchConversionItem;
+import nl.infomedics.invoicing.model.BatchConversionRequest;
+import nl.infomedics.invoicing.model.BatchConversionResponse;
+import nl.infomedics.invoicing.model.BatchConversionResultItem;
+import nl.infomedics.invoicing.model.DebiteurWithPractitioner;
 import nl.infomedics.reporting.service.Html2PdfConverterService;
 import nl.infomedics.reporting.service.Html2PdfConverterService.HtmlToPdfConversionException;
 import nl.infomedics.reporting.service.Html2PdfConverterService.PdfConversionResult;
-import nl.infomedics.xhtml2pdf.web.dto.BatchConversionItem;
-import nl.infomedics.xhtml2pdf.web.dto.BatchConversionRequest;
-import nl.infomedics.xhtml2pdf.web.dto.BatchConversionResponse;
-import nl.infomedics.xhtml2pdf.web.dto.BatchConversionResultItem;
-import nl.infomedics.xhtml2pdf.web.dto.HtmlToPdfRequest;
-import nl.infomedics.xhtml2pdf.web.dto.HtmlToPdfResponse;
-import nl.infomedics.xhtml2pdf.web.dto.HtmlToPdfWithModelRequest;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import nl.infomedics.invoicing.model.DebiteurWithPractitioner;
 
 /**
  * REST controller exposing HTML-to-PDF conversion endpoints.
@@ -50,40 +48,6 @@ public class HtmlToPdfController {
 
     public HtmlToPdfController(Html2PdfConverterService converterService) {
         this.converterService = converterService;
-    }
-
-    @PostMapping(
-            path = "/convert",
-            consumes = MediaType.APPLICATION_JSON_VALUE,
-            produces = MediaType.APPLICATION_JSON_VALUE
-    )
-    public ResponseEntity<HtmlToPdfResponse> convertHtmlToPdf(@Valid @RequestBody HtmlToPdfRequest request)
-            throws HtmlToPdfConversionException {
-        int requestSize = request.html() != null ? request.html().length() : 0;
-        // debug: received single conversion request size
-        if (requestSize > 0 && requestSize < 200) { /* small; omit */ }
-        
-        PdfConversionResult result = converterService.convertHtmlToPdf(request.html());
-        String pdfBase64 = Base64.getEncoder().encodeToString(result.pdfContent());
-        String sanitised = request.includeSanitisedXhtml() ? result.sanitisedXhtml() : null;
-        HtmlToPdfResponse response = new HtmlToPdfResponse(pdfBase64, sanitised, Instant.now());
-        return ResponseEntity.ok(response);
-    }
-
-    @PostMapping(
-            path = "/convert-with-model",
-            consumes = MediaType.APPLICATION_JSON_VALUE,
-            produces = MediaType.APPLICATION_JSON_VALUE
-    )
-    public ResponseEntity<HtmlToPdfResponse> convertHtmlToPdfWithModel(@Valid @RequestBody HtmlToPdfWithModelRequest request)
-            throws HtmlToPdfConversionException {
-        int requestSize = request.html() != null ? request.html().length() : 0;
-        // debug: received conversion-with-model (sizes suppressed for perf)
-        PdfConversionResult result = converterService.convertHtmlToPdf(request.html()); // jsonModel currently unused
-        String pdfBase64 = Base64.getEncoder().encodeToString(result.pdfContent());
-        String sanitised = request.includeSanitisedXhtml() ? result.sanitisedXhtml() : null;
-        HtmlToPdfResponse response = new HtmlToPdfResponse(pdfBase64, sanitised, Instant.now());
-        return ResponseEntity.ok(response);
     }
 
     @PostMapping(

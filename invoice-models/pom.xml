@@ -13,9 +13,23 @@
 	<java.version>25</java.version>
 	<maven.compiler.release>25</maven.compiler.release>
 	<maven-compiler-plugin.version>3.14.1</maven-compiler-plugin.version>
+	<jakarta-validation-api.version>3.1.1</jakarta-validation-api.version>
+	<jackson-annotations.version>2.20</jackson-annotations.version>
   	<lombok.version>1.18.42</lombok.version>
   </properties>
   <dependencies>
+    <!-- https://mvnrepository.com/artifact/jakarta.validation/jakarta.validation-api -->
+	<dependency>
+	    <groupId>jakarta.validation</groupId>
+	    <artifactId>jakarta.validation-api</artifactId>
+	    <version>${jakarta-validation-api.version}</version>
+	</dependency>
+	<!-- https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-annotations -->
+	<dependency>
+	    <groupId>com.fasterxml.jackson.core</groupId>
+	    <artifactId>jackson-annotations</artifactId>
+	    <version>${jackson-annotations.version}</version>
+	</dependency>	
     <dependency>
         <groupId>org.projectlombok</groupId>
         <artifactId>lombok</artifactId>
