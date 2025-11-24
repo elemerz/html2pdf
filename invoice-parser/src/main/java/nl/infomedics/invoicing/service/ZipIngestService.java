@@ -201,7 +201,7 @@ public class ZipIngestService {
 			try {
 				Path archive = Paths.get(props.getArchiveFolder()).resolve(name);
 				if (attemptMoveWithRetry(zipPath, archive, 10, 250)) {
-					log.info("OK {} → {} ({} debiteuren, {} specificaties)", name, archive.getFileName(), debiSize, specSize);
+					log.info("OK {} -> {} ({} debiteuren, {} specificaties)", name, archive.getFileName(), debiSize, specSize);
 				} else {
 					log.error("FAIL {} during {} after retries: still locked", name, stage);
 					Path err = Paths.get(props.getErrorFolder()).resolve(zipPath.getFileName());
@@ -361,3 +361,5 @@ public class ZipIngestService {
 		return html;
 	}
 }
+
+

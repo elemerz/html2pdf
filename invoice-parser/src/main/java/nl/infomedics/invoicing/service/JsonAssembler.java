@@ -1,11 +1,11 @@
 package nl.infomedics.invoicing.service;
-import nl.infomedics.invoicing.model.*;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.springframework.stereotype.Service;
+import nl.infomedics.invoicing.model.*;
 import java.util.*;
 
 @Service
@@ -14,7 +14,7 @@ public class JsonAssembler {
 
 	public JsonAssembler() {
 		this.om = new ObjectMapper()
-		.setSerializationInclusion(JsonInclude.Include.NON_NULL)
+		.setDefaultPropertyInclusion(JsonInclude.Value.construct(JsonInclude.Include.NON_NULL, JsonInclude.Include.NON_NULL))
 		.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
 		.registerModule(new JavaTimeModule());
 	}

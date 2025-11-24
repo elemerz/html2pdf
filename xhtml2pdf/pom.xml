@@ -5,7 +5,7 @@
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
-		<version>3.5.7</version>
+		<version>4.0.0</version>
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>nl.infomedics</groupId>
@@ -28,6 +28,7 @@
 	</scm>
 	<properties>
 		<java.version>25</java.version>
+		<zxing.version>3.5.4</zxing.version>
 		<invoice-models.version>1.0.0</invoice-models.version>
 		<lombok.version>1.18.42</lombok.version>
 	</properties>
@@ -78,12 +79,12 @@
 		<dependency>
 			<groupId>com.google.zxing</groupId>
 			<artifactId>core</artifactId>
-			<version>3.5.3</version>
+			<version>${zxing.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>com.google.zxing</groupId>
 			<artifactId>javase</artifactId>
-			<version>3.5.3</version>
+			<version>${zxing.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>nl.infomedics.invoicing</groupId>

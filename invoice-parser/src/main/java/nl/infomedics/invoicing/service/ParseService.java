@@ -5,7 +5,6 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -33,10 +32,6 @@ public class ParseService {
 
 	private static String get(com.univocity.parsers.common.record.Record r, int idx) {
 		return idx < r.getValues().length ? r.getString(idx) : null;
-	}
-
-	private static List<Integer> listAllowingNulls(Integer... values) {
-		return new ArrayList<>(Arrays.asList(values));
 	}
 
 	private static Integer safeInt(String s) {

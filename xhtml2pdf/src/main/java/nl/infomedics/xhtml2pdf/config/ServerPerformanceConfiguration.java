@@ -6,8 +6,8 @@ import java.util.concurrent.Executors;
 
 import org.apache.coyote.ProtocolHandler;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.boot.web.embedded.tomcat.TomcatProtocolHandlerCustomizer;
-import org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactory;
+import org.springframework.boot.tomcat.TomcatProtocolHandlerCustomizer;
+import org.springframework.boot.tomcat.servlet.TomcatServletWebServerFactory;
 import org.springframework.boot.web.server.WebServerFactoryCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
