@@ -4,7 +4,7 @@
       <h2>Publish Template</h2>
       <label class="field">
         <span class="label">Template Id</span>
-        <select [value]="invoiceType()" (change)="invoiceType.set(+$any($event.target).value)">
+        <select [ngModel]="invoiceType()" (ngModelChange)="invoiceType.set(+($event))">
           @for (id of templateIds; track id) {
             <option [value]="id">{{id}}</option>
           }
@@ -22,6 +22,9 @@
           <div class="success">{{successMessage()}}</div>
         }
       </div>
+      @if (closeCountdown() !== null) {
+        <div class="countdown">Closing in {{closeCountdown()}}s...</div>
+      }
       <div class="actions">
         <button (click)="handlePublish()" [disabled]="submitting()">Publish</button>
         <button (click)="close()" [disabled]="submitting()">Cancel</button>

@@ -1,11 +1,5 @@
 package nl.infomedics.invoicing.config;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryStream;
@@ -16,10 +10,16 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 @Configuration
 public class TemplateHtmlConfig {
-    private static final Logger log = LoggerFactory.getLogger(TemplateHtmlConfig.class);
-    private static final String TEMPLATE_PATTERN = "factuur-*.html";
+    public static final String TEMPLATE_PATTERN = "factuur-*.html";
 
     @Value("${templates.for-pdf.path:for-pdf}")
     private String templatesPath;
@@ -53,8 +53,8 @@ public class TemplateHtmlConfig {
         });
     }
 
-    static synchronized void reloadTemplates(Path templateDirectory,
-                                             Map<Integer, String> target) throws IOException {
+    public static synchronized void reloadTemplates(Path templateDirectory,
+                                                    Map<Integer, String> target) throws IOException {
         Map<Integer, String> fresh = new HashMap<>();
         if (!Files.isDirectory(templateDirectory)) {
             log.warn("Template directory {} does not exist; clearing in-memory templates", templateDirectory);

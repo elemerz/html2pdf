@@ -14,13 +14,16 @@ import { HttpClient } from '@angular/common/http';
 export class PublishTemplateDialogComponent {
   private designerState = inject(DesignerStateService);
   private http = inject(HttpClient);
+  private closeTimeout: ReturnType<typeof setTimeout> | null = null;
+  private closeInterval: ReturnType<typeof setInterval> | null = null;
 
   isOpen = signal(true);
-  invoiceType = signal<number>(1);
+  invoiceType = signal<number>(20);
   version = signal('1.0');
   submitting = signal(false);
   errorMessage = signal('');
   successMessage = signal('');
+  closeCountdown = signal<number | null>(null);
 
   onClose = output<void>();
   onPublished = output<{ invoiceType: number; version: string }>();
@@ -29,6 +32,7 @@ export class PublishTemplateDialogComponent {
 
   close() {
     if (this.submitting()) return;
+    this.clearAutoCloseTimers();
     this.isOpen.set(false);
     this.onClose.emit();
   }
@@ -36,6 +40,7 @@ export class PublishTemplateDialogComponent {
   handlePublish() {
     this.errorMessage.set('');
     this.successMessage.set('');
+    this.clearAutoCloseTimers();
     const version = this.version().trim();
     if (!/^\d+(?:\.\d+)?$/.test(version)) {
       this.errorMessage.set('Version must be numeric (e.g. 1.0)');
@@ -48,23 +53,45 @@ export class PublishTemplateDialogComponent {
       this.errorMessage.set(e?.message || 'Failed to generate XHTML');
       return;
     }
+    const invoiceType = this.invoiceType();
     this.submitting.set(true);
-    this.http.put('/api/templates', null, {
-      params: {
-        invoicetype: this.invoiceType().toString(),
-        xhtmlTemplate: xhtml,
-        version
-      }
+    this.http.put('/api/templates/publish', {
+      invoiceType,
+      xhtmlTemplate: xhtml,
+      version
     }).subscribe({
       next: () => {
         this.successMessage.set('Published successfully');
         this.submitting.set(false);
-        this.onPublished.emit({ invoiceType: this.invoiceType(), version });
+        this.onPublished.emit({ invoiceType, version });
+        const endTime = Date.now() + 2000;
+        this.closeCountdown.set(2);
+        this.closeInterval = setInterval(() => {
+          const remaining = Math.max(0, Math.ceil((endTime - Date.now()) / 1000));
+          this.closeCountdown.set(remaining);
+          if (remaining <= 0 && this.closeInterval) {
+            clearInterval(this.closeInterval);
+            this.closeInterval = null;
+          }
+        }, 200);
+        this.closeTimeout = setTimeout(() => this.close(), 2000);
       },
       error: err => {
         this.errorMessage.set(err?.message || 'Publish failed');
         this.submitting.set(false);
       }
     });
+  }
+
+  private clearAutoCloseTimers() {
+    if (this.closeTimeout) {
+      clearTimeout(this.closeTimeout);
+      this.closeTimeout = null;
+    }
+    if (this.closeInterval) {
+      clearInterval(this.closeInterval);
+      this.closeInterval = null;
+    }
+    this.closeCountdown.set(null);
   }
 }
