@@ -1,4 +1,4 @@
-import {Component, Input, Output, EventEmitter, OnInit, ElementRef, ViewChild, HostListener, OnDestroy, inject} from '@angular/core';
+import {Component, Input, Output, EventEmitter, OnInit, ElementRef, ViewChild, HostListener, OnDestroy, AfterViewInit, Renderer2, inject} from '@angular/core';
 import Quill from 'quill';
 
 import { FormsModule } from '@angular/forms';
@@ -149,7 +149,7 @@ function isDiacriticalLetter(code: number, char: string): boolean {
   templateUrl: './cell-editor-dialog.html',
   styleUrl: './cell-editor-dialog.less'
 })
-export class CellEditorDialogComponent implements OnInit, OnDestroy {
+export class CellEditorDialogComponent implements OnInit, OnDestroy, AfterViewInit {
   @Input() initialContent: string = ''; // initial HTML
   @Input() repeatBinding?: { binding: string; iteratorName: string; repeatedElement: 'tr' | 'tbody' | 'table'; subTablePath?: Array<{row:number;col:number}> };
   @Output() closed = new EventEmitter<void>();
@@ -177,6 +177,9 @@ export class CellEditorDialogComponent implements OnInit, OnDestroy {
   private intellisenseCurrentPath = '';
   private intellisenseInsertIndex = 0;
   private boundQuillKeydown = (event: KeyboardEvent) => this.handleQuillKeydown(event);
+  private hostRef = inject(ElementRef<HTMLElement>);
+  private renderer = inject(Renderer2);
+  private hostRelocated = false;
 
   quillModules = {
     toolbar: {
@@ -1077,6 +1080,26 @@ export class CellEditorDialogComponent implements OnInit, OnDestroy {
     setTimeout(() => this.attachQrHandlers(), 0);
   }
 
+  ngAfterViewInit(): void {
+    this.relocateHostToBody();
+  }
+
+  private relocateHostToBody(): void {
+    try {
+      const hostEl = this.hostRef?.nativeElement;
+      const body = hostEl?.ownerDocument?.body;
+      if (!hostEl || !body || hostEl.parentElement === body) {
+        this.hostRelocated = !!hostEl && !!body && hostEl.parentElement === body;
+        return;
+      }
+      // Move host to body so canvas zoom transforms do not scale the dialog/backdrop.
+      body.appendChild(hostEl);
+      this.hostRelocated = true;
+    } catch {
+      this.hostRelocated = false;
+    }
+  }
+
   /**
    * Starts tracking mouse movement to drag the dialog.
    */
@@ -1343,6 +1366,8 @@ export class CellEditorDialogComponent implements OnInit, OnDestroy {
       this.intellisenseDropdownEl.remove();
       this.intellisenseDropdownEl = null;
     }
+
+    this.removeHostFromBody();
   }
 
   /**
@@ -1542,5 +1567,20 @@ export class CellEditorDialogComponent implements OnInit, OnDestroy {
     this.imageResizeLabelEl.textContent = `${w} x ${h}`;
     this.imageResizeLabelEl.style.left = (ev.clientX + 12) + 'px';
     this.imageResizeLabelEl.style.top = (ev.clientY + 12) + 'px';
+  }
+
+  private removeHostFromBody(): void {
+    if (!this.hostRelocated) return;
+    try {
+      const hostEl = this.hostRef?.nativeElement;
+      const body = hostEl?.ownerDocument?.body;
+      if (hostEl && body?.contains(hostEl)) {
+        this.renderer.removeChild(body, hostEl);
+      }
+    } catch {
+      // ignore cleanup failures
+    } finally {
+      this.hostRelocated = false;
+    }
   }
 }
