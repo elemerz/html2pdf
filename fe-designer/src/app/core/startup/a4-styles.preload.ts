@@ -1,4 +1,4 @@
-import { APP_INITIALIZER, Provider, inject } from '@angular/core';
+import { EnvironmentProviders, inject, provideAppInitializer } from '@angular/core';
 import { ResourceLoaderService } from '../services/resource-loader-service';
 import { DesignerStateService } from '../services/designer-state.service';
 import { firstValueFrom } from 'rxjs';
@@ -20,8 +20,4 @@ async function preloadA4Styles(): Promise<void> {
   }
 }
 
-export const A4_STYLES_PRELOAD_PROVIDER: Provider = {
-  provide: APP_INITIALIZER,
-  multi: true,
-  useFactory: () => preloadA4Styles
-};
+export const A4_STYLES_PRELOAD_PROVIDER: EnvironmentProviders = provideAppInitializer(() => preloadA4Styles());

@@ -1,4 +1,4 @@
-import { Component, HostListener, Input, signal, inject, ElementRef, AfterViewInit, AfterViewChecked, OnDestroy, OnChanges, SimpleChanges } from '@angular/core';
+import { Component, HostBinding, HostListener, Input, signal, inject, ElementRef, AfterViewInit, AfterViewChecked, OnDestroy, OnChanges, SimpleChanges } from '@angular/core';
 import { CellEditorDialogComponent } from './cell-editor-dialog';
 import { RepeatBindingDialogComponent } from './repeat-binding-dialog';
 
@@ -35,6 +35,10 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
   @Input({ required: true }) element!: CanvasElement;
   @Input() mmToPx = 3.7795275591;
   @Input() gridSize = 10;
+  @HostBinding('attr.role') get roleAttribute(): string {
+    const role = this.element.properties?.['elementRole'];
+    return role === 'report-header' || role === 'report-footer' ? role : 'report-body';
+  }
 
   protected designerState = inject(DesignerStateService);
   private hostRef = inject(ElementRef<HTMLElement>);

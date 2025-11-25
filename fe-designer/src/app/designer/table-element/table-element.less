@@ -17,7 +17,15 @@
   height: 100%;
   border-collapse: collapse;
   table-layout: fixed;
-  background-color: fade(@background, 60%);
+  background-color: @layout-role-body-bg;
+
+  :host([role="report-header"]) & {
+    background-color: @layout-role-header-bg;
+  }
+
+  :host([role="report-footer"]) & {
+    background-color: @layout-role-footer-bg;
+  }
 
   tbody {
     height: 100%;

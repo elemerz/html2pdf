@@ -1,10 +1,10 @@
-import { APP_INITIALIZER, Provider } from '@angular/core';
+import { EnvironmentProviders, provideAppInitializer } from '@angular/core';
 
 /**
  * Preloads managed .woff2 fonts so Quill can immediately render selected font families.
  * Fonts are also declared via @font-face in styles.less; this initializer eagerly loads them.
  */
-function preloadManagedFonts(): Promise<void> {
+async function preloadManagedFonts(): Promise<void> {
   if (typeof document === 'undefined' || !(document as any).fonts) {
     return Promise.resolve();
   }
@@ -14,7 +14,11 @@ function preloadManagedFonts(): Promise<void> {
   const seen = new Set<string>();
   for (const sheet of Array.from(document.styleSheets)) {
     let rules: CSSRuleList | null = null;
-    try { rules = sheet.cssRules; } catch { continue; } // cross-origin / inaccessible
+    try {
+      rules = sheet.cssRules;
+    } catch {
+      continue;
+    } // cross-origin / inaccessible
     if (!rules) continue;
     for (const rule of Array.from(rules)) {
       if (rule instanceof CSSFontFaceRule) {
@@ -27,7 +31,7 @@ function preloadManagedFonts(): Promise<void> {
             const match = src.match(/url\(([^)]+)\)/);
             const url = match ? match[1].replace(/['"]/g, '') : '';
             if (url) {
-              discovered.push({ family: fam, url });
+              discovered.push({family: fam, url});
               seen.add(fam);
             }
           }
@@ -41,26 +45,28 @@ function preloadManagedFonts(): Promise<void> {
     for (const file of fallbackFiles) {
       const fam = file.split('.')[0].replace(/[-_](Regular|Bold|Medium|Light|Italic)$/i, '');
       if (!seen.has(fam)) {
-        discovered.push({ family: fam === 'KIXBarcode' ? 'KIX Barcode' : fam, url: `/managed-fonts/${file}` });
+        discovered.push({family: fam === 'KIXBarcode' ? 'KIX Barcode' : fam, url: `/managed-fonts/${file}`});
         seen.add(fam);
       }
     }
   }
-  const loads = discovered.map(meta => {
+  const loads = discovered.map(async meta => {
     try {
       const face = new FontFace(meta.family, `url(${meta.url})`, meta.descriptors);
-      return face.load().then(f => { (document as any).fonts.add(f); });
-    } catch { return Promise.resolve(); }
+      const f = await face.load();
+      (document as any).fonts.add(f);
+    } catch {
+      return Promise.resolve();
+    }
   });
-  return Promise.all(loads).then(() => void 0);
+  await Promise.all(loads);
+  return void 0;
 }
 
-export const MANAGED_FONTS_PRELOAD_PROVIDER: Provider = {
-  provide: APP_INITIALIZER,
-  multi: true,
-  // Factory waits a tick to allow other preloaders (e.g., A4 styles) to inject @font-face rules
-  useFactory: () => () => new Promise<void>(resolve => {
+export const MANAGED_FONTS_PRELOAD_PROVIDER: EnvironmentProviders = provideAppInitializer(
+  // Wait a tick to allow other preloaders (e.g., A4 styles) to inject @font-face rules
+  () => new Promise<void>(resolve => {
     // Schedule after microtasks so a4-common-styles.css has been loaded & parsed
     setTimeout(() => { preloadManagedFonts().then(resolve).catch(() => resolve()); }, 0);
   })
-};
+);
