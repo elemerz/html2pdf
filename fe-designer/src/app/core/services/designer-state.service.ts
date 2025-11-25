@@ -25,6 +25,16 @@ type BorderSide = 'all' | 'top' | 'right' | 'bottom' | 'left';
 
 export type CanvasZoomMode = 'fit' | 'width' | 'height' | 'actual';
 
+interface RoleGroup {
+  role: string | null;
+  elements: CanvasElement[];
+}
+
+interface TableFlowContext {
+  lastFlowBottom: number;
+  firstFlow: boolean;
+}
+
 /**
  * Central store for designer state, including layout data, history, and export helpers.
  */
@@ -517,101 +527,163 @@ export class DesignerStateService {
     const safeTitle = this.escapeHtml(title || 'Layout');
     const elements = [...this.elementsSignal()];
 
-    // Validate role adjacency before saving
+    // Validate role adjacency before saving. PDF generation assumes grouped roles.
     this.validateRoleAdjacency(elements);
 
-    // Group consecutive elements by role
-    const groups: Array<{ role: string | null; elements: CanvasElement[] }> = [];
-    let currentGroup: { role: string | null; elements: CanvasElement[] } | null = null;
+    const groupedByRole = this.createRoleGroups(elements);
+    const orderedGroups = this.sortGroupsForExport(groupedByRole);
+    const bodyContent = this.buildBodyContent(orderedGroups);
+    const commonStyles = this.prepareExportStyles(elements);
+    const xhtml = this.composeXhtmlDocument(safeTitle, commonStyles, bodyContent);
+
+    return this.applyExportPostProcessing(xhtml);
+  }
+
+  /**
+   * Collapses consecutive elements into role buckets while preserving author intent.
+   * We only merge adjacent elements with the same role so positioning across roles stays intact.
+   */
+  private createRoleGroups(elements: CanvasElement[]): RoleGroup[] {
+    const groups: RoleGroup[] = [];
+    let currentGroup: RoleGroup | null = null;
 
     for (const el of elements) {
       const role = this.resolveElementRole(el);
 
       if (!currentGroup || currentGroup.role !== role) {
-        // Start a new group
         currentGroup = { role, elements: [el] };
         groups.push(currentGroup);
       } else {
-        // Add to current group
         currentGroup.elements.push(el);
       }
     }
 
-    // Reorder main layout tables within each role group by ascending Y coordinate
-    // Only affects relative ordering among tables; non-table elements retain their sequence.
-    for (const group of groups) {
-      group.elements = [...group.elements].sort((a, b) => {
-        if (a.type === 'table' && b.type === 'table') {
-          return a.y - b.y; // ascending top position
-        }
-        return 0; // preserve original order for mixed/non-table comparisons (stable sort)
-      });
-    }
+    return groups;
+  }
 
-    // Generate markup for each group
-    let lastFlowBottom = 0;
-    let firstFlow = true;
+  /**
+   * Enforces export order (header -> footer -> body) and normalizes table order within groups.
+   * Tables are sorted vertically, but non-table items keep their authored sequence.
+   */
+  private sortGroupsForExport(groups: RoleGroup[]): RoleGroup[] {
+    const groupsWithSortedTables = groups.map(group => ({
+      ...group,
+      elements: this.sortTablesInGroup(group.elements)
+    }));
 
-    // Enforce required export order: header, footer, body
-    const roleOrder = ['report-header','report-footer','report-body'];
-    const orderedGroups = [...groups].sort((a,b) => roleOrder.indexOf(a.role || '') - roleOrder.indexOf(b.role || ''));
-    const bodyContent = orderedGroups
-      .map(group => {
-        const groupMarkup: string[] = [];
+    const roleOrder = ['report-header', 'report-footer', 'report-body'];
+    return [...groupsWithSortedTables].sort(
+      (a, b) => roleOrder.indexOf(a.role || '') - roleOrder.indexOf(b.role || '')
+    );
+  }
 
-        for (const el of group.elements) {
-          if (el.type === 'table') {
-            const isFirstFooterElement = group.role === 'report-footer' && groupMarkup.length === 0;
-            let topMargin = firstFlow ? el.y : Math.max(0, el.y - lastFlowBottom);
-            if (isFirstFooterElement) {
-              topMargin = 0;
-            }
-            const leftMargin = el.x;
-            lastFlowBottom = el.y + el.height;
-            firstFlow = false;
-            const tableStyle = [
-              `margin-top:${this.formatMillimeters(topMargin)}mm`,
-              `width:${this.formatMillimeters(el.width)}mm`,
-              `height:${this.formatMillimeters(el.height)}mm`
-            ].join(';') + ';';
+  private sortTablesInGroup(elements: CanvasElement[]): CanvasElement[] {
+    return [...elements].sort((a, b) => {
+      if (a.type === 'table' && b.type === 'table') {
+        return a.y - b.y;
+      }
+      // Preserve authored ordering for non-table comparisons (stable sort keeps sequence).
+      return 0;
+    });
+  }
 
-            const tableHtml = this.serializeTableElement(
-              el,
-              tableStyle,
-              false // Don't include data-role on table, it will be on parent wrapper
-            );
-            groupMarkup.push(tableHtml);
-          } else {
-            const elementHtml = this.serializeElementToXhtml(el);
-            if (elementHtml) {
-              groupMarkup.push(elementHtml);
-            }
-          }
-        }
+  /**
+   * Builds the body markup while maintaining a flowing vertical offset for tables across groups.
+   */
+  private buildBodyContent(groups: RoleGroup[]): string {
+    const flowContext: TableFlowContext = { lastFlowBottom: 0, firstFlow: true };
 
-        if (group.role === 'report-footer' && groupMarkup.length) {
-          groupMarkup[0] = this.ensureMarginTopZero(groupMarkup[0]);
-        }
-
-        // Wrap group in appropriate parent tag based on role
-        const groupContent = groupMarkup.join('\n      ');
-
-        if (group.role === 'report-header') {
-          return `    <header class="hdr-odd">\n      ${groupContent}\n    </header>`;
-        } else if (group.role === 'report-footer') {
-          return `    <footer class="ftr-odd">\n      ${groupContent}\n    </footer>`;
-        } else if (group.role === 'report-body') {
-          return `    <div class="report-body">\n      ${groupContent}\n    </div>`;
-        } else {
-          // No role or unrecognized role - output without wrapper
-          return groupContent ? `    ${groupContent}` : '';
-        }
-      })
+    return groups
+      .map(group => this.renderGroup(group, flowContext))
       .filter(Boolean)
       .join('\n');
+  }
 
+  private renderGroup(group: RoleGroup, flowContext: TableFlowContext): string {
+    const groupMarkup: string[] = [];
+
+    group.elements.forEach((element, index) => {
+      const markup = this.renderElementMarkup(element, group.role, flowContext, index === 0);
+      if (markup) {
+        groupMarkup.push(markup);
+      }
+    });
+
+    if (group.role === 'report-footer' && groupMarkup.length) {
+      groupMarkup[0] = this.ensureMarginTopZero(groupMarkup[0]);
+    }
+
+    const groupContent = groupMarkup.join('\n      ');
+    return this.wrapGroupContent(group.role, groupContent);
+  }
+
+  private renderElementMarkup(
+    element: CanvasElement,
+    role: string | null,
+    flowContext: TableFlowContext,
+    isFirstInGroup: boolean
+  ): string | null {
+    if (element.type === 'table') {
+      return this.renderTableElement(element, role, flowContext, isFirstInGroup);
+    }
+    return this.serializeElementToXhtml(element) || null;
+  }
+
+  private renderTableElement(
+    element: CanvasElement,
+    role: string | null,
+    flowContext: TableFlowContext,
+    isFirstInGroup: boolean
+  ): string {
+    // Preserve printed layout: first table uses absolute Y, subsequent tables offset from the previous bottom.
+    let topMargin = flowContext.firstFlow ? element.y : Math.max(0, element.y - flowContext.lastFlowBottom);
+    if (role === 'report-footer' && isFirstInGroup) {
+      // Footers should hug the page bottom; margins risk pushing them onto a new page.
+      topMargin = 0;
+    }
+
+    flowContext.lastFlowBottom = element.y + element.height;
+    flowContext.firstFlow = false;
+
+    const tableStyle = [
+      `margin-top:${this.formatMillimeters(topMargin)}mm`,
+      `width:${this.formatMillimeters(element.width)}mm`,
+      `height:${this.formatMillimeters(element.height)}mm`
+    ].join(';') + ';';
+
+    return this.serializeTableElement(
+      element,
+      tableStyle,
+      false // Table roles live on the wrapper; avoid duplicating data-role on the table itself.
+    );
+  }
+
+  private wrapGroupContent(role: string | null, groupContent: string): string {
+    if (!groupContent) {
+      return '';
+    }
+
+    if (role === 'report-header') {
+      return `    <header class="hdr-odd">\n      ${groupContent}\n    </header>`;
+    }
+    if (role === 'report-footer') {
+      return `    <footer class="ftr-odd">\n      ${groupContent}\n    </footer>`;
+    }
+    if (role === 'report-body') {
+      return `    <div class="report-body">\n      ${groupContent}\n    </div>`;
+    }
+
+    // No role or unrecognized role - output without wrapper so unknown fragments stay exportable.
+    return groupContent ? `    ${groupContent}` : '';
+  }
+
+  /**
+   * Prepares export styles by injecting dynamic margins derived from layout content.
+   * Header/footer heights contribute to top/bottom margins to avoid overlapping printed content.
+   */
+  private prepareExportStyles(elements: CanvasElement[]): string {
     const headerHeight = this.calculateRoleHeight(elements, 'report-header') + this.pageGutters().top;
-    const footerHeight = this.calculateRoleHeight(elements, 'report-footer')+ this.pageGutters().bottom;
+    const footerHeight = this.calculateRoleHeight(elements, 'report-footer') + this.pageGutters().bottom;
     const leftMargin = 10;
     const rightMargin = 10;
 
@@ -623,31 +695,35 @@ export class DesignerStateService {
     const formattedLeft = `${this.formatMillimeters(leftMargin)}mm`;
     const marginLine = `margin: ${formattedTop} ${formattedRight} ${formattedBottom} ${formattedLeft};`;
 
-    const commonStyles = commonStylesRaw
+    return commonStylesRaw
       .replace(/\/\* MARGINS: __TOP__ __RIGHT__ __BOTTOM__ __LEFT__ \*\//g, marginLine)
       .replace(/margin:\s*0\s*\/\*[^*]*\*\/;/g, marginLine)
       .replace(/__TOP__/g, formattedTop)
       .replace(/__RIGHT__/g, formattedRight)
       .replace(/__BOTTOM__/g, formattedBottom)
       .replace(/__LEFT__/g, formattedLeft);
+  }
 
-    let xhtml = `<html lang="nl" xmlns="http://www.w3.org/1999/xhtml">\n` +
+  private composeXhtmlDocument(title: string, styles: string, bodyContent: string): string {
+    return `<html lang="nl" xmlns="http://www.w3.org/1999/xhtml">\n` +
       `  <head>\n` +
-      `    <title>${safeTitle}</title>\n` +
+      `    <title>${title}</title>\n` +
       `    <style type="text/css" media="all">\n` +
-      `${commonStyles}\n` +
+      `${styles}\n` +
       `    </style>\n` +
       `  </head>\n` +
       `  <body>\n${bodyContent}\n  </body>\n</html>`;
-    // Ensure all <img> tags have explicit closing </img>
-    xhtml = this.ensureImageTagsClosed(xhtml);
-    // Add alt attributes to images for PDF/A compliance
-    xhtml = this.addAltToImages(xhtml);
-    // Add title attributes to links for PDF/A compliance
-    xhtml = this.addTitleToLinks(xhtml);
-    // Transform QR code <img> placeholders into <object type="application/qrcode"> for OpenHTMLtoPDF
-    xhtml = this.transformQrImages(xhtml);
-    return xhtml;
+  }
+
+  /**
+   * Applies XHTML/PDF-A hygiene after composing the document so downstream renderers remain strict-safe.
+   */
+  private applyExportPostProcessing(xhtml: string): string {
+    let processed = this.ensureImageTagsClosed(xhtml);
+    processed = this.addAltToImages(processed);
+    processed = this.addTitleToLinks(processed);
+    processed = this.transformQrImages(processed);
+    return processed;
   }
 
   /**
