@@ -708,7 +708,7 @@ export class DesignerStateService {
     return `<html lang="nl" xmlns="http://www.w3.org/1999/xhtml">\n` +
       `  <head>\n` +
       `    <title>${title}</title>\n` +
-      `    <style type="text/css" media="all">\n` +
+      `    <style media="all">\n` +
       `${styles}\n` +
       `    </style>\n` +
       `  </head>\n` +

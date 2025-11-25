@@ -22,13 +22,7 @@ export class ResourceLoaderService {
     @Optional() @Inject(APP_BASE_HREF) private baseHref?: string,
     @Inject(DOCUMENT) private doc?: Document
   ) {}
-
-  /** Loads a resource as text using caching for repeat requests. */
-  loadResource(relPath: string): Observable<string>;
   loadResource(relPath: string, contentType: 'text'): Observable<string>;
-  loadResource(relPath: string, contentType: 'json'): Observable<unknown>;
-  loadResource(relPath: string, contentType: 'blob'): Observable<Blob>;
-  loadResource(relPath: string, contentType: 'arraybuffer'): Observable<ArrayBuffer>;
   /**
    * Fetches a resource relative to the public assets folder, caching the observable per type.
    */
@@ -61,24 +55,6 @@ export class ResourceLoaderService {
     this.cache.set(key, request$);
     return request$;
   }
-
-  /** Clears the cache for a specific resource+type (or everything if not provided). */
-  clearCache(relPath?: string, contentType?: ContentType): void {
-    if (!relPath) {
-      this.cache.clear();
-      return;
-    }
-    const url = this.resolvePublicUrl(relPath);
-    if (contentType) {
-      this.cache.delete(`${contentType}::${url}`);
-    } else {
-      // Remove all entries for this URL
-      for (const k of Array.from(this.cache.keys())) {
-        if (k.endsWith(`::${url}`)) this.cache.delete(k);
-      }
-    }
-  }
-
   /** Resolves a URL relative to the app's base href so it works under subpaths. */
   private resolvePublicUrl(relPath: string): string {
     // If caller passes "/..." treat it as already rooted at the deploy base

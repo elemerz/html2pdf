@@ -43,20 +43,6 @@ export class DragDropService {
   }
 
   /**
-   * Begins a drag for an existing canvas element so it can be repositioned.
-   */
-  startCanvasDrag(elementId: string, x: number, y: number, offsetX: number = 0, offsetY: number = 0) {
-    this.dragStateSignal.set({
-      isDragging: true,
-      draggedItem: null,
-      ghostPosition: { x, y },
-      dragType: 'canvas',
-      draggedElementId: elementId,
-      pointerOffset: { x: offsetX, y: offsetY }
-    });
-  }
-
-  /**
    * Updates the ghost preview coordinates while dragging.
    */
   updateGhostPosition(x: number, y: number) {
