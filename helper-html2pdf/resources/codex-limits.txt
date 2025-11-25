@@ -1,0 +1,15 @@
+╭─────────────────────────────────────────────────────────────────────────────╮
+│  >_ OpenAI Codex (v0.47.0)                                                  │
+│                                                                             │
+│  Model:            gpt-5-codex (reasoning medium, summaries auto)           │
+│  Directory:        /mnt/c/jde/html2pdf/fe-designer-dragdrop                 │
+│  Approval:         on-request                                               │
+│  Sandbox:          workspace-write                                          │
+│  Agents.md:        AGENTS.md                                                │
+│  Account:          elemer.zagoni@endava.com (Enterprise)                    │
+│  Session:          019a0723-1358-7972-ad95-b6d823fdbf34                     │
+│                                                                             │
+│  Context window:   63% left (107K used / 272K)                              │
+│  5h limit:         [████████████████████] 100% used (resets 19:10)          │
+│  Weekly limit:     [████████░░░░░░░░░░░░] 42% used (resets 07:57 on 27 Oct) │
+╰─────────────────────────────────────────────────────────────────────────────╯

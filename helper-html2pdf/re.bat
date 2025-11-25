@@ -1,5 +1,5 @@
 @ECHO off
-title xhtml2pdf
+title Invoice Processor
 call build.bat
 
 TIMEOUT /T 2
