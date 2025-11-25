@@ -216,6 +216,14 @@ export class CellEditorDialogComponent implements OnInit, OnDestroy {
    */
   onEditorCreated(q: Quill) {
     this.quill = q;
+    const defaultRoboto = this.isContentEmpty();
+    if (defaultRoboto) {
+      try {
+        const rootEl = this.quill.root as HTMLElement;
+        rootEl.style.fontFamily = 'Roboto, sans-serif';
+        this.quill.formatText(0, this.quill.getLength(), 'font', 'roboto', 'silent');
+      } catch {}
+    }
     this.normalizeLogoPlaceholders();
     this.bindLogoPlaceholderSelection();
     // Autofocus editor so user can type immediately (ensure contenteditable root gets focus)
@@ -330,6 +338,13 @@ export class CellEditorDialogComponent implements OnInit, OnDestroy {
         } else if (formatsGroup) {
           // fallback to original insertion method
           fontPicker ? fontPicker.after(spinnerWrapper) : toolbarEl.appendChild(spinnerWrapper);
+        }
+        if (defaultRoboto) {
+          const fontSelect = toolbarEl.querySelector('select.ql-font') as HTMLSelectElement | null;
+          if (fontSelect) {
+            fontSelect.value = 'roboto';
+            fontSelect.dispatchEvent(new Event('change', { bubbles: true }));
+          }
         }
       }
     } catch {}
@@ -942,6 +957,16 @@ export class CellEditorDialogComponent implements OnInit, OnDestroy {
   private quillHtmlToXhtml(html: string): string {
     //replace all <br> instances with their self-closing counterpart: <br/>:
     return html.replaceAll('<br>', '<br/>');
+  }
+
+  private isContentEmpty(): boolean {
+    const html = this.contentValue || this.initialContent || '';
+    const normalized = html
+      .replace(/&nbsp;/gi, ' ')
+      .replace(/<br\s*\/?>/gi, ' ')
+      .replace(/<[^>]*>/g, '')
+      .trim();
+    return normalized.length === 0;
   }
 
   /**
