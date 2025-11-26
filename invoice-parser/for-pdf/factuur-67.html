@@ -12,7 +12,7 @@ html, body {
   size: A4 portrait;
   @top-center    { content: element(hdr-odd); }
   @bottom-center { content: element(ftr-odd); }
-  margin: 50mm 10mm 20mm 10mm;
+  margin: 122mm 10mm 80mm 10mm;
 }
 /* Define the running elements */
 .hdr-odd  { position: running(hdr-odd);}
@@ -71,29 +71,128 @@ table {
   </head>
   <body>
     <header class="hdr-odd">
-      <table class="element element-table" style="margin-top:10mm;width:190mm;height:40mm;">
+      <table id="DebugLine" class="element element-table" style="margin-top:10mm;width:190mm;height:9mm;">
     <tbody>
-      <tr style="height:40mm;">
-        <td style="width:190mm;height:40mm;padding:0mm 0mm 0mm 0mm;text-align:left;vertical-align:top;border-top:none;border-right:none;border-bottom:none;border-left:none;font-style:normal;font-weight:normal;font-size:9pt;line-height:1;font-family:Roboto, sans-serif;text-decoration:none;"><p><span style="font-family:Roboto, sans-serif;">${debiteur.invoiceNumber}</span></p></td>
+      <tr style="height:9mm;">
+        <td style="width:190mm;height:9mm;padding:0mm 0mm 0mm 82mm;text-align:left;vertical-align:top;border-top:none;border-right:none;border-bottom:none;border-left:none;font-style:normal;font-weight:normal;font-size:9pt;line-height:1;font-family:Roboto, sans-serif;text-decoration:none;"><p><span style="font-size: 9pt; font-family: Roboto, sans-serif; color: rgb(0, 138, 0);">Factuurtype: 67</span></p><p><span style="font-size: 9pt; font-family: Roboto, sans-serif; color: rgb(0, 138, 0);">Customer in run:67</span></p></td>
+      </tr>
+    </tbody>
+  </table>
+      <table id="CompanyLogo" class="element element-table" style="margin-top:0mm;width:190mm;height:19mm;">
+    <tbody>
+      <tr style="height:19mm;">
+        <td style="width:190mm;height:19mm;padding:0mm 0mm 0mm 0mm;text-align:left;vertical-align:top;border-top:none;border-right:none;border-bottom:none;border-left:none;font-style:normal;font-weight:normal;font-size:9pt;line-height:1;font-family:Roboto, sans-serif;text-decoration:none;"><p><img src="data:image/png;base64,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" alt="image"></img></p></td>
+      </tr>
+    </tbody>
+  </table>
+      <table id="AddresseAndDoctor" class="element element-table" style="margin-top:0mm;width:190mm;height:30mm;">
+    <tbody>
+      <tr style="height:30mm;">
+        <td style="width:112.23mm;height:30mm;padding:17mm 0mm 0mm 18mm;text-align:left;vertical-align:top;border-top:none;border-right:none;border-bottom:none;border-left:none;font-style:normal;font-weight:normal;font-size:9pt;line-height:1;font-family:Roboto, sans-serif;text-decoration:none;"><p><span style="font-family: Arial, Helvetica, sans-serif; font-size: 9pt;">${debiteur.patientName}</span></p><p><span style="font-size: 9pt; font-family: Arial, Helvetica, sans-serif;">${debiteur.street} ${debiteur.houseNr}</span></p><p><span style="font-size: 9pt; font-family: Arial, Helvetica, sans-serif;">${debiteur.zipCode} ${debiteur.city}</span></p></td>
+        <td style="width:61.538mm;height:30mm;padding:0mm 0mm 0mm 0mm;text-align:left;vertical-align:top;border-top:none;border-right:none;border-bottom:none;border-left:none;font-style:normal;font-weight:normal;font-size:9pt;line-height:1;font-family:Roboto, sans-serif;text-decoration:none;"><p><strong style="font-family: Arial, Helvetica, sans-serif;"> ${debiteur.hcpName}</strong></p><p><span style="font-size: 9pt; font-family: Roboto, sans-serif;">${debiteur.hcpStreet} ${debiteur.hcpHouseNr}</span></p><p><span style="font-size: 9pt; font-family: Roboto, sans-serif;">${debiteur.hcpZipCode} ${debiteur.hcpCity}</span></p><p><span style="font-size: 9pt; font-family: Roboto, sans-serif;">AGB-Code Praktijk/Instelling:</span></p><p><span style="font-size: 9pt; font-family: Roboto, sans-serif;">AGB-Code zorgaanbieder:</span></p></td>
+        <td style="width:16.232mm;height:30mm;padding:0mm 0mm 0mm 0mm;text-align:right;vertical-align:top;border-top:none;border-right:none;border-bottom:none;border-left:none;font-style:normal;font-weight:normal;font-size:9pt;line-height:1;font-family:Roboto, sans-serif;text-decoration:none;"><p><br/></p><p><br/></p><p><br/></p><p><span style="font-family: Arial, Helvetica, sans-serif;">${debiteur.practiceAgb}</span></p><p><span style="font-family: Arial, Helvetica, sans-serif;">${debiteur.hcpAgb}</span></p></td>
+      </tr>
+    </tbody>
+  </table>
+      <table id="KixPostCode" class="element element-table" style="margin-top:0mm;width:190mm;height:21mm;">
+    <tbody>
+      <tr style="height:21mm;">
+        <td style="width:190mm;height:21mm;padding:0mm 0mm 0mm 18mm;text-align:left;vertical-align:top;border-top:none;border-right:none;border-bottom:none;border-left:none;font-style:normal;font-weight:normal;font-size:9pt;line-height:1;font-family:Roboto, sans-serif;text-decoration:none;"><p><span style="font-family: &quot;KIX Barcode&quot;;">${debiteur.zipCode}${debiteur.houseNr}</span></p></td>
+      </tr>
+    </tbody>
+  </table>
+      <table id="InvoiceAndPatient" class="element element-table" style="margin-top:0mm;width:190mm;height:13mm;">
+    <tbody>
+      <tr style="height:13mm;">
+        <td style="width:37.642mm;height:13mm;padding:0mm 0mm 0mm 0mm;text-align:left;vertical-align:top;border-top:none;border-right:none;border-bottom:none;border-left:none;font-style:normal;font-weight:normal;font-size:9pt;line-height:1;font-family:Roboto, sans-serif;text-decoration:none;"><p><strong style="font-size: 13pt;">REKENING</strong></p><p><span style="font-size: 9pt; font-family: Roboto, sans-serif;">Betalingskenmerk:</span></p><p><span style="font-size: 9pt; font-family: Roboto, sans-serif;">Datum:</span></p></td>
+        <td style="width:74.884mm;height:13mm;padding:0mm 0mm 0mm 0mm;text-align:left;vertical-align:top;border-top:none;border-right:none;border-bottom:none;border-left:none;font-style:normal;font-weight:normal;font-size:9pt;line-height:1;font-family:Roboto, sans-serif;text-decoration:none;"><table style="width:100%;height:100%;border-collapse:collapse;">
+      <tbody>
+        <tr style="height:5.021mm;">
+          <td style="width:74.884mm;height:5.021mm;padding:0mm 0mm 0mm 0mm;text-align:left;vertical-align:top;border-top:none;border-right:none;border-bottom:none;border-left:none;font-style:normal;font-weight:normal;font-size:9pt;line-height:1;font-family:Roboto, sans-serif;text-decoration:none;">&#160;</td>
+        </tr>
+        <tr style="height:7.979mm;">
+          <td style="width:74.884mm;height:7.979mm;padding:0mm 0mm 0mm 0mm;text-align:left;vertical-align:top;border-top:none;border-right:none;border-bottom:none;border-left:none;font-style:normal;font-weight:normal;font-size:9pt;line-height:1;font-family:Roboto, sans-serif;text-decoration:none;"><p>${debiteur.invoiceNumber}</p><p><span style="font-family: Arial, Helvetica, sans-serif;">${debiteur.printDate}</span></p></td>
+        </tr>
+      </tbody>
+    </table></td>
+        <td style="width:32.165mm;height:13mm;padding:0mm 0mm 0mm 0mm;text-align:left;vertical-align:top;border-top:none;border-right:none;border-bottom:none;border-left:none;font-style:normal;font-weight:normal;font-size:9pt;line-height:1;font-family:Roboto, sans-serif;text-decoration:none;"><p><strong style="font-size: 9pt;">Patiëntgegevens</strong></p><p><span style="font-family: Roboto, sans-serif; font-size: 9pt;">Naam:</span></p><p><span style="font-family: Roboto, sans-serif; font-size: 9pt;">Geb.datum:</span></p><p><span style="font-family: Roboto, sans-serif; font-size: 9pt;">BSN:</span></p></td>
+        <td style="width:45.309mm;height:13mm;padding:0mm 0mm 0mm 0mm;text-align:right;vertical-align:top;border-top:none;border-right:none;border-bottom:1px solid #000000;border-left:none;font-style:normal;font-weight:normal;font-size:9pt;line-height:1;font-family:Roboto, sans-serif;text-decoration:none;"><p><br/></p><p><span style="font-family: Roboto, sans-serif;">${debiteur.patientName}</span></p><p><span style="font-family: Roboto, sans-serif;">${debiteur.patientDob}</span></p></td>
+      </tr>
+    </tbody>
+  </table>
+      <table id="InvoiceAndPatientSuf" class="element element-table" style="margin-top:0mm;width:190mm;height:20mm;">
+    <tbody>
+      <tr style="height:20mm;">
+        <td style="width:112.8mm;height:20mm;padding:0mm 0mm 0mm 0mm;text-align:left;vertical-align:top;border-top:none;border-right:none;border-bottom:none;border-left:none;font-style:normal;font-weight:normal;font-size:9pt;line-height:1;font-family:Roboto, sans-serif;text-decoration:none;">&#160;</td>
+        <td style="width:77.2mm;height:20mm;padding:0mm 0mm 0mm 0mm;text-align:left;vertical-align:top;border-top:none;border-right:none;border-bottom:none;border-left:none;font-style:normal;font-weight:normal;font-size:9pt;line-height:1;font-family:Roboto, sans-serif;text-decoration:none;"><p><span style="font-size: 8pt;">(invullen voor declaratie bij uw zorgverzekeraar)</span></p></td>
       </tr>
     </tbody>
   </table>
     </header>
     <footer class="ftr-odd">
-      <table class="element element-table" style="margin-top:0;width:190mm;height:10mm;">
+      <table class="element element-table" style="margin-top:0;width:190mm;height:9mm;">
     <tbody>
-      <tr style="height:10mm;">
-        <td style="width:190mm;height:10mm;padding:0mm 0mm 0mm 0mm;text-align:left;vertical-align:bottom;border-top:none;border-right:none;border-bottom:none;border-left:none;font-style:normal;font-weight:normal;font-size:9pt;line-height:1;font-family:Roboto, sans-serif;text-decoration:none;"><p><span style="font-family: Roboto, sans-serif; font-size: 12pt; color: rgb(0, 138, 0);">© </span><span style="font-family: Roboto, sans-serif; font-size: 12pt; color: rgb(230, 0, 0);">Infomedics B.V.</span></p></td>
+      <tr style="height:9mm;">
+        <td style="width:190mm;height:9mm;padding:0mm 0mm 0mm 0mm;text-align:left;vertical-align:top;border-top:none;border-right:none;border-bottom:none;border-left:none;font-style:normal;font-weight:normal;font-size:9pt;line-height:1;font-family:Roboto, sans-serif;text-decoration:none;"><p><span style="font-family: Roboto, sans-serif; font-size: 9pt;">Wij vragen u vriendelijk het bedrag binnen 30 dagen aan ons over te maken. Hieronder treft u de betaalgegevens aan.</span></p><p><span style="font-family: Roboto, sans-serif; font-size: 9pt;">Vermeld bij uw betaling altijd het betalingskenmerk.</span></p></td>
+      </tr>
+    </tbody>
+  </table>
+      <table id="PaymentFooter" class="element element-table" style="margin-top:0mm;width:190mm;height:24mm;">
+    <tbody>
+      <tr style="height:24mm;">
+        <td style="width:190mm;height:24mm;padding:0mm 0mm 0mm 0mm;text-align:left;vertical-align:top;border-top:1px solid #000000;border-right:1px solid #000000;border-bottom:1px solid #000000;border-left:1px solid #000000;font-style:normal;font-weight:normal;font-size:9pt;line-height:0.95;font-family:Roboto, sans-serif;text-decoration:none;"><table style="width:100%;height:100%;border-collapse:collapse;">
+      <tbody>
+        <tr style="height:24mm;">
+          <td style="width:38.966mm;height:24mm;padding:1mm 1mm 1mm 0mm;text-align:left;vertical-align:top;border-top:none;border-right:none;border-bottom:none;border-left:none;font-style:normal;font-weight:normal;font-size:9pt;line-height:1;font-family:Roboto, sans-serif;text-decoration:none;"><p><strong style="font-size: 9pt;">Betaalgegevens</strong><span style="font-family: Roboto, sans-serif; font-size: 9pt;">:</span></p><p><span style="font-family: Roboto, sans-serif; font-size: 9pt;">Bedrag:</span></p><p><span style="font-family: Roboto, sans-serif; font-size: 9pt;">Betalingskenmerk:</span></p><p><span style="font-family: Roboto, sans-serif; font-size: 9pt;">Vervaldatum:</span></p><p><br/></p><p><span style="font-family: Roboto, sans-serif; font-size: 9pt;">Ten name van:</span></p><p><span style="font-family: Roboto, sans-serif; font-size: 9pt;">IBAN:</span></p></td>
+          <td style="width:53.013mm;height:24mm;padding:1mm 1mm 1mm 0mm;text-align:left;vertical-align:top;border-top:none;border-right:none;border-bottom:none;border-left:none;font-style:normal;font-weight:normal;font-size:9pt;line-height:1;font-family:Roboto, sans-serif;text-decoration:none;"><p><br/></p><p><strong style="font-size: 9pt;">€</strong><span style="font-size: 9pt;"> ${debiteur.openImfCents}</span></p><p>${debiteur.invoiceNumber}</p><p>${debiteur<span style="font-family: Arial, Helvetica, sans-serif;">.firstExpirationDate</span>}</p><p><br/></p><p><span style="font-size: 9pt; font-family: Roboto, sans-serif;">Infomedics B.V.</span></p><p><span style="font-size: 9pt; font-family: Roboto, sans-serif;">NL34 ABNA 0243 2400 58</span></p></td>
+          <td style="width:73.609mm;height:24mm;padding:1mm 1mm 1mm 0mm;text-align:left;vertical-align:top;border-top:none;border-right:none;border-bottom:none;border-left:none;font-style:normal;font-weight:normal;font-size:9pt;line-height:1;font-family:Roboto, sans-serif;text-decoration:none;"><p><strong style="font-size: 9pt; font-family: Roboto, sans-serif;">Direct betalen?</strong></p><p><span style="font-size: 9pt; font-family: Roboto, sans-serif;">Betaal veilig online met iDEAL. Dan verwerken</span></p><p><span style="font-size: 9pt; font-family: Roboto, sans-serif;">we uw betaling het snelst.</span></p><p><span style="font-size: 9pt; font-family: Roboto, sans-serif;">•  Scan de code met de camera van uw</span></p><p><span style="font-size: 9pt; font-family: Roboto, sans-serif;">   telefoon of tablet.</span></p><p><span style="font-size: 9pt; font-family: Roboto, sans-serif;">•  Of ga naar www.infomedics.nl en vul het</span></p><p><span style="font-size: 9pt; font-family: Roboto, sans-serif;">   betalingskenmerk in.</span></p></td>
+          <td style="width:24.412mm;height:24mm;padding:1mm 1mm 1mm 0mm;text-align:right;vertical-align:middle;border-top:none;border-right:none;border-bottom:none;border-left:none;font-style:normal;font-weight:normal;font-size:9pt;line-height:1;font-family:Roboto, sans-serif;text-decoration:none;"><p><object type="application/qrcode" data="https://rekening.infomedics.nl/Invoice?invoiceNumber=${debiteur.invoiceNumber}" width="71" height="71" data-ec-level="M" data-margin="2" /></p><p><br/></p></td>
+        </tr>
+      </tbody>
+    </table></td>
+      </tr>
+    </tbody>
+  </table>
+      <table id="InfomedicsFoot" class="element element-table" style="margin-top:2mm;width:190mm;height:23mm;">
+    <tbody>
+      <tr style="height:23mm;">
+        <td style="width:27.509mm;height:23mm;padding:0mm 0mm 0mm 0mm;text-align:left;vertical-align:bottom;border-top:none;border-right:none;border-bottom:none;border-left:none;font-style:normal;font-weight:normal;font-size:9pt;line-height:1.3;font-family:Roboto, sans-serif;text-decoration:none;"><p><strong style="font-size: 8.5pt;">Infomedics B.V.</strong></p><p><span style="font-size: 8.5pt;">Postbus 60108</span></p><p><span style="font-size: 8.5pt;">1320 AC Almere</span></p></td>
+        <td style="width:48.048mm;height:23mm;padding:0mm 0mm 0mm 0mm;text-align:left;vertical-align:bottom;border-top:none;border-right:none;border-bottom:none;border-left:none;font-style:normal;font-weight:normal;font-size:9pt;line-height:1.3;font-family:Roboto, sans-serif;text-decoration:none;"><p><span style="font-family: Roboto, sans-serif; font-size: 8.5pt;">036 – 20 31 900</span></p><p><span style="font-family: Roboto, sans-serif; font-size: 8.5pt;">ma t/m vr van 9.00 – 17.00 uu</span></p></td>
+        <td style="width:44.214mm;height:23mm;padding:0mm 0mm 0mm 0mm;text-align:left;vertical-align:bottom;border-top:none;border-right:none;border-bottom:none;border-left:none;font-style:normal;font-weight:normal;font-size:9pt;line-height:1.3;font-family:Roboto, sans-serif;text-decoration:none;"><p><span style="font-family: Roboto, sans-serif; font-size: 8.5pt;">AGB-code: 98098705</span></p><p><span style="font-family: Roboto, sans-serif; font-size: 8.5pt;">IBAN: NL34 ABNA 0243 2400 5</span></p></td>
+        <td style="width:70.229mm;height:23mm;padding:0mm 0mm 0mm 0mm;text-align:left;vertical-align:bottom;border-top:none;border-right:none;border-bottom:none;border-left:none;font-style:normal;font-weight:normal;font-size:9pt;line-height:1.3;font-family:Roboto, sans-serif;text-decoration:none;"><p><span style="font-family: Roboto, sans-serif; font-size: 8.5pt;">KvK nr: 04048143</span></p><p><span style="font-family: Roboto, sans-serif; font-size: 8.5pt;">BTW nr: NL8035.98.130.B.01</span></p></td>
+      </tr>
+    </tbody>
+  </table>
+      <table id="FooterIso" class="element element-table" style="margin-top:0mm;width:190mm;height:12mm;">
+    <tbody>
+      <tr style="height:12mm;">
+        <td style="width:119.471mm;height:12mm;padding:0mm 0mm 1mm 0mm;text-align:left;vertical-align:bottom;border-top:none;border-right:none;border-bottom:none;border-left:none;font-style:normal;font-weight:normal;font-size:9pt;line-height:1;font-family:Roboto, sans-serif;text-decoration:none;"><p><span style="font-size: 6.5pt;">Uw zorgaanbieder heeft Infomedics B.V. de opdracht gegeven om de vordering op u te innen. Tegelijkertijd heeft uw</span></p><p><span style="font-size: 6.5pt;">zorgaanbieder het eigendom van die vordering overgedragen aan Infomedics Finance B.V. (gecedeerd).</span></p></td>
+        <td style="width:36.77mm;height:12mm;padding:0mm 0mm 1mm 0mm;text-align:left;vertical-align:bottom;border-top:none;border-right:none;border-bottom:none;border-left:none;font-style:normal;font-weight:normal;font-size:9pt;line-height:1;font-family:Roboto, sans-serif;text-decoration:none;"><p><a href="www.infomedics.nl" rel="noopener noreferrer" target="_blank" style="color: rgb(0, 102, 204); font-size: 8pt;" title="www.infomedics.nl">www.infomedics.nl</a></p></td>
+        <td style="width:33.758mm;height:12mm;padding:0mm 0mm 0mm 0mm;text-align:left;vertical-align:top;border-top:none;border-right:none;border-bottom:none;border-left:none;font-style:normal;font-weight:normal;font-size:9pt;line-height:1;font-family:Roboto, sans-serif;text-decoration:none;"><p><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAHkAAAAoBAMAAAAoBkgoAAAABGdBTUEAALGPC/xhBQAAAAFzUkdCAK7OHOkAAAGHaVRYdFhNTDpjb20uYWRvYmUueG1wAAAAAAA8P3hwYWNrZXQgYmVnaW49J++7vycgaWQ9J1c1TTBNcENlaGlIenJlU3pOVGN6a2M5ZCc/Pg0KPHg6eG1wbWV0YSB4bWxuczp4PSJhZG9iZTpuczptZXRhLyI+PHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj48cmRmOkRlc2NyaXB0aW9uIHJkZjphYm91dD0idXVpZDpmYWY1YmRkNS1iYTNkLTExZGEtYWQzMS1kMzNkNzUxODJmMWIiIHhtbG5zOnRpZmY9Imh0dHA6Ly9ucy5hZG9iZS5jb20vdGlmZi8xLjAvIj48dGlmZjpPcmllbnRhdGlvbj4xPC90aWZmOk9yaWVudGF0aW9uPjwvcmRmOkRlc2NyaXB0aW9uPjwvcmRmOlJERj48L3g6eG1wbWV0YT4NCjw/eHBhY2tldCBlbmQ9J3cnPz4slJgLAAAACXBIWXMAABYlAAAWJQFJUiTwAAAAKlBMVEX////m6e25wM04TXB9i6JUZoTV2uH29/miq7vv8PNtfJaOmq7GzNaHk6n+mamxAAADW0lEQVRIx83Wz0/TUBwA8O+2rlvh0jFgbuEA7dCFaML2gMzJYawbQbnwYwOil+IYGLxsLIghHsCJCqdiIB70IEyMxssMCTHIYRfjwX/KV/reKz56w4Mv6eWbftLv971vvy3sBrgVAoAKHwzgoMshmOXXIb6xlw9qOOjlgzkZ0sCtNnwpfNCDL4EPuq+uFzZgj2UzRnRrGvx2joalxVEQ7aB+rodHIYjoGiD67DcILIhkSz/uMNx2sNvUUv7QQWdzDrovJ/PaF65gPaWhTGza1ksi1kkVJZRjW4d2y2400IuSyhbVrmgb1mkVdYOvxnSmHeu4B/UDFJnuyeBnJ3AcIEI1SlgaobSXaW3A0gjNuJlWkaURSko0c6WH6sFdps27LY30aarNU7I0aqhk12yNuqepRojpCZXqKmI6XqV1A9NN9uyRbgfdk2b6dpDowijLHJi+l2daPmYnljdY5kSb1RAdFx3qToJD3YNQIxqfyrmeUox9xNedVHQB8XWnlF8iPbHNkKWH4JrdLSMBS6fgzTTTNwOWHjREjeo8rduoX+jULMl8Q73QqVlS98Q+6/OmRPTsqq1fiUQP+W097ytbOiWyPi/MEJ2SbL3zke6aXGe6VCD6PCMr8+w3uucbRabHpqg2MyI6Nke1mRHfqQk/07udVJsZEV0JUG1mdPEdw2O0C+kae8eCpjbHaL1R/Psdk3CwNuulvWZOh4OAqWdKVOfqWA+bY7eejLA9L2CdNIO1VBfplvklh9ky3+kwW550Aj9boHHdQd9456BXhMv6xYyDjnx10C258iVdMRzmuUt2mOdS6F9/Da6o3+vQBNBhDdZ8MtGG5AqvuXjt84FeMQzfBd0//ql0CutHwpGQ8/TTTm3vGOv1yNpQ/W7efYdoz4OWDS22OLr8cHL2dZFqOeNvBItBb8kboFpbiITUPhlmh4yod5V8xzyfX57U+krgb87dylaJ3otj3aoVhWVbj+c7emL3ZbERnYh6BHJinq32k2Js8ay0uD35IyhbenPqtNQUf1ZLweKzOJ0t+UhYUWX/UuzDzvpWmdStS358wHrlbdlYq5QtvdVwH8DTL67v4slelujtRyvXFwWj1YiFs0the8+l/+e8Mwq3nuN4lA+q5l8PH4zKcKU/rj/MwjHpu5niygAAAABJRU5ErkJggg==" alt="image"></img></p></td>
       </tr>
     </tbody>
   </table>
     </footer>
     <div class="report-body">
-      <table class="element element-table" style="margin-top:0mm;width:190mm;height:40mm;">
+      <table id="InvoiceLines" class="element element-table" style="margin-top:0mm;width:190mm;height:19mm;">
     <tbody>
-      <tr data-repeat-over="treatments" data-repeat-var="tmt" style="height:40mm;">
-        <td style="width:95mm;height:40mm;padding:0mm 0mm 0mm 0mm;text-align:left;vertical-align:top;border-top:none;border-right:none;border-bottom:none;border-left:none;font-style:normal;font-weight:normal;font-size:9pt;line-height:1;font-family:Roboto, sans-serif;text-decoration:none;"><p><span style="font-family:Roboto, sans-serif;">${tmt.date}</span></p></td>
-        <td style="width:95mm;height:40mm;padding:0mm 0mm 0mm 0mm;text-align:left;vertical-align:top;border-top:none;border-right:none;border-bottom:none;border-left:none;font-style:normal;font-weight:normal;font-size:9pt;line-height:1;font-family:Roboto, sans-serif;text-decoration:none;"><p><span style="font-family:Roboto, sans-serif;">${tmt.treatmentCode}</span></p></td>
+      <tr style="height:4.44mm;">
+        <td style="width:37.642mm;height:4.44mm;padding:0mm 0mm 1mm 0mm;text-align:left;vertical-align:top;border-top:none;border-right:none;border-bottom:1px solid #000000;border-left:none;font-style:normal;font-weight:normal;font-size:9pt;line-height:1;font-family:Roboto, sans-serif;text-decoration:none;"><p><strong style="font-family: Roboto, sans-serif; font-size: 8pt;">Behandelingsdatum</strong></p></td>
+        <td style="width:127.462mm;height:4.44mm;padding:0mm 0mm 1mm 0mm;text-align:left;vertical-align:top;border-top:none;border-right:none;border-bottom:1px solid #000000;border-left:none;font-style:normal;font-weight:normal;font-size:9pt;line-height:1;font-family:Roboto, sans-serif;text-decoration:none;"><p><strong style="font-size: 8pt; font-family: Roboto, sans-serif;">Omschrijving</strong></p></td>
+        <td style="width:5.876mm;height:4.44mm;padding:0mm 0mm 1mm 0mm;text-align:left;vertical-align:top;border-top:none;border-right:none;border-bottom:1px solid #000000;border-left:none;font-style:normal;font-weight:normal;font-size:9pt;line-height:1;font-family:Roboto, sans-serif;text-decoration:none;">&#160;</td>
+        <td style="width:19.02mm;height:4.44mm;padding:0mm 0mm 1mm 0mm;text-align:right;vertical-align:top;border-top:none;border-right:none;border-bottom:1px solid #000000;border-left:none;font-style:normal;font-weight:normal;font-size:9pt;line-height:1;font-family:Roboto, sans-serif;text-decoration:none;"><p><strong style="font-family: Roboto, sans-serif; font-size: 8pt;">Bedrag</strong></p></td>
+      </tr>
+      <tr data-repeat-over="treatments" data-repeat-var="t" style="height:9.109mm;">
+        <td style="width:37.642mm;height:9.109mm;padding:1mm 0mm 1mm 0mm;text-align:left;vertical-align:top;border-top:none;border-right:none;border-bottom:1px solid #000000;border-left:none;font-style:normal;font-weight:normal;font-size:9pt;line-height:1;font-family:Roboto, sans-serif;text-decoration:none;"><p><span style="font-size: 8pt; font-family: Roboto, sans-serif;">${t.date}</span></p><p><span style="font-size: 8pt;">Behandelaar: ${</span><span style="font-size: 8pt; font-family: Arial, Helvetica, sans-serif;">t.treatmentProvider</span><span style="font-size: 8pt;">}</span><span style="font-size: 8pt; font-family: Arial, Helvetica, sans-serif;"> </span></p></td>
+        <td style="width:127.462mm;height:9.109mm;padding:1mm 0mm 1mm 0mm;text-align:left;vertical-align:top;border-top:none;border-right:none;border-bottom:1px solid #000000;border-left:none;font-style:normal;font-weight:normal;font-size:9pt;line-height:1;font-family:Roboto, sans-serif;text-decoration:none;"><p><span style="font-family: Arial, Helvetica, sans-serif;">${t.treatmentCode} </span>${t.description}</p><p>${<span style="font-family: Arial, Helvetica, sans-serif;">t.vatIndicator</span>}<span style="font-family: Arial, Helvetica, sans-serif;"> %BTW</span></p></td>
+        <td style="width:5.876mm;height:9.109mm;padding:1mm 0mm 1mm 0mm;text-align:left;vertical-align:top;border-top:none;border-right:none;border-bottom:1px solid #000000;border-left:none;font-style:normal;font-weight:normal;font-size:9pt;line-height:1;font-family:Roboto, sans-serif;text-decoration:none;"><p><span style="font-size: 8pt;">€</span></p></td>
+        <td style="width:19.02mm;height:9.109mm;padding:1mm 0mm 1mm 0mm;text-align:right;vertical-align:top;border-top:none;border-right:none;border-bottom:1px solid #000000;border-left:none;font-style:normal;font-weight:normal;font-size:9pt;line-height:1;font-family:Roboto, sans-serif;text-decoration:none;"><p>${t.amountCents}</p><p><span style="font-family: Arial, Helvetica, sans-serif;">${t.vatValueCents}</span></p></td>
+      </tr>
+      <tr style="height:5.451mm;">
+        <td style="width:37.642mm;height:5.451mm;padding:0mm 0mm 0mm 0mm;text-align:left;vertical-align:top;border-top:none;border-right:none;border-bottom:none;border-left:none;font-style:normal;font-weight:normal;font-size:9pt;line-height:1;font-family:Roboto, sans-serif;text-decoration:none;">&#160;</td>
+        <td style="width:127.462mm;height:5.451mm;padding:0mm 0mm 0mm 74mm;text-align:left;vertical-align:top;border-top:none;border-right:none;border-bottom:none;border-left:none;font-style:normal;font-weight:normal;font-size:9pt;line-height:1;font-family:Roboto, sans-serif;text-decoration:none;"><p><strong style="font-family: Roboto, sans-serif; font-size: 8pt;">Totaal</strong></p></td>
+        <td style="width:5.876mm;height:5.451mm;padding:0mm 0mm 0mm 0mm;text-align:left;vertical-align:top;border-top:none;border-right:none;border-bottom:none;border-left:none;font-style:normal;font-weight:normal;font-size:9pt;line-height:1;font-family:Roboto, sans-serif;text-decoration:none;"><p><span style="font-size: 8pt; font-family: Roboto, sans-serif;">€</span></p></td>
+        <td style="width:19.02mm;height:5.451mm;padding:0mm 0mm 0mm 0mm;text-align:right;vertical-align:top;border-top:none;border-right:none;border-bottom:none;border-left:none;font-style:normal;font-weight:normal;font-size:9pt;line-height:1;font-family:Roboto, sans-serif;text-decoration:none;"><p><span style="font-family: Arial, Helvetica, sans-serif;">${debiteur.invoiceAmountCents}</span></p></td>
       </tr>
     </tbody>
   </table>
