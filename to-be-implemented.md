@@ -4,6 +4,7 @@
 - Add Logo Image Management
   - Support optimization for png and svg images to minimize throughput
 - Add Custom Font Management
+- Add preview functionality
 - Add nested template repetition support
 - Add Unit Tests
 - Add Integration Tests
