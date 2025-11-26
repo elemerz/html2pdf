@@ -4,8 +4,10 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
 import java.util.stream.Collectors;
 
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -41,12 +43,15 @@ import nl.infomedics.reporting.service.Html2PdfConverterService.PdfConversionRes
 public class HtmlToPdfController {
 
     private final Html2PdfConverterService converterService;
+    private final ExecutorService pdfConversionExecutor;
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper()
             .registerModule(new com.fasterxml.jackson.datatype.jsr310.JavaTimeModule())
             .disable(com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
 
-    public HtmlToPdfController(Html2PdfConverterService converterService) {
+    public HtmlToPdfController(Html2PdfConverterService converterService,
+                               @Qualifier("pdfConversionExecutor") ExecutorService pdfConversionExecutor) {
         this.converterService = converterService;
+        this.pdfConversionExecutor = pdfConversionExecutor;
     }
 
     @PostMapping(
@@ -58,7 +63,9 @@ public class HtmlToPdfController {
         // debug: batch conversion items=" + request.items().size()
         
         List<CompletableFuture<BatchConversionResultItem>> futures = request.items().stream()
-                .map(item -> CompletableFuture.supplyAsync(() -> convertSingleItem(request.html(), request.includeSanitisedXhtml(), item)))
+                .map(item -> CompletableFuture.supplyAsync(
+                        () -> convertSingleItem(request.html(), request.includeSanitisedXhtml(), item),
+                        pdfConversionExecutor))
                 .collect(Collectors.toList());
         
         List<BatchConversionResultItem> results = futures.stream()

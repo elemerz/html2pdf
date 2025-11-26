@@ -20,7 +20,8 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Configures embedded Tomcat and MVC async handling to leverage virtual threads.
+ * Configures embedded Tomcat and MVC async handling to leverage virtual threads,
+ * and provides a bounded platform-thread executor for heavy PDF conversions.
  */
 @Slf4j
 @Configuration
@@ -56,6 +57,20 @@ public class ServerPerformanceConfiguration implements WebMvcConfigurer {
     public void configureAsyncSupport(AsyncSupportConfigurer configurer) {
         configurer.setDefaultTimeout(DEFAULT_ASYNC_TIMEOUT.toMillis());
         configurer.setTaskExecutor(virtualTaskExecutor);
+    }
+
+    /**
+     * Bounded platform-thread pool sized to available processors for CPU-heavy PDF conversions.
+     */
+    @Bean(name = "pdfConversionExecutor", destroyMethod = "shutdown")
+    public ExecutorService pdfConversionExecutor() {
+        int cores = Math.max(1, Runtime.getRuntime().availableProcessors());
+        return Executors.newFixedThreadPool(cores, r -> {
+            Thread t = new Thread(r);
+            t.setName("pdf-convert-" + t.threadId());
+            t.setDaemon(true);
+            return t;
+        });
     }
 
     @Bean
