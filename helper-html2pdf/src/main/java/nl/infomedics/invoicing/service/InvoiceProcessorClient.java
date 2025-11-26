@@ -8,7 +8,6 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Base64;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ExecutorService;
@@ -114,11 +113,11 @@ public class InvoiceProcessorClient {
                 if (resultItem.error() != null && !resultItem.error().isBlank()) {
                     throw new PdfConversionException("Remote service reported an error: " + resultItem.error());
                 }
-                if (resultItem.pdfBase64() == null || resultItem.pdfBase64().isBlank()) {
+                if (resultItem.pdfContent() == null || resultItem.pdfContent().length == 0) {
                     throw new PdfConversionException("Remote service returned an empty PDF payload.");
                 }
-                byte[] pdfBytes = Base64.getDecoder().decode(resultItem.pdfBase64());
-                return new PdfConversionResult(pdfBytes, resultItem.sanitisedXhtml());
+                byte[] pdfBytes = resultItem.pdfContent();
+                return new PdfConversionResult(pdfBytes, null);
             } catch (InterruptedException ie) {
                 Thread.currentThread().interrupt();
                 throw new PdfConversionException("Interrupted while waiting for remote conversion", ie);
@@ -155,7 +154,7 @@ public class InvoiceProcessorClient {
 
     public record BatchConversionResponse(List<BatchConversionResultItem> results, Instant generatedAt) { }
 
-    public record BatchConversionResultItem(String outputId, String pdfBase64, String sanitisedXhtml, String error) { }
+    public record BatchConversionResultItem(String outputId, byte[] pdfContent, String error) { }
 
     public static class PdfConversionException extends Exception {
         private static final long serialVersionUID = 312139412231131757L;

@@ -2,7 +2,6 @@ package nl.infomedics.xhtml2pdf.web;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
-import java.util.Base64;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
@@ -91,9 +90,8 @@ public class HtmlToPdfController {
 //            log.info("\n\nsharedHtml =\n\n {}", sharedHtml);
 //            log.info("\n\nhtmlResolved =\n\n {}", htmlResolved);
             PdfConversionResult result = converterService.convertHtmlToPdf(htmlResolved);
-            String pdfBase64 = Base64.getEncoder().encodeToString(result.pdfContent());
-            String sanitised = includeSanitised ? result.sanitisedXhtml() : null;
-            return BatchConversionResultItem.success(item.outputId(), pdfBase64, sanitised);
+            byte[] pdfBytes = result.pdfContent();
+            return BatchConversionResultItem.success(item.outputId(), pdfBytes);
         } catch (Exception e) {
             log.error("Batch item {} failed: {}", item.outputId(), e.getMessage());
             return BatchConversionResultItem.failure(item.outputId(), e.getMessage());

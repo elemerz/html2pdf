@@ -21,7 +21,6 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
-import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -66,8 +65,8 @@ public class Xhtml2PdfClient {
             HttpResponse<String> resp = httpClient.send(req, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
             if (resp.statusCode() >= 400) throw new ConversionException("Remote error status=" + resp.statusCode());
             HtmlToPdfResponse r = objectMapper.readValue(resp.body(), HtmlToPdfResponse.class);
-            if (r.pdfBase64()==null || r.pdfBase64().isBlank()) throw new ConversionException("Empty PDF payload");
-            return Base64.getDecoder().decode(r.pdfBase64());
+            if (r.pdfContent()==null || r.pdfContent().length==0) throw new ConversionException("Empty PDF payload");
+            return r.pdfContent();
         } catch (IOException | InterruptedException e) {
             if (e instanceof InterruptedException) Thread.currentThread().interrupt();
             throw new ConversionException("Conversion failed: " + e.getMessage(), e);
@@ -92,10 +91,10 @@ public class Xhtml2PdfClient {
             if (resp.statusCode() >= 400) throw new ConversionException("Remote error status=" + resp.statusCode());
             BatchConversionResponse r = objectMapper.readValue(resp.body(), BatchConversionResponse.class);
             return r.results().stream()
-                .filter(result -> result.pdfBase64() != null && result.error() == null)
+                .filter(result -> result.pdfContent() != null && result.error() == null)
                 .collect(Collectors.toMap(
                 		BatchConversionResultItem::outputId,
-                    result -> Base64.getDecoder().decode(result.pdfBase64())
+                    BatchConversionResultItem::pdfContent
                 ));
         } catch (IOException | InterruptedException e) {
             if (e instanceof InterruptedException) Thread.currentThread().interrupt();
