@@ -114,13 +114,29 @@ public class HtmlToPdfController {
         // <tr data-repeat-over="collectionName" data-repeat-var="itemVar"> ... ${itemVar.prop} ... </tr>
         try {
             java.util.Map<String,String> cache = new java.util.HashMap<>(); // cache computed values per key
+            java.util.Map<String, java.lang.reflect.Method> methodCache = new java.util.HashMap<>(); // cache reflection lookups
             java.util.function.BiFunction<Object,String,Object> readProp = (obj, name) -> {
                 if (obj == null || name == null || name.isEmpty()) return null;
                 Class<?> c = obj.getClass();
                 String capital = Character.toUpperCase(name.charAt(0)) + name.substring(1);
-                try { java.lang.reflect.Method m = c.getMethod("get" + capital); return m.invoke(obj); } catch (Exception ignored) {}
-                try { java.lang.reflect.Method m = c.getMethod("is" + capital); return m.invoke(obj); } catch (Exception ignored) {}
-                try { java.lang.reflect.Method m = c.getMethod(name); if (m.getParameterCount()==0) return m.invoke(obj); } catch (Exception ignored) {}
+                String keyGet = c.getName()+"#get"+capital;
+                String keyIs = c.getName()+"#is"+capital;
+                String keyPlain = c.getName()+"#"+name;
+                try {
+                    java.lang.reflect.Method m = methodCache.get(keyGet);
+                    if (m == null) { m = c.getMethod("get" + capital); methodCache.put(keyGet, m); }
+                    return m.invoke(obj);
+                } catch (Exception ignored) {}
+                try {
+                    java.lang.reflect.Method m = methodCache.get(keyIs);
+                    if (m == null) { m = c.getMethod("is" + capital); methodCache.put(keyIs, m); }
+                    return m.invoke(obj);
+                } catch (Exception ignored) {}
+                try {
+                    java.lang.reflect.Method m = methodCache.get(keyPlain);
+                    if (m == null) { m = c.getMethod(name); methodCache.put(keyPlain, m); }
+                    if (m.getParameterCount()==0) return m.invoke(obj);
+                } catch (Exception ignored) {}
                 return null;
             };
             java.util.function.BiFunction<Object,String,Object> resolvePath = (root, path) -> {

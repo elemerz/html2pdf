@@ -135,16 +135,26 @@ public class Html2PdfConverterService {
         }
     }
 
+    private final java.util.concurrent.ConcurrentHashMap<Integer, Integer> templateSizeHint = new java.util.concurrent.ConcurrentHashMap<>();
+
     private byte[] renderToPdf(Document document, String htmlContent) throws IOException {
-        try (ByteArrayOutputStream os = new ByteArrayOutputStream()) {
+        int key = htmlContent != null ? htmlContent.hashCode() : System.identityHashCode(document);
+        int initialSize = Math.max(8 * 1024, templateSizeHint.getOrDefault(key, 64 * 1024));
+        try (ByteArrayOutputStream os = new ByteArrayOutputStream(initialSize)) {
             renderToPdf(document, htmlContent, os);
-            return os.toByteArray();
+            byte[] bytes = os.toByteArray();
+            templateSizeHint.merge(key, bytes.length, (prev, cur) -> {
+                int avg = (prev + cur) >>> 1;
+                int cap = 8 * 1024 * 1024; // cap at 8MB
+                return Math.min(avg, cap);
+            });
+            return bytes;
         }
     }
 
     private void renderToPdf(Document document, String htmlContent, OutputStream os) throws IOException {
         try {
-            PdfRendererBuilder builder = configuredBuilder();
+            PdfRendererBuilder builder = configuredBuilderSkeleton();
             if (document != null) {
                 builder.withW3cDocument(document, "about:blank");
             } else {
@@ -157,7 +167,7 @@ public class Html2PdfConverterService {
         }
     }
 
-    private PdfRendererBuilder configuredBuilder() {
+    private PdfRendererBuilder configuredBuilderSkeleton() {
         PdfRendererBuilder builder = new PdfRendererBuilder();
         builder.useSVGDrawer(new BatikSVGDrawer());
         builder.useObjectDrawerFactory(objectFactory);
