@@ -22,6 +22,12 @@
 
   <logger name="nl.infomedics" level="INFO" />
   <logger name="com.sun.jersey.api.client.filter.LoggingFilter" level="ERROR" />
+  <!--
+  <logger name="com.openhtmltopdf" level="ERROR"/>
+  <logger name="com.openhtmltopdf.load" level="ERROR"/>
+  <logger name="com.openhtmltopdf.match" level="ERROR"/>
+  <logger name="com.openhtmltopdf.general" level="ERROR"/>
+  -->
 
   <root level="INFO">
     <appender-ref ref="FILE" />
