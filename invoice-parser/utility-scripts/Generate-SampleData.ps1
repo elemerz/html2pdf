@@ -41,7 +41,7 @@ param(
 )
 
 # Sample data templates
-$script:invoiceTypes = @(1, 2, 27, 40, 42, 43, 50, 51, 64, 65, 66, 67, 68)
+$script:invoiceTypes = @(1, 2, 20, 40, 42, 43, 50, 51, 64, 65, 66, 67, 68)
 $script:insurers = @("Testverzekeraar Noord", "Testverzekeraar Zuid", "Zilveren Kruis Achmea Zorgverzekeringen NV", "CZ groep Zorgverzekeringen")
 $script:cities = @("VECOZOTESTCITY", "ALMERE", "EMMELOORD", "DIEMEN", "AMSTERDAM", "UTRECHT")
 $script:streets = @("VecozoTestStreet", "Antaresstraat", "Lindelaan", "DIEMERKADE", "P.J. Oudweg")
@@ -236,7 +236,7 @@ function Generate-FolderName {
 # Main script execution
 Write-Host "Generating $SampleCount sample(s) of type '$ModelType'..." -ForegroundColor Cyan
 
-$outputDir = Join-Path $PSScriptRoot "samples_generated"
+$outputDir = Join-Path $PSScriptRoot "_generated"
 if (-not (Test-Path $outputDir)) {
     New-Item -Path $outputDir -ItemType Directory | Out-Null
 }
