@@ -1,62 +1,56 @@
-# Report Template Designer
+# Report Template Designer (Prototype)
 
-This Angular 20 application provides a drag-and-drop editor for composing printable HTML report templates. Designers can place layout tables, nest sub-tables up to five levels deep, edit rich text via a Quill-powered dialog, and export the result as XHTML or JSON for further processing.
+Angular 21-based drag-and-drop editor for composing printable XHTML invoice templates. It outputs well‑formed XHTML and JSON design snapshots, intended for consumption by the invoice-parser and pdf-creator modules.
 
 ## Requirements
-
 - Node.js 20+
 - npm 10+
-- Java 21 (required for the Spring Boot backend)
+- Java 25 (for Spring Boot backend used in development)
 
 ## Getting Started
-
 Install dependencies:
-
 ```bash
 npm ci
 ```
-
 Start the frontend dev server:
-
 ```bash
 npm run start
 ```
-
-Start the Spring Boot backend (from the project root):
-
+Start the Spring Boot backend (from project root):
 ```bash
 ./gradlew bootRun
 ```
-
-The frontend proxies API requests to the backend using `proxy.conf.json` during development.
+The frontend proxies API requests via `proxy.conf.json` during development.
 
 ## Scripts
-
-- `npm run start` – runs Vite in dev mode with HMR.
-- `npm run build` – produces an optimized production build in `dist/`.
-- `npm run test -- --watch=false` – executes Angular unit tests once.
-
-## Testing Backend
-
-Run backend unit tests with:
-
-```bash
-./gradlew test
-```
+- `npm run start` – Vite dev mode with HMR.
+- `npm run build` – production build in `dist/`.
+- `npm run test -- --watch=false` – run Angular unit tests once.
 
 ## Project Structure Highlights
+- `src/app/designer` – canvas, table rendering, editing UI.
+- `src/app/layout` – menus, toolbars, dialogs.
+- `src/app/core/services` – state management, API clients, resource loaders.
+- `src/app/shared` – reusable dialogs, models, utilities.
 
-- `src/app/designer` – canvas, table rendering, and editing UI.
-- `src/app/layout` – application chrome (menus, toolbars, dialogs).
-- `src/app/core/services` – shared state management, API clients, and resource loaders.
-- `src/app/shared` – reusable dialogs, models, and utilities.
+## Template Guidelines
+- XHTML only: well‑formed XML (all tags closed, quoted attributes, lowercase elements).
+- Use a conservative CSS subset for PDF rendering; avoid complex flex/grid that may not be supported.
+- Placeholders: `{{ path.to.field }}` mapped to JSONModel fields.
+- Assets: Prefer local fonts/images; ensure resolvable paths.
 
 ## Export & Import
-
-- **Export XHTML** – generates printable markup honoring table roles (`header`, `report-body`, `footer`).
-- **Save Design** – creates a JSON snapshot you can re-import later.
-- **Import XHTML/JSON** – the menu supports importing previously exported layouts or designs.
+- **Export XHTML** – printable markup honoring table roles (`header`, `report-body`, `footer`).
+- **Save Design** – JSON snapshot that can be re‑imported.
+- **Open JSON** – open previously-saved designs.
 
 ## Screen Calibration
+Use the Calibrate Screen option to align on‑screen measurements with physical millimeters. Scale is stored in `localStorage` and reused.
 
-Use the *Calibrate Screen* option in the menu to adjust canvas scaling so on-screen measurements match physical millimeters. The calibration scale is stored in `localStorage` and reused on subsequent sessions.
+## Known Limitations
+- Prototype status: limited validation and error handling.
+- XML input parsing is out of scope; focus on `.txt` sources.
+- CSS support may differ from browsers; verify via end‑to‑end preview.
+
+## Related Docs
+See `docs\Project-Technical-Documentation.md` for architecture, contracts, and roadmap.
