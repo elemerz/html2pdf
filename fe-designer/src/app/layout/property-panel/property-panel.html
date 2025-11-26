@@ -10,10 +10,6 @@
         </header>
         @if (!collapsed('general')) {
           <div class="section-body">
-            <div class="property-field">
-              <label class="property-label">Type</label>
-              <input class="property-input" [value]="element.type" disabled />
-            </div>
             @if (isTable(element)) {
               <div class="property-grid" style="grid-template-columns:repeat(2,minmax(0,1fr));">
                 <div class="property-field">

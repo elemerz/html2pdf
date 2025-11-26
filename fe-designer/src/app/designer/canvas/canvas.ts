@@ -18,7 +18,7 @@ import { createDefaultCanvasElement, MM_TO_PX, A4_WIDTH_MM, A4_HEIGHT_MM } from 
 export class CanvasComponent implements AfterViewInit, OnDestroy {
   private designerState = inject(DesignerStateService);
   private dragDropService = inject(DragDropService);
-  
+
   @ViewChild('workspace', { static: true }) private workspaceRef!: ElementRef<HTMLElement>;
   @ViewChild('sheet', { static: true }) private sheetRef!: ElementRef<HTMLElement>;
 
@@ -50,7 +50,7 @@ export class CanvasComponent implements AfterViewInit, OnDestroy {
       heightPx: contentHeightMm * mmToPx
     };
   });
-  
+
   protected readonly MM_TO_PX = MM_TO_PX;
   protected readonly A4_WIDTH_MM = A4_WIDTH_MM;
   protected readonly A4_HEIGHT_MM = A4_HEIGHT_MM;
@@ -103,19 +103,19 @@ export class CanvasComponent implements AfterViewInit, OnDestroy {
   onMouseMove(event: MouseEvent) {
     const canvas = this.sheetRef?.nativeElement;
     if (!canvas) return;
-    
+
     const rect = canvas.getBoundingClientRect();
     const x = event.clientX - rect.left;
     const y = event.clientY - rect.top;
-    
+
     const effectiveMmToPx = MM_TO_PX * this.canvasScale();
     const xMm = this.dragDropService.pxToMm(x, effectiveMmToPx);
     const yMm = this.dragDropService.pxToMm(y, effectiveMmToPx);
     const snappedX = this.dragDropService.snapToGrid(xMm, this.logicalGridSize());
     const snappedY = this.dragDropService.snapToGrid(yMm, this.logicalGridSize());
 
-    let clampedX = snappedX;
-    let clampedY = snappedY;
+    let clampedX: number;
+    let clampedY: number;
 
     const dragState = this.dragState();
     let widthForClamp = 0;
@@ -143,12 +143,12 @@ export class CanvasComponent implements AfterViewInit, OnDestroy {
       const pointerOffset = dragState.pointerOffset;
       let ghostClientX = rect.left + this.dragDropService.mmToPx(clampedX, effectiveMmToPx);
       let ghostClientY = rect.top + this.dragDropService.mmToPx(clampedY, effectiveMmToPx);
-      
+
       if (pointerOffset) {
         ghostClientX -= pointerOffset.x;
         ghostClientY -= pointerOffset.y;
       }
-      
+
       this.dragDropService.updateGhostPosition(ghostClientX, ghostClientY);
     }
   }
@@ -160,15 +160,15 @@ export class CanvasComponent implements AfterViewInit, OnDestroy {
     event.preventDefault();
     const canvas = this.sheetRef?.nativeElement;
     if (!canvas) return;
-    
+
     const rect = canvas.getBoundingClientRect();
     const x = event.clientX - rect.left;
     const y = event.clientY - rect.top;
-    
+
     const effectiveMmToPx = MM_TO_PX * this.canvasScale();
     let xMm = this.dragDropService.pxToMm(x, effectiveMmToPx);
     let yMm = this.dragDropService.pxToMm(y, effectiveMmToPx);
-    
+
     const pointerOffset = this.dragState().pointerOffset;
     const draggedItem = this.dragState().draggedItem;
     if (draggedItem) {
@@ -192,10 +192,10 @@ export class CanvasComponent implements AfterViewInit, OnDestroy {
       }
       this.designerState.addElement({
         ...newElement,
-        id: `el-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+        id: `el-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`
       });
     }
-    
+
     this.dragDropService.endDrag();
   }
 

@@ -1,6 +1,6 @@
 import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { toolbarElements, ToolbarElement, ToolbarCategory } from '../../shared/models/schema';
+import { toolbarElements, ToolbarElement } from '../../shared/models/schema';
 import { DragDropService } from '../../core/services/drag-drop.service';
 import { ReportDataService } from '../../core/services/report-data.service';
 
@@ -127,33 +127,6 @@ export class ToolbarPanelComponent {
     if (!value) return;
     this.loadDataModel(value);
   }
-
-  protected onImportJson() {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.json';
-    input.onchange = (event: Event) => {
-      const target = event.target as HTMLInputElement;
-      const file = target.files?.[0];
-      if (!file) return;
-
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        try {
-          const jsonData = JSON.parse(e.target?.result as string);
-            this.reportDataModel = jsonData;
-            this.jsonTree.set(this.buildJsonTree(this.reportDataModel, ''));
-            this.reportDataService.setReportDataModel(jsonData);
-        } catch (error) {
-          console.error('Failed to parse JSON file:', error);
-          alert('Invalid JSON file');
-        }
-      };
-      reader.readAsText(file);
-    };
-    input.click();
-  }
-
   /**
    * Returns toolbar entries belonging to the requested category.
    */

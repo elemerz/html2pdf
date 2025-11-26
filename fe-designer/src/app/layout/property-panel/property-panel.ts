@@ -20,21 +20,21 @@ type BorderPart = 'width' | 'style' | 'color';
 })
 export class PropertyPanelComponent {
   protected collapsedSections: Record<string, boolean> = { general: false, table: false, cell: false };
-  protected collapsedSubsections: Record<string, boolean> = { 
-    alignment: false, 
-    cellBorder: false, 
-    font: false 
+  protected collapsedSubsections: Record<string, boolean> = {
+    alignment: false,
+    cellBorder: false,
+    font: false
   };
 
   /**
    * Returns whether the requested accordion section is collapsed.
    */
-  collapsed(id: string): boolean { return !!this.collapsedSections[id]; }
+  collapsed(id: string): boolean { return this.collapsedSections[id]; }
 
   /**
    * Returns whether the requested subsection is collapsed.
    */
-  collapsedSubsection(id: string): boolean { return !!this.collapsedSubsections[id]; }
+  collapsedSubsection(id: string): boolean { return this.collapsedSubsections[id]; }
 
   /**
    * Toggles the expansion state for a panel section.
@@ -46,12 +46,12 @@ export class PropertyPanelComponent {
    */
   toggleSubsection(id: string): void { this.collapsedSubsections[id] = !this.collapsedSubsections[id]; }
   private designerState = inject(DesignerStateService);
-  
+
   protected selectedElement = this.designerState.selectedElement;
   protected selectedTableCell = this.designerState.selectedTableCell;
   protected activeBorderPopover: BorderSide | null = null;
   protected borderStyleOptions: string[] = ['none', 'solid', 'dashed', 'dotted', 'double'];
-  
+
   /**
    * Applies a partial update to the currently selected element.
    */
@@ -95,16 +95,6 @@ export class PropertyPanelComponent {
     if (safeWidth === el.width && safeHeight === el.height) return;
     this.updateElement({ width: safeWidth, height: safeHeight });
   }
-
-  /**
-   * Stores arbitrary string content on the selected element.
-   */
-  updateContent(content: string) {
-    const el = this.selectedElement();
-    if (!el || el.content === content) return;
-    this.updateElement({ content });
-  }
-
   /**
    * Resolves the custom element identifier property.
    */
@@ -764,8 +754,8 @@ export class PropertyPanelComponent {
     }
     return {
       width: Number.isFinite(spec.width) ? spec.width : 0,
-      style: typeof spec.style === 'string' ? spec.style : 'solid',
-      color: typeof spec.color === 'string' ? spec.color : '#000000'
+      style: spec.style,
+      color: spec.color
     };
   }
 
@@ -862,7 +852,7 @@ export class PropertyPanelComponent {
     if (!selection || !el || el.id !== selection.elementId) return;
     const key = this.cellKey(selection.row, selection.col);
     let nextProps: Record<string, any> = { ...(el.properties||{}) };
-    
+
     if (part === 'style') {
       const map = (el.properties?.['tableCellFontStyle'] as Record<string, string>) || {};
       nextProps['tableCellFontStyle'] = { ...map, [key]: String(value) };

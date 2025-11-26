@@ -72,4 +72,4 @@
 .ql-snow .ql-picker.ql-font .ql-picker-item[data-value="kix-barcode"]::before,
 .ql-snow .ql-picker.ql-font .ql-picker-label[data-value="kix-barcode"]::before { font-family: Arial, sans-serif; content: "KIX Barcode"; }
 /* Ensure editor content still renders actual barcode font when chosen */
-.ql-editor .ql-font-kix-barcode { font-family: "KIX Barcode"; }
+.ql-editor .ql-font-kix-barcode {font-family: "KIX Barcode", sans-serif; }

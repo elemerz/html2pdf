@@ -22,37 +22,6 @@ export function createEqualRatios(length: number): number[] {
   const ratio = 1 / length;
   return Array.from({ length }, () => ratio);
 }
-
-function normalizeRatiosWithLength(length: number, rawValues: unknown): number[] {
-  if (length <= 0) {
-    return [];
-  }
-
-  const normalizedLength = Math.floor(length);
-  const ratios = new Array<number>(normalizedLength).fill(0);
-
-  if (Array.isArray(rawValues)) {
-    for (let index = 0; index < normalizedLength; index++) {
-      const value = toPositiveNumber(rawValues[index]);
-      ratios[index] = value > 0 ? value : 0;
-    }
-  }
-
-  const total = ratios.reduce((sum, value) => sum + value, 0);
-  if (total <= EPSILON) {
-    return createEqualRatios(normalizedLength);
-  }
-
-  const normalized = ratios.map(value => value / total);
-  const normalizedTotal = normalized.reduce((sum, value) => sum + value, 0);
-  const correction = 1 - normalizedTotal;
-  if (normalized.length) {
-    normalized[normalized.length - 1] += correction;
-  }
-
-  return normalized;
-}
-
 export function normalizeRatios(values: number[]): number[] {
   if (!values.length) {
     return [];

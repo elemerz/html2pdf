@@ -49,14 +49,8 @@ export class App {
   protected eastCollapsed = this.designerState.eastCollapsed;
   protected westWidth = this.designerState.westWidth;
   protected eastWidth = this.designerState.eastWidth;
-  protected statusMessage = this.designerState.statusMessage;
-  protected cursorPosition = this.designerState.cursorPosition;
-  protected selectedElement = this.designerState.selectedElement;
   protected elements = this.designerState.elements;
-  protected canUndo = this.designerState.canUndo;
-  protected canRedo = this.designerState.canRedo;
-
-  // Menu bar handlers
+// Menu bar handlers
   /**
    * Resets the current layout after user confirmation and clears designer state.
    */
@@ -191,7 +185,7 @@ export class App {
    */
   async handleSave(payload: string | { fileName: string; minify: boolean }): Promise<void> {
     const trimmedName = (typeof payload === 'string' ? payload : payload.fileName).trim() || 'layout';
-    const shouldMinify = typeof payload === 'object' && !!payload.minify;
+    const shouldMinify = typeof payload === 'object' && payload.minify;
     try {
       let xhtml = this.designerState.generateXhtmlDocument(trimmedName);
       if (shouldMinify) {

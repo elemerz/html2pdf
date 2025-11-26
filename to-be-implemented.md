@@ -1,6 +1,11 @@
-- Kix Barcode-ot javitani, hogy a designerben &quot; => '
-- Page margin TOP/Botoom-ot kiszamolni
-- Quill Editor-ban: ${propName} => transformToPlainText
-- Export as Xhtml: if <footer> element is present => it should be placed before <body> elements.
-- On Export as Xhtml: <footer> content elements: transform margin-top into margin-bottom
-- Watch invoice-parser's src/main/resources/templates/for-pdf => reload Templates bean automatically
+- Add real database support
+- Add versioning suppoort for templates
+- Support custom components
+- Add Logo Image Management
+  - Support optimization for png and svg images to minimize throughput
+- Add Custom Font Management
+- Add nested template repetition support
+- Add Unit Tests
+- Add Integration Tests
+- Write performance Tests with JMH (Java Microbenchmarking Harness)
+- Add Enterprize-level scalability

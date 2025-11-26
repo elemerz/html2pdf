@@ -38,30 +38,6 @@ export interface TableCellBorderConfig {
 }
 
 // Sub-table data structure for nested tables within cells
-export interface SubTableData {
-  rows: number;
-  cols: number;
-  rowSizes: number[];
-  colSizes: number[];
-  level: number; // Nesting level (1-5)
-  cellContents: Record<string, string>;
-  cellPadding: Record<string, number[]>;
-  cellHAlign: Record<string, string>;
-  cellVAlign: Record<string, string>;
-  cellBorderWidth: Record<string, number>;
-  cellBorderStyle: Record<string, string>;
-  cellBorderColor: Record<string, string>;
-  cellBorders?: Record<string, TableCellBorderConfig>;
-  cellFontFamily: Record<string, string>;
-  cellFontSize: Record<string, number>;
-  cellFontWeight: Record<string, string>;
-  cellFontStyle: Record<string, string>;
-  cellLineHeight: Record<string, number>;
-  cellTextDecoration: Record<string, string>;
-  cellSubTables?: Record<string, SubTableData>; // Nested sub-tables
-  repeatBindings?: Record<string, any>; // Repeat bindings for this sub-table's rows/tbody/table
-}
-
 // Layout/Report design
 export interface ReportLayout {
   id?: string;
@@ -137,4 +113,3 @@ export function createDefaultLayout(name: string = "Untitled Layout"): InsertRep
 export const MM_TO_PX = 3.7795275591; // Conversion factor: 1mm = 3.7795275591px at 96 DPI
 export const A4_WIDTH_MM = 210;
 export const A4_HEIGHT_MM = 297;
-export const DEFAULT_GRID_SIZE_MM = 10;

@@ -109,20 +109,16 @@ function isUsableSymbol(code: number, char: string): boolean {
   if (code >= 0x00A1 && code <= 0x00FF && /[A-Za-z0-9]/.test(char)) {
     return false;
   }
-  if (code === 0x00AD) {
-    return false;
-  }
-  return true;
+  return code !== 0x00AD;
+
 }
 
 function isLetter(char: string): boolean {
   if (!char) return false;
   const lower = char.toLowerCase();
   const upper = char.toUpperCase();
-  if (lower === upper) {
-    return false;
-  }
-  return true;
+  return lower !== upper;
+
 }
 
 function isDiacriticalLetter(code: number, char: string): boolean {
@@ -160,9 +156,7 @@ export class CellEditorDialogComponent implements OnInit, OnDestroy, AfterViewIn
   quill!: Quill;
   currentFontSize: number = 12; // pt default
   @ViewChild('dialogRoot') dialogRoot!: ElementRef<HTMLDivElement>;
-  private dragging = false;
-  private dragOffsetX = 0; // distance from dialog origin when using absolute mode (legacy)
-  private dragOffsetY = 0;
+  private dragging = false;// distance from dialog origin when using absolute mode (legacy)
   private dragStartMouseX = 0;
   private dragStartMouseY = 0;
   private dragAccumX = 0; // accumulated transform translation
@@ -263,11 +257,8 @@ export class CellEditorDialogComponent implements OnInit, OnDestroy, AfterViewIn
     if (keyboard) {
       keyboard.addBinding({
         key: 'Enter'
-      }, (range: any, context: any) => {
-        if (this.intellisenseVisible) {
-          return false; // Prevent Quill from handling Enter
-        }
-        return true; // Allow Quill to handle Enter normally
+      }, (context: any) => {
+        return !this.intellisenseVisible;
       });
     }
 

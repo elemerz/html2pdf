@@ -1,11 +1,24 @@
-import { Component, HostBinding, HostListener, Input, signal, inject, ElementRef, AfterViewInit, AfterViewChecked, OnDestroy, OnChanges, SimpleChanges } from '@angular/core';
-import { CellEditorDialogComponent } from './cell-editor-dialog';
-import { RepeatBindingDialogComponent } from './repeat-binding-dialog';
+import {
+  AfterViewChecked,
+  AfterViewInit,
+  Component,
+  ElementRef,
+  HostBinding,
+  HostListener,
+  inject,
+  Input,
+  OnChanges,
+  OnDestroy,
+  signal,
+  SimpleChanges
+} from '@angular/core';
+import {CellEditorDialogComponent} from './cell-editor-dialog';
+import {RepeatBindingDialogComponent} from './repeat-binding-dialog';
 
-import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
-import { CanvasElement, TableCellBorderConfig, TableCellBorderSpec } from '../../shared/models/schema';
-import { DesignerStateService } from '../../core/services/designer-state.service';
-import { getTableColSizes, getTableRowSizes, withTableSizes } from '../../shared/utils/table-utils';
+import {DomSanitizer, SafeHtml} from '@angular/platform-browser';
+import {CanvasElement, TableCellBorderConfig, TableCellBorderSpec} from '../../shared/models/schema';
+import {DesignerStateService} from '../../core/services/designer-state.service';
+import {getTableColSizes, getTableRowSizes, withTableSizes} from '../../shared/utils/table-utils';
 
 type ResizeMode =
   | { type: 'row'; index: number; startClientY: number; startRowSizes: number[] }
@@ -45,11 +58,9 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
   private sanitizer = inject(DomSanitizer);
   private activeResize: ResizeMode | null = null;
   private clickListener?: (event: MouseEvent) => void;
-  private subTableClickHandlersAttached = new WeakSet<HTMLElement>();
   private subTableHtmlCache = new Map<string, SafeHtml>();
 
   protected showContextMenu = signal(false);
-  protected contextMenuPosition = signal({ x: 0, y: 0 });
   protected contextMenuCell = signal<ContextMenuCell | null>(null);
   protected showActionsToolbar = signal(false);
 
@@ -67,14 +78,12 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
    */
   ngAfterViewInit(): void {
     // Add DOCUMENT-level listener first for debugging
-    const docListener = (event: MouseEvent) => {
-      const target = event.target as HTMLElement;
+    const docListener = () => {
     };
     document.addEventListener('click', docListener, true);
 
     // Add click listener at capture phase to intercept ALL clicks including sub-table cells
     this.clickListener = (event: MouseEvent) => {
-      const target = event.target as HTMLElement;
       this.handleNativeClick(event);
     };
 
@@ -124,12 +133,10 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
     const subTableCell = target.closest('.sub-table-cell') as HTMLElement;
     if (subTableCell) {
       event.stopPropagation();
-
-      const subRow = parseInt(subTableCell.dataset['row'] || '0', 10);
-      const subCol = parseInt(subTableCell.dataset['col'] || '0', 10);
-      const level = parseInt(subTableCell.dataset['level'] || '1', 10);
-
-      // Build the full path through all nesting levels
+      parseInt(subTableCell.dataset['row'] || '0', 10);
+      parseInt(subTableCell.dataset['col'] || '0', 10);
+      parseInt(subTableCell.dataset['level'] || '1', 10);
+// Build the full path through all nesting levels
       const subTablePath: Array<{ row: number; col: number }> = [];
 
       // Walk up from the clicked cell to collect all sub-table levels
@@ -304,8 +311,7 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
       }
     }
 
-    const result = { left, top, width };
-    return result;
+    return {left, top, width};
   }
 
   /**
@@ -1078,8 +1084,8 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
 
     return {
       width: Number.isFinite(spec.width) ? spec.width : 0,
-      style: typeof spec.style === 'string' ? spec.style : 'solid',
-      color: typeof spec.color === 'string' ? spec.color : '#000000'
+      style: spec.style,
+      color: spec.color
     };
   }
 
@@ -1099,8 +1105,7 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
       return base;
     }
 
-    const normalizedOverride = this.normalizeBorderSpec(override);
-    return normalizedOverride;
+    return this.normalizeBorderSpec(override);
   }
 
   /**
@@ -1235,7 +1240,7 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
     }
 
     const subTable = subTablesMap[key];
-    const html = this.generateSubTableHtml(subTable, 0); // Start with parent cell padding = 0
+    const html = this.generateSubTableHtml(subTable); // Start with parent cell padding = 0
     const safeHtml = this.sanitizer.bypassSecurityTrustHtml(html);
 
     // Cache it
@@ -1246,7 +1251,7 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
   /**
    * Generates XHTML markup for a nested sub-table and caches the result.
    */
-  private generateSubTableHtml(subTable: any, parentPadding: number): string {
+  private generateSubTableHtml(subTable: any): string {
     const level = subTable.level || 1;
     const rows = subTable.rows || 1;
     const cols = subTable.cols || 1;
@@ -1337,7 +1342,7 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
 
         // Check for nested sub-table
         if (subTable.cellSubTables && subTable.cellSubTables[cellKey]) {
-          html += this.generateSubTableHtml(subTable.cellSubTables[cellKey], padding[0]);
+          html += this.generateSubTableHtml(subTable.cellSubTables[cellKey]);
         } else {
           html += content || '&nbsp;';
         }
@@ -1877,98 +1882,6 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
     this.designerState.selectTableCell(this.element.id, row, col);
     this.onEditCellContent();
   }
-
-  /**
-   * Displays the contextual actions menu for a cell.
-   */
-  protected onCellContextMenu(event: MouseEvent, row: number, col: number): void {
-    event.preventDefault();
-    event.stopPropagation();
-    this.designerState.selectElement(this.element.id);
-    this.designerState.selectTableCell(this.element.id, row, col);
-    this.contextMenuCell.set({ row, col });
-    const hostRect = this.hostRef.nativeElement.getBoundingClientRect();
-    this.contextMenuPosition.set({
-      x: event.clientX - hostRect.left,
-      y: event.clientY - hostRect.top
-    });
-    this.showContextMenu.set(true);
-  }
-
-  /**
-   * Splits the selected cell horizontally using user-provided segments.
-   */
-  protected onSplitHorizontally(): void {
-    const cell = this.contextMenuCell();
-    if (!cell) {
-      this.closeContextMenu();
-      return;
-    }
-
-    const parts = this.promptForSplit('row');
-    if (!parts) {
-      this.closeContextMenu();
-      return;
-    }
-
-    const rowSizes = this.getRowSizes();
-    if (!rowSizes.length) {
-      this.closeContextMenu();
-      return;
-    }
-
-    const currentSize = rowSizes[cell.row];
-    if (currentSize <= 0) {
-      this.closeContextMenu();
-      return;
-    }
-
-    const newSizesSegment = Array.from({ length: parts }, () => currentSize / parts);
-    const updatedRows = [...rowSizes];
-    updatedRows.splice(cell.row, 1, ...newSizesSegment);
-
-    this.applyTableSizes(updatedRows, this.getColSizes());
-    this.designerState.selectTableCell(this.element.id, cell.row, cell.col);
-    this.closeContextMenu();
-  }
-
-  /**
-   * Splits the selected cell vertically using user-provided segments.
-   */
-  protected onSplitVertically(): void {
-    const cell = this.contextMenuCell();
-    if (!cell) {
-      this.closeContextMenu();
-      return;
-    }
-
-    const parts = this.promptForSplit('col');
-    if (!parts) {
-      this.closeContextMenu();
-      return;
-    }
-
-    const colSizes = this.getColSizes();
-    if (!colSizes.length) {
-      this.closeContextMenu();
-      return;
-    }
-
-    const currentSize = colSizes[cell.col];
-    if (currentSize <= 0) {
-      this.closeContextMenu();
-      return;
-    }
-
-    const newSizesSegment = Array.from({ length: parts }, () => currentSize / parts);
-    const updatedCols = [...colSizes];
-    updatedCols.splice(cell.col, 1, ...newSizesSegment);
-
-    this.applyTableSizes(this.getRowSizes(), updatedCols);
-    this.designerState.selectTableCell(this.element.id, cell.row, cell.col);
-    this.closeContextMenu();
-  }
-
   /**
    * Closes the context menu overlay.
    */
@@ -2143,14 +2056,6 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
     }
     return currentSubTable;
   }
-
-  /**
-   * Identity trackBy used for template repeaters.
-   */
-  protected trackByIndex(index: number): number {
-    return index;
-  }
-
   /**
    * Indicates whether the provided handle index is currently being resized.
    */
@@ -2299,7 +2204,7 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
 
     // Get parent cell dimensions to calculate the delta ratio
     const rowSizes = this.getRowSizes();
-    const colSizes = this.getColSizes();
+    this.getColSizes();
     const parentCellHeightMm = this.element.height * rowSizes[start.parentRow];
     const parentPadding = this.getCellPadding(start.parentRow, start.parentCol);
     const availableHeightMm = parentCellHeightMm - parentPadding.top - parentPadding.bottom;
@@ -2335,7 +2240,7 @@ export class TableElementComponent implements AfterViewInit, AfterViewChecked, O
     const deltaPx = event.clientX - start.startClientX;
 
     // Get parent cell dimensions to calculate the delta ratio
-    const rowSizes = this.getRowSizes();
+    this.getRowSizes();
     const colSizes = this.getColSizes();
     const parentCellWidthMm = this.element.width * colSizes[start.parentCol];
     const parentPadding = this.getCellPadding(start.parentRow, start.parentCol);
