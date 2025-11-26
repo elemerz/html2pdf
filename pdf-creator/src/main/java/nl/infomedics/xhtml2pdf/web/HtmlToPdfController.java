@@ -47,6 +47,9 @@ public class HtmlToPdfController {
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper()
             .registerModule(new com.fasterxml.jackson.datatype.jsr310.JavaTimeModule())
             .disable(com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+    private static final java.util.regex.Pattern REPEAT_BLOCK_PATTERN = java.util.regex.Pattern.compile(
+            "(<([a-zA-Z0-9]+)([^>]*?data-repeat-over=\\\"([a-zA-Z0-9_\\.]+)\\\"[^>]*?data-repeat-var=\\\"([a-zA-Z0-9_]+)\\\"[^>]*?)>)([\\s\\S]*?)(</\\2>)"
+    );
 
     public HtmlToPdfController(Html2PdfConverterService converterService,
                                @Qualifier("pdfConversionExecutor") ExecutorService pdfConversionExecutor) {
@@ -131,9 +134,7 @@ public class HtmlToPdfController {
             };
             // 1. Handle repeat nodes (very lightweight parser; assumes attributes on same opening tag line)
             // Pattern for a repeatable TR (can generalize later): find tags with both data-repeat-over and data-repeat-var
-            String repeatPattern = "(<([a-zA-Z0-9]+)([^>]*?data-repeat-over=\\\"([a-zA-Z0-9_\\.]+)\\\"[^>]*?data-repeat-var=\\\"([a-zA-Z0-9_]+)\\\"[^>]*?)>)([\\s\\S]*?)(</\\2>)"; // group 4: collection path, 5: var name, 6: inner html
-            java.util.regex.Pattern rp = java.util.regex.Pattern.compile(repeatPattern);
-            java.util.regex.Matcher rm = rp.matcher(htmlString);
+            java.util.regex.Matcher rm = REPEAT_BLOCK_PATTERN.matcher(htmlString);
             StringBuffer sbRepeat = new StringBuffer();
             while (rm.find()) {
                 String openingTag = rm.group(1);
