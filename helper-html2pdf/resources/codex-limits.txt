@@ -2,7 +2,7 @@
 │  >_ OpenAI Codex (v0.47.0)                                                  │
 │                                                                             │
 │  Model:            gpt-5-codex (reasoning medium, summaries auto)           │
-│  Directory:        /mnt/c/jde/html2pdf/fe-designer-dragdrop                 │
+│  Directory:        /mnt/c/jde/html2pdf/fe-designer                 │
 │  Approval:         on-request                                               │
 │  Sandbox:          workspace-write                                          │
 │  Agents.md:        AGENTS.md                                                │
