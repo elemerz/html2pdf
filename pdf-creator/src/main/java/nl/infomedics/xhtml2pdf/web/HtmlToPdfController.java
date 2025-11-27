@@ -44,6 +44,7 @@ public class HtmlToPdfController {
 
     private final Html2PdfConverterService converterService;
     private final ExecutorService pdfConversionExecutor;
+    private static final java.util.Map<String, RepeatPlan> REPEAT_PLAN_CACHE = new java.util.concurrent.ConcurrentHashMap<>();
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper()
             .registerModule(new com.fasterxml.jackson.datatype.jsr310.JavaTimeModule())
             .disable(com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
@@ -138,9 +139,8 @@ public class HtmlToPdfController {
 
     private String resolvePropertyPlaceholders(String htmlString, DebiteurWithPractitioner debiteur) {
         if (htmlString == null || htmlString.isEmpty() || debiteur == null) return htmlString;
-        boolean hasRepeat = htmlString.contains("data-repeat-over");
-        boolean hasPlaceholders = htmlString.contains("${");
-        if (!hasRepeat && !hasPlaceholders) return htmlString; // nothing to resolve
+        RepeatPlan plan = REPEAT_PLAN_CACHE.computeIfAbsent(htmlString, this::compileRepeatPlan);
+        if (!plan.hasRepeat && !plan.hasPlaceholders) return htmlString; // nothing to resolve
 
         // Extended placeholder resolution: supports ${a.b.c} and simple repeat nodes:
         // <tr data-repeat-over="collectionName" data-repeat-var="itemVar"> ... ${itemVar.prop} ... </tr>
@@ -161,46 +161,10 @@ public class HtmlToPdfController {
                 }
                 return current;
             };
-            // 1. Handle repeat nodes (very lightweight parser; assumes attributes on same opening tag line)
-            // Pattern for a repeatable TR (can generalize later): find tags with both data-repeat-over and data-repeat-var
-            java.util.regex.Matcher rm = REPEAT_BLOCK_PATTERN.matcher(htmlString);
-            StringBuffer sbRepeat = new StringBuffer();
-            while (rm.find()) {
-                String openingTag = rm.group(1);
-                String collectionPath = rm.group(4);
-                String varName = rm.group(5);
-                String inner = rm.group(6);
-                Object collectionObj = resolvePath.apply(debiteurMap, collectionPath);
-                StringBuilder repeated = new StringBuilder();
-                if (collectionObj instanceof java.lang.Iterable<?> iterable) {
-                    for (Object item : iterable) {
-                        // For each item, resolve ${varName.x.y} within inner HTML.
-                        String resolvedInner = resolveItemPlaceholders(inner, varName, item, resolvePath);
-                        repeated.append(openingTag.replace("data-repeat-over=\""+collectionPath+"\"", "")
-                                .replace("data-repeat-var=\""+varName+"\"", "")) // strip repeat attributes
-                                .append(resolvedInner)
-                                .append("</"+rm.group(2)+">");
-                    }
-                } else if (collectionObj != null && collectionObj.getClass().isArray()) {
-                    int length = java.lang.reflect.Array.getLength(collectionObj);
-                    for (int idx=0; idx<length; idx++) {
-                        Object item = java.lang.reflect.Array.get(collectionObj, idx);
-                        String resolvedInner = resolveItemPlaceholders(inner, varName, item, resolvePath);
-                        repeated.append(openingTag.replace("data-repeat-over=\""+collectionPath+"\"", "")
-                                .replace("data-repeat-var=\""+varName+"\"", ""))
-                                .append(resolvedInner)
-                                .append("</"+rm.group(2)+">");
-                    }
-                }
-                if (repeated.length() == 0) {
-                    // No collection or empty -> remove entire block
-                    rm.appendReplacement(sbRepeat, java.util.regex.Matcher.quoteReplacement(""));
-                } else {
-                    rm.appendReplacement(sbRepeat, java.util.regex.Matcher.quoteReplacement(repeated.toString()));
-                }
-            }
-            rm.appendTail(sbRepeat);
-            String afterRepeatExpansion = sbRepeat.toString();
+            String afterRepeatExpansion = plan.hasRepeat
+                    ? expandRepeats(plan, debiteurMap, resolvePath)
+                    : htmlString;
+            if (!plan.hasPlaceholders) return afterRepeatExpansion;
 
             // 2. Resolve remaining ${...} placeholders against root debiteur
             StringBuilder out = new StringBuilder(afterRepeatExpansion.length());
@@ -281,6 +245,65 @@ public class HtmlToPdfController {
         } catch (Exception ignored) {}
         return null;
     }
+
+    private RepeatPlan compileRepeatPlan(String html) {
+        boolean hasRepeat = html.contains("data-repeat-over");
+        boolean hasPlaceholders = html.contains("${");
+        if (!hasRepeat) {
+            return new RepeatPlan(hasRepeat, hasPlaceholders, java.util.Collections.emptyList(), html);
+        }
+        java.util.List<RepeatSegment> segments = new java.util.ArrayList<>();
+        java.util.regex.Matcher rm = REPEAT_BLOCK_PATTERN.matcher(html);
+        int last = 0;
+        while (rm.find()) {
+            String prefix = html.substring(last, rm.start());
+            String openingTag = rm.group(1);
+            String collectionPath = rm.group(4);
+            String varName = rm.group(5);
+            String inner = rm.group(6);
+            String closingTag = "</" + rm.group(2) + ">";
+            String strippedOpening = openingTag
+                    .replace("data-repeat-over=\"" + collectionPath + "\"", "")
+                    .replace("data-repeat-var=\"" + varName + "\"", "");
+            segments.add(new RepeatSegment(prefix, strippedOpening, closingTag, collectionPath, varName, inner));
+            last = rm.end();
+        }
+        String tail = html.substring(last);
+        return new RepeatPlan(true, hasPlaceholders, java.util.Collections.unmodifiableList(segments), tail);
+    }
+
+    private String expandRepeats(RepeatPlan plan, java.util.Map<String,Object> debiteurMap,
+                                 java.util.function.BiFunction<Object,String,Object> resolvePath) {
+        if (!plan.hasRepeat) return plan.tail;
+        StringBuilder out = new StringBuilder();
+        for (RepeatSegment seg : plan.segments) {
+            out.append(seg.prefix);
+            Object collectionObj = resolvePath.apply(debiteurMap, seg.collectionPath);
+            StringBuilder repeated = new StringBuilder();
+            if (collectionObj instanceof java.lang.Iterable<?> iterable) {
+                for (Object item : iterable) {
+                    String resolvedInner = resolveItemPlaceholders(seg.inner, seg.varName, item, resolvePath);
+                    repeated.append(seg.openingTagStripped).append(resolvedInner).append(seg.closingTag);
+                }
+            } else if (collectionObj != null && collectionObj.getClass().isArray()) {
+                int length = java.lang.reflect.Array.getLength(collectionObj);
+                for (int idx = 0; idx < length; idx++) {
+                    Object item = java.lang.reflect.Array.get(collectionObj, idx);
+                    String resolvedInner = resolveItemPlaceholders(seg.inner, seg.varName, item, resolvePath);
+                    repeated.append(seg.openingTagStripped).append(resolvedInner).append(seg.closingTag);
+                }
+            }
+            out.append(repeated);
+        }
+        out.append(plan.tail);
+        return out.toString();
+    }
+
+    private record RepeatPlan(boolean hasRepeat, boolean hasPlaceholders,
+                              java.util.List<RepeatSegment> segments, String tail) { }
+
+    private record RepeatSegment(String prefix, String openingTagStripped, String closingTag,
+                                 String collectionPath, String varName, String inner) { }
 
     private int determineMaxInFlight(ExecutorService executor) {
         if (executor instanceof java.util.concurrent.ThreadPoolExecutor tpe) {

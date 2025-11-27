@@ -121,11 +121,12 @@ public class Html2PdfConverterService {
         if (htmlContent == null) {
             throw new HtmlToPdfConversionException("HTML content must not be null.");
         }
+        String cleanedHtml = stripBom(htmlContent);
         try (ConversionPermit _ = acquireConversionPermit()) {
             long startMillis = System.currentTimeMillis();
             noteConversionStarted();
             try {
-                Document document = parseDocumentSafely(htmlContent);
+                Document document = parseDocumentSafely(cleanedHtml);
                 String sanitisedXhtml = null;
                 if (document != null) {
                     objectFactory.preprocessDocument(document);
@@ -133,7 +134,7 @@ public class Html2PdfConverterService {
                         sanitisedXhtml = serializeDocument(document);
                     }
                 }
-                byte[] pdfBytes = renderToPdf(document, htmlContent);
+                byte[] pdfBytes = renderToPdf(document, cleanedHtml);
 
                 long duration = System.currentTimeMillis() - startMillis;
                 String timestamp = LocalTime.now().format(TIMESTAMP_FORMATTER);
@@ -226,6 +227,14 @@ public class Html2PdfConverterService {
             transformer.transform(new DOMSource(document), new StreamResult(out));
             return out.toString(StandardCharsets.UTF_8);
         }
+    }
+
+    private String stripBom(String input) {
+        if (input == null || input.isEmpty()) return input;
+        if (input.charAt(0) == '\uFEFF') {
+            return input.substring(1);
+        }
+        return input;
     }
 
     private ConversionPermit acquireConversionPermit() throws InterruptedException {
