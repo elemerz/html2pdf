@@ -254,10 +254,11 @@ public class ZipIngestService {
 			List<BatchConversionItem> batchItems = new ArrayList<>();
 			for (DebiteurWithPractitioner dwp : debiteuren) {
 				try {
-					String debtorJson = json.stringifySingleDebtor(new nl.infomedics.invoicing.model.SingleDebtorInvoice(dwp), false);
+					// Pass object directly, avoiding double serialization
+					nl.infomedics.invoicing.model.SingleDebtorInvoice sdi = new nl.infomedics.invoicing.model.SingleDebtorInvoice(dwp);
 					String outputId = sanitizeFilename(dwp.getDebiteur().getInvoiceNumber() != null ? 
 						dwp.getDebiteur().getInvoiceNumber() : dwp.getDebiteur().getInsuredId());
-					batchItems.add(new BatchConversionItem(debtorJson, outputId));
+					batchItems.add(new BatchConversionItem(sdi, outputId));
 				} catch (Exception e) {
 					log.error("Failed to prepare batch item for debtor {} in {}: {}", 
 						dwp.getDebiteur().getInvoiceNumber(), zipName, e.getMessage(), e);

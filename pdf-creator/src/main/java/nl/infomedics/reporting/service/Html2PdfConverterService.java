@@ -44,6 +44,26 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Service
 public class Html2PdfConverterService {
+    private static final ThreadLocal<DocumentBuilder> DOCUMENT_BUILDER = ThreadLocal.withInitial(() -> {
+        try {
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            factory.setNamespaceAware(true);
+            factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
+            factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+            return factory.newDocumentBuilder();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    });
+
+    private static final ThreadLocal<Transformer> TRANSFORMER = ThreadLocal.withInitial(() -> {
+        try {
+            return TransformerFactory.newInstance().newTransformer();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    });
+
     private final QrBarcodeObjectFactory objectFactory = new QrBarcodeObjectFactory();
     private final FontRegistry fontRegistry;
     private static final long CONVERSION_IDLE_THRESHOLD_MS = 1_000L;
@@ -188,8 +208,7 @@ public class Html2PdfConverterService {
     }
 
     private String serializeDocument(Document document) throws Exception {
-        TransformerFactory transformerFactory = TransformerFactory.newInstance();
-        Transformer transformer = transformerFactory.newTransformer();
+        Transformer transformer = TRANSFORMER.get();
         transformer.setOutputProperty(OutputKeys.INDENT, "yes");
         transformer.setOutputProperty(OutputKeys.METHOD, "xml");
         transformer.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
@@ -259,11 +278,8 @@ public class Html2PdfConverterService {
     }
 
     private Document parseDocument(InputStream input) throws Exception {
-        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-        factory.setNamespaceAware(true);
-        factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
-        factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
-        DocumentBuilder builder = factory.newDocumentBuilder();
+        DocumentBuilder builder = DOCUMENT_BUILDER.get();
+        builder.reset();
         Document document = builder.parse(input);
         document.getDocumentElement().normalize();
         return document;

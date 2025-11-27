@@ -51,6 +51,8 @@ public class HtmlToPdfController {
             "(<([a-zA-Z0-9]+)([^>]*?data-repeat-over=\\\"([a-zA-Z0-9_\\.]+)\\\"[^>]*?data-repeat-var=\\\"([a-zA-Z0-9_]+)\\\"[^>]*?)>)([\\s\\S]*?)(</\\2>)"
     );
 
+    private static final java.util.Map<String, java.lang.reflect.Method> METHOD_CACHE = new java.util.concurrent.ConcurrentHashMap<>();
+
     public HtmlToPdfController(Html2PdfConverterService converterService,
                                @Qualifier("pdfConversionExecutor") ExecutorService pdfConversionExecutor) {
         this.converterService = converterService;
@@ -79,9 +81,16 @@ public class HtmlToPdfController {
         return ResponseEntity.ok(response);
     }
     
-    private DebiteurWithPractitioner parseDebiteur(String jsonModel) throws Exception {
-        if (jsonModel == null || jsonModel.isBlank()) return new DebiteurWithPractitioner();
-        JsonNode root = OBJECT_MAPPER.readTree(jsonModel);
+    private DebiteurWithPractitioner parseDebiteur(Object jsonModel) throws Exception {
+        if (jsonModel == null) return new DebiteurWithPractitioner();
+        JsonNode root;
+        if (jsonModel instanceof String s) {
+             if (s.isBlank()) return new DebiteurWithPractitioner();
+             root = OBJECT_MAPPER.readTree(s);
+        } else {
+             root = OBJECT_MAPPER.valueToTree(jsonModel);
+        }
+        
         if (root.isObject() && root.has("debiteur") && root.get("debiteur").isObject()) {
             root = root.get("debiteur");
         }
@@ -114,7 +123,6 @@ public class HtmlToPdfController {
         // <tr data-repeat-over="collectionName" data-repeat-var="itemVar"> ... ${itemVar.prop} ... </tr>
         try {
             java.util.Map<String,String> cache = new java.util.HashMap<>(); // cache computed values per key
-            java.util.Map<String, java.lang.reflect.Method> methodCache = new java.util.HashMap<>(); // cache reflection lookups
             java.util.function.BiFunction<Object,String,Object> readProp = (obj, name) -> {
                 if (obj == null || name == null || name.isEmpty()) return null;
                 Class<?> c = obj.getClass();
@@ -123,18 +131,18 @@ public class HtmlToPdfController {
                 String keyIs = c.getName()+"#is"+capital;
                 String keyPlain = c.getName()+"#"+name;
                 try {
-                    java.lang.reflect.Method m = methodCache.get(keyGet);
-                    if (m == null) { m = c.getMethod("get" + capital); methodCache.put(keyGet, m); }
+                    java.lang.reflect.Method m = METHOD_CACHE.get(keyGet);
+                    if (m == null) { m = c.getMethod("get" + capital); METHOD_CACHE.put(keyGet, m); }
                     return m.invoke(obj);
                 } catch (Exception ignored) {}
                 try {
-                    java.lang.reflect.Method m = methodCache.get(keyIs);
-                    if (m == null) { m = c.getMethod("is" + capital); methodCache.put(keyIs, m); }
+                    java.lang.reflect.Method m = METHOD_CACHE.get(keyIs);
+                    if (m == null) { m = c.getMethod("is" + capital); METHOD_CACHE.put(keyIs, m); }
                     return m.invoke(obj);
                 } catch (Exception ignored) {}
                 try {
-                    java.lang.reflect.Method m = methodCache.get(keyPlain);
-                    if (m == null) { m = c.getMethod(name); methodCache.put(keyPlain, m); }
+                    java.lang.reflect.Method m = METHOD_CACHE.get(keyPlain);
+                    if (m == null) { m = c.getMethod(name); METHOD_CACHE.put(keyPlain, m); }
                     if (m.getParameterCount()==0) return m.invoke(obj);
                 } catch (Exception ignored) {}
                 return null;
