@@ -138,6 +138,10 @@ public class HtmlToPdfController {
 
     private String resolvePropertyPlaceholders(String htmlString, DebiteurWithPractitioner debiteur) {
         if (htmlString == null || htmlString.isEmpty() || debiteur == null) return htmlString;
+        boolean hasRepeat = htmlString.contains("data-repeat-over");
+        boolean hasPlaceholders = htmlString.contains("${");
+        if (!hasRepeat && !hasPlaceholders) return htmlString; // nothing to resolve
+
         // Extended placeholder resolution: supports ${a.b.c} and simple repeat nodes:
         // <tr data-repeat-over="collectionName" data-repeat-var="itemVar"> ... ${itemVar.prop} ... </tr>
         try {
@@ -227,6 +231,7 @@ public class HtmlToPdfController {
     // Resolves ${var.prop.path} within an inner repeat section for a single item object.
     private String resolveItemPlaceholders(String inner, String varName, Object item, java.util.function.BiFunction<Object,String,Object> resolvePath) {
         if (inner == null || inner.isEmpty()) return inner;
+        if (!inner.contains("${" + varName + ".")) return inner; // nothing to replace for this item
         java.util.Map<String,Object> itemMap = (item instanceof java.util.Map<?,?> m)
                 ? (java.util.Map<String,Object>) m
                 : OBJECT_MAPPER.convertValue(item, java.util.Map.class);

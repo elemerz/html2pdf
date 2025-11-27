@@ -21,9 +21,15 @@
 3 : 11.963 s
 4 : 12.613 s
 5 : 11.629 s
------ After 3rd round of Perf Improvements ---
+----- After 3rd round of Perf Improvements: Just set concurrent therads to 16 (instead of the previous value: 64) ---
 1 : 15.895 s
 2 : 12.376 s
 3 : 11.804 s
 4 : 11.063 s
-5 : 1 s
+5 : 11.321 s
+----- After 4th round of Perf Improvements ---
+1 : 16.106 s
+2 : 11.925 s
+3 : 10.833 s
+4 : 11.413 s
+5 :  s
