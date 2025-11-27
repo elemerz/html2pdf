@@ -1,6 +1,9 @@
------ 1000 Zips: After 5th round of Perf Improvements ---
+----- 1000 Zips: After 5th round of Perf Improvements --- *51678.zip
 1 : 116.356 s
 2 : 110.553 s
 3 : 110.771 s
 4 : 118.443 s
 5 : 127.049 s
+----- 10000 Zips (45830 Pdf-s): After 5th round of Perf Improvements --- *51678.zip
+1 : 1017 s = 16 minutes, 55 seconds.
+2 : 1117 s = 18 minutes, 35 seconds.
