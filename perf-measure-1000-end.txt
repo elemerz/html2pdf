@@ -1,0 +1,6 @@
+----- 1000 Zips: After 5th round of Perf Improvements ---
+1 : 116.356 s
+2 : 110.553 s
+3 : 110.771 s
+4 : 118.443 s
+5 : 127.049 s
