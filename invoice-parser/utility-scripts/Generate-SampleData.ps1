@@ -106,7 +106,7 @@ function Generate-ClassicDebiteurenFile {
         $amount3 = $amount1
         $totalAmount += $amount1
         $hash = -join ((1..64) | ForEach-Object { '{0:X}' -f (Get-Random -Maximum 16) })
-        $imageUrl = "https://a-api.infomedics.nl/TimInvoiceWebApi/api/InvoiceMail/GetImage?Hash=$([Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes((New-Guid).ToString())))"
+        $imageUrl = "https://a-api.infomedics.nl/TimInvoiceWebApi/api/InvoiceMail/GetImage?Hash=$([Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes(([Guid]::NewGuid()).ToString())))"
         $randomId = Get-Random -Minimum 10000000 -Maximum 99999999
         
         $line = "$invoiceNr;TEST_Sample_TC_$i;;;;;$insuredId;$patientName;;;$insurer;$practiceName;$street;$houseNr;$postcode;$city;$($dateFrom.ToString('dd-MM-yyyy'));$dateTo;$InvoiceType;0;$amount1;0;$amount1;$(Get-Random -Minimum 1000000 -Maximum 9999999)_P210247$(Get-Random -Minimum 100 -Maximum 999)_$hash;;;;$amount2;$(Get-Random -Minimum 5 -Maximum 100);4000;$amount2;;0;12-07-2025;0;0;0;;;;;;;;;;0;0;;0;0;0;;;;;;;;;;;;;;;;;0;;;;;;;;;;;;;;;;;;;;;$amount1;$amount1;$amount3;$amount3;;$imageUrl;$randomId;;;2;0;;$houseNr;;"
@@ -158,7 +158,7 @@ function Generate-XmlNotasFile {
         
         $documentNr = Get-Random -Minimum 1000000 -Maximum 9999999
         $bundleKey = "$(Get-Random -Minimum 1000000 -Maximum 9999999)_$(Get-Random -Minimum 100000 -Maximum 999999)_$(-join ((1..64) | ForEach-Object { '{0:X}' -f (Get-Random -Maximum 16) }))"
-        $trackingUrl = "https://t-api.infomedics.nl/TimInvoiceWebApi/api/InvoiceMail/GetImage?Hash=$([Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes((New-Guid).ToString())))"
+        $trackingUrl = "https://t-api.infomedics.nl/TimInvoiceWebApi/api/InvoiceMail/GetImage?Hash=$([Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes(([Guid]::NewGuid()).ToString())))"
         $paymentRef = "0161621$(Get-Random -Minimum 100000 -Maximum 999999)071"
         $dagtekenDate = (Get-Date).ToString("yyyy-MM-dd")
         $betaalDate = (Get-Date).AddDays(30).ToString("yyyy-MM-dd")
