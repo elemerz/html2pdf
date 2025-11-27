@@ -133,6 +133,7 @@ Request: `{ xhtmlTemplateString, jsonModel }` → Response: `{ pdfBytesBase64[] 
 
 ## 8. Future Features (Backlog)
 - Real database persistence (audit & history).
+- Securize the API.
 - Template versioning & migration tooling.
 - Custom component library (headers, line item tables, totals blocks).
 - Logo/image management + optimization pipeline.

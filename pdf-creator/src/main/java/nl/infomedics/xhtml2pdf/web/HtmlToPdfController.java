@@ -67,10 +67,21 @@ public class HtmlToPdfController {
     public ResponseEntity<BatchConversionResponse> convertBatch(@Valid @RequestBody BatchConversionRequest request) {
         // debug: batch conversion items=" + request.items().size()
         
+        int maxInFlight = determineMaxInFlight(pdfConversionExecutor);
+        java.util.concurrent.Semaphore limiter = new java.util.concurrent.Semaphore(maxInFlight);
+
         List<CompletableFuture<BatchConversionResultItem>> futures = request.items().stream()
-                .map(item -> CompletableFuture.supplyAsync(
-                        () -> convertSingleItem(request.html(), request.includeSanitisedXhtml(), item),
-                        pdfConversionExecutor))
+                .map(item -> CompletableFuture.supplyAsync(() -> {
+                            try {
+                                limiter.acquire();
+                                return convertSingleItem(request.html(), request.includeSanitisedXhtml(), item);
+                            } catch (InterruptedException ie) {
+                                Thread.currentThread().interrupt();
+                                return BatchConversionResultItem.failure(item.outputId(), "Interrupted");
+                            } finally {
+                                limiter.release();
+                            }
+                        }, pdfConversionExecutor))
                 .collect(Collectors.toList());
         
         List<BatchConversionResultItem> results = futures.stream()
@@ -83,14 +94,22 @@ public class HtmlToPdfController {
     
     private DebiteurWithPractitioner parseDebiteur(Object jsonModel) throws Exception {
         if (jsonModel == null) return new DebiteurWithPractitioner();
+        if (jsonModel instanceof DebiteurWithPractitioner direct) {
+            return direct;
+        }
+        if (jsonModel instanceof nl.infomedics.invoicing.model.SingleDebtorInvoice sdi
+                && sdi.getDebiteur() != null) {
+            return sdi.getDebiteur();
+        }
+
         JsonNode root;
         if (jsonModel instanceof String s) {
-             if (s.isBlank()) return new DebiteurWithPractitioner();
-             root = OBJECT_MAPPER.readTree(s);
+            if (s.isBlank()) return new DebiteurWithPractitioner();
+            root = OBJECT_MAPPER.readTree(s);
         } else {
-             root = OBJECT_MAPPER.valueToTree(jsonModel);
+            root = OBJECT_MAPPER.valueToTree(jsonModel);
         }
-        
+
         if (root.isObject() && root.has("debiteur") && root.get("debiteur").isObject()) {
             root = root.get("debiteur");
         }
@@ -108,7 +127,7 @@ public class HtmlToPdfController {
             String htmlResolved = dwp != null ? resolvePropertyPlaceholders(sharedHtml, dwp) : sharedHtml;
 //            log.info("\n\nsharedHtml =\n\n {}", sharedHtml);
 //            log.info("\n\nhtmlResolved =\n\n {}", htmlResolved);
-            PdfConversionResult result = converterService.convertHtmlToPdf(htmlResolved);
+            PdfConversionResult result = converterService.convertHtmlToPdf(htmlResolved, includeSanitised);
             byte[] pdfBytes = result.pdfContent();
             return BatchConversionResultItem.success(item.outputId(), pdfBytes);
         } catch (Exception e) {
@@ -123,36 +142,18 @@ public class HtmlToPdfController {
         // <tr data-repeat-over="collectionName" data-repeat-var="itemVar"> ... ${itemVar.prop} ... </tr>
         try {
             java.util.Map<String,String> cache = new java.util.HashMap<>(); // cache computed values per key
-            java.util.function.BiFunction<Object,String,Object> readProp = (obj, name) -> {
-                if (obj == null || name == null || name.isEmpty()) return null;
-                Class<?> c = obj.getClass();
-                String capital = Character.toUpperCase(name.charAt(0)) + name.substring(1);
-                String keyGet = c.getName()+"#get"+capital;
-                String keyIs = c.getName()+"#is"+capital;
-                String keyPlain = c.getName()+"#"+name;
-                try {
-                    java.lang.reflect.Method m = METHOD_CACHE.get(keyGet);
-                    if (m == null) { m = c.getMethod("get" + capital); METHOD_CACHE.put(keyGet, m); }
-                    return m.invoke(obj);
-                } catch (Exception ignored) {}
-                try {
-                    java.lang.reflect.Method m = METHOD_CACHE.get(keyIs);
-                    if (m == null) { m = c.getMethod("is" + capital); METHOD_CACHE.put(keyIs, m); }
-                    return m.invoke(obj);
-                } catch (Exception ignored) {}
-                try {
-                    java.lang.reflect.Method m = METHOD_CACHE.get(keyPlain);
-                    if (m == null) { m = c.getMethod(name); METHOD_CACHE.put(keyPlain, m); }
-                    if (m.getParameterCount()==0) return m.invoke(obj);
-                } catch (Exception ignored) {}
-                return null;
-            };
+            java.util.Map<String,Object> debiteurMap = OBJECT_MAPPER.convertValue(debiteur, java.util.Map.class);
+
             java.util.function.BiFunction<Object,String,Object> resolvePath = (root, path) -> {
                 if (root == null || path == null || path.isEmpty()) return null;
                 Object current = root;
                 for (String part : path.split("\\.")) {
                     if (current == null) return null;
-                    current = readProp.apply(current, part);
+                    if (current instanceof java.util.Map<?,?> m && m.containsKey(part)) {
+                        current = m.get(part);
+                    } else {
+                        current = invokeProperty(current, part);
+                    }
                 }
                 return current;
             };
@@ -165,7 +166,7 @@ public class HtmlToPdfController {
                 String collectionPath = rm.group(4);
                 String varName = rm.group(5);
                 String inner = rm.group(6);
-                Object collectionObj = resolvePath.apply(debiteur, collectionPath);
+                Object collectionObj = resolvePath.apply(debiteurMap, collectionPath);
                 StringBuilder repeated = new StringBuilder();
                 if (collectionObj instanceof java.lang.Iterable<?> iterable) {
                     for (Object item : iterable) {
@@ -209,7 +210,7 @@ public class HtmlToPdfController {
                 String key = afterRepeatExpansion.substring(start+2, end).trim();
                 String val = cache.get(key);
                 if (val == null && !cache.containsKey(key)) {
-                    Object resolved = resolvePath.apply(debiteur, key);
+                    Object resolved = resolvePath.apply(debiteurMap, key);
                     val = resolved != null ? resolved.toString() : "";
                     cache.put(key, val);
                 }
@@ -226,6 +227,9 @@ public class HtmlToPdfController {
     // Resolves ${var.prop.path} within an inner repeat section for a single item object.
     private String resolveItemPlaceholders(String inner, String varName, Object item, java.util.function.BiFunction<Object,String,Object> resolvePath) {
         if (inner == null || inner.isEmpty()) return inner;
+        java.util.Map<String,Object> itemMap = (item instanceof java.util.Map<?,?> m)
+                ? (java.util.Map<String,Object>) m
+                : OBJECT_MAPPER.convertValue(item, java.util.Map.class);
         StringBuilder out = new StringBuilder(inner.length());
         int i=0; int len=inner.length();
         while (i < len) {
@@ -237,7 +241,7 @@ public class HtmlToPdfController {
             String key = inner.substring(start+2, end).trim();
             if (key.startsWith(varName + ".")) {
                 String path = key.substring(varName.length()+1);
-                Object resolved = resolvePath.apply(item, path);
+                Object resolved = resolvePath.apply(itemMap, path);
                 out.append(resolved != null ? resolved.toString() : "");
             } else {
                 // leave unresolved for later global pass
@@ -246,6 +250,39 @@ public class HtmlToPdfController {
             i = end + 1;
         }
         return out.toString();
+    }
+
+    private Object invokeProperty(Object obj, String name) {
+        if (obj == null || name == null || name.isEmpty()) return null;
+        Class<?> c = obj.getClass();
+        String capital = Character.toUpperCase(name.charAt(0)) + name.substring(1);
+        String keyGet = c.getName()+"#get"+capital;
+        String keyIs = c.getName()+"#is"+capital;
+        String keyPlain = c.getName()+"#"+name;
+        try {
+            java.lang.reflect.Method m = METHOD_CACHE.get(keyGet);
+            if (m == null) { m = c.getMethod("get" + capital); METHOD_CACHE.put(keyGet, m); }
+            return m.invoke(obj);
+        } catch (Exception ignored) {}
+        try {
+            java.lang.reflect.Method m = METHOD_CACHE.get(keyIs);
+            if (m == null) { m = c.getMethod("is" + capital); METHOD_CACHE.put(keyIs, m); }
+            return m.invoke(obj);
+        } catch (Exception ignored) {}
+        try {
+            java.lang.reflect.Method m = METHOD_CACHE.get(keyPlain);
+            if (m == null) { m = c.getMethod(name); METHOD_CACHE.put(keyPlain, m); }
+            if (m.getParameterCount()==0) return m.invoke(obj);
+        } catch (Exception ignored) {}
+        return null;
+    }
+
+    private int determineMaxInFlight(ExecutorService executor) {
+        if (executor instanceof java.util.concurrent.ThreadPoolExecutor tpe) {
+            int max = tpe.getMaximumPoolSize();
+            return Math.max(1, max * 2); // allow small queueing but prevent floods
+        }
+        return Math.max(1, Runtime.getRuntime().availableProcessors());
     }
 
     @ExceptionHandler(HtmlToPdfConversionException.class)

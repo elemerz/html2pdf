@@ -33,7 +33,8 @@ public class FileWatchRunner implements ApplicationRunner {
 	public FileWatchRunner(AppProperties props, ZipIngestService ingest) {
 		this.props = props;
 		this.ingest = ingest;
-		this.maxConcurrentProcessing = Math.max(1, props.getConcurrentWorkers());
+		int configured = Math.max(1, props.getConcurrentWorkers());
+		this.maxConcurrentProcessing = configured;
 		this.processingPermits = new Semaphore(this.maxConcurrentProcessing);
 		
 		// Create thread pool with bounded queue to prevent memory issues

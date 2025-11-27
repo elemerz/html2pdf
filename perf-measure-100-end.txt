@@ -1,0 +1,29 @@
+----- Baseline Before Perf Improvements ---
+1 : 15.461 s
+2 : 13.391 s
+3 : 12.064 s
+4 : 11.817 s
+5 : 12.897 s
+6 : 18.090 s
+7 : 18.285 s
+8 : 15.210 s
+9 : 15.566 s
+10: 14.502 s
+----- After 1st round of Perf Improvements ---
+1 : 20.604 s
+2 : 18.264 s
+3 : 14.511 s
+4 : 13.195 s
+5 : 14.457 s
+----- After 2nd round of Perf Improvements ---
+1 : 15.312 s
+2 : 13.220 s
+3 : 11.963 s
+4 : 12.613 s
+5 : 11.629 s
+----- After 3rd round of Perf Improvements ---
+1 : 15.895 s
+2 : 12.376 s
+3 : 11.804 s
+4 : 11.063 s
+5 : 1 s

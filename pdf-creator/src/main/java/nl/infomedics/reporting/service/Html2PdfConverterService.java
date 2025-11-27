@@ -94,7 +94,10 @@ public class Html2PdfConverterService {
         this.fontRegistry = fontRegistry;
         this.srgbColorProfile = loadSrgbColorProfile();
         if (configuredMaxConcurrent < 1) {
-            log.warn("Configured converter.max-concurrent {} is invalid; defaulting to 1.", configuredMaxConcurrent);
+            int cores = Math.max(1, Runtime.getRuntime().availableProcessors());
+            log.warn("Configured converter.max-concurrent {} is invalid; defaulting to hardware cores ({}).",
+                    configuredMaxConcurrent, cores);
+            configuredMaxConcurrent = cores;
         }
         this.maxConcurrentConversions = Math.max(1, configuredMaxConcurrent);
         this.conversionPermits = new Semaphore(this.maxConcurrentConversions);
@@ -110,6 +113,11 @@ public class Html2PdfConverterService {
      * @throws HtmlToPdfConversionException when conversion fails or the thread is interrupted
      */
     public PdfConversionResult convertHtmlToPdf(String htmlContent) throws HtmlToPdfConversionException {
+        return convertHtmlToPdf(htmlContent, true);
+    }
+
+    public PdfConversionResult convertHtmlToPdf(String htmlContent, boolean includeSanitisedXhtml)
+            throws HtmlToPdfConversionException {
         if (htmlContent == null) {
             throw new HtmlToPdfConversionException("HTML content must not be null.");
         }
@@ -121,7 +129,9 @@ public class Html2PdfConverterService {
                 String sanitisedXhtml = null;
                 if (document != null) {
                     objectFactory.preprocessDocument(document);
-                    sanitisedXhtml = serializeDocument(document);
+                    if (includeSanitisedXhtml) {
+                        sanitisedXhtml = serializeDocument(document);
+                    }
                 }
                 byte[] pdfBytes = renderToPdf(document, htmlContent);
 

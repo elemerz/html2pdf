@@ -30,6 +30,7 @@
 	<properties>
 		<java.version>25</java.version>
 		<spring-boot.version>4.0.0</spring-boot.version>
+		<spring-boot.repackage.skip>false</spring-boot.repackage.skip>
 		<maven.compiler.release>${java.version}</maven.compiler.release>
 		<maven-compiler-plugin.version>3.14.1</maven-compiler-plugin.version>
 		<lombok.version>1.18.42</lombok.version>
@@ -133,7 +134,7 @@
                     <groupId>org.springframework.boot</groupId>
                     <artifactId>spring-boot-maven-plugin</artifactId>
                     <configuration>
-                        <skip>false</skip>
+                        <skip>${spring-boot.repackage.skip}</skip>
 						<excludes>
 							<exclude>
 								<groupId>org.projectlombok</groupId>
