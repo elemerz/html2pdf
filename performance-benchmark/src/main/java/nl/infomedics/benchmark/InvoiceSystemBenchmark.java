@@ -13,8 +13,24 @@ import java.nio.file.StandardCopyOption;
 import java.util.concurrent.TimeUnit;
 
 @State(Scope.Benchmark)
-@BenchmarkMode(Mode.Throughput)
-@OutputTimeUnit(TimeUnit.SECONDS)
+// Role: Defines what the benchmark measures (e.g. operations per unit of time).
+// Other supported values: AverageTime, SampleTime, SingleShotTime, All
+@BenchmarkMode(value = Mode.Throughput)
+// Role: Defines the time unit for the benchmark results.
+// Other supported values: NANOSECONDS, MICROSECONDS, MILLISECONDS, MINUTES, HOURS, DAYS
+@OutputTimeUnit(value = TimeUnit.SECONDS)
+// Role: Configures the warmup phase to allow JIT optimization.
+// Parameters: iterations (count), time (duration), timeUnit (unit), batchSize (ops per invocation)
+@Warmup(iterations = 5, time = 1, timeUnit = TimeUnit.SECONDS, batchSize = 1)
+// Role: Configures the measurement phase.
+// Parameters: iterations (count), time (duration), timeUnit (unit), batchSize (ops per invocation)
+@Measurement(iterations = 5, time = 1, timeUnit = TimeUnit.SECONDS, batchSize = 1)
+// Role: Controls JVM forking for isolation.
+// Parameters: value (forks), warmups (ignored forks), jvmArgs/Prepend/Append (JVM flags)
+@Fork(value = 1, warmups = 0, jvmArgs = {}, jvmArgsPrepend = {}, jvmArgsAppend = {})
+// Role: Sets the number of threads.
+// Other supported values: Threads.MAX
+@Threads(value = 1)
 public class InvoiceSystemBenchmark {
 
     private ConfigurableApplicationContext context;
