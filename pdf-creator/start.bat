@@ -11,4 +11,4 @@ java -Xmx512M -Xms256M ^
 	 -Dlogging.config=./config/logback.xml ^
 	 -Dserver.port=6969 ^
 	 --sun-misc-unsafe-memory-access=allow ^
-	 -jar ./target/pdf-creator-0.0.1-SNAPSHOT.jar
+	 -jar ./target/pdf-creator-0.0.1-SNAPSHOT.jar %*

@@ -2,4 +2,4 @@
 set -euo pipefail
 
 # Start the Spring Boot app
-java -jar ./target/xhtml2pdf-0.0.1-SNAPSHOT.jar
+java -jar ./target/pdf-creator-0.0.1-SNAPSHOT.jar "$@"

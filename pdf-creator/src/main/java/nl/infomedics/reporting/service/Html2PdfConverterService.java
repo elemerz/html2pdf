@@ -113,7 +113,7 @@ public class Html2PdfConverterService {
      * @throws HtmlToPdfConversionException when conversion fails or the thread is interrupted
      */
     public PdfConversionResult convertHtmlToPdf(String htmlContent) throws HtmlToPdfConversionException {
-        return convertHtmlToPdf(htmlContent, true);
+        return convertHtmlToPdf(htmlContent, false);
     }
 
     public PdfConversionResult convertHtmlToPdf(String htmlContent, boolean includeSanitisedXhtml)

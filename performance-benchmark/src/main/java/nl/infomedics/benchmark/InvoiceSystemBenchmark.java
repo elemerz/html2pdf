@@ -81,23 +81,27 @@ public class InvoiceSystemBenchmark {
     }
 
     private void checkPdfCreatorHealth() {
-        try {
-            java.net.URL url = new java.net.URL("http://localhost:6969");
-            java.net.HttpURLConnection conn = (java.net.HttpURLConnection) url.openConnection();
-            conn.setConnectTimeout(2000);
-            conn.connect();
-            // We just want to check if the port is open and accepting connections
-            // Even a 404 is fine, it means the server is there.
-            // ConnectException would be thrown if not listening.
-            conn.disconnect();
-            System.out.println("PDF Creator is reachable at http://localhost:6969");
-        } catch (Exception e) {
-            System.err.println("WARNING: PDF Creator is NOT reachable at http://localhost:6969. Benchmark will likely fail.");
-            System.err.println("Please ensure pdf-creator is running (use start.bat). Error: " + e.getMessage());
-            // We don't throw exception here to allow the benchmark to attempt anyway, 
-            // but in a real scenario we might want to fail fast.
-            throw new RuntimeException("PDF Creator not reachable", e);
+        int retries = 30;
+        while (retries > 0) {
+            try {
+                java.net.URL url = new java.net.URL("http://localhost:6969");
+                java.net.HttpURLConnection conn = (java.net.HttpURLConnection) url.openConnection();
+                conn.setConnectTimeout(2000);
+                conn.connect();
+                // We just want to check if the port is open and accepting connections
+                // Even a 404 is fine, it means the server is there.
+                // ConnectException would be thrown if not listening.
+                conn.disconnect();
+                System.out.println("PDF Creator is reachable at http://localhost:6969");
+                return;
+            } catch (Exception e) {
+                System.out.println("Waiting for PDF Creator... (" + e.getMessage() + ")");
+                try { Thread.sleep(1000); } catch (InterruptedException ie) {}
+                retries--;
+            }
         }
+        // Final attempt that throws
+        throw new RuntimeException("PDF Creator not reachable after retries");
     }
 
     @TearDown(Level.Trial)
