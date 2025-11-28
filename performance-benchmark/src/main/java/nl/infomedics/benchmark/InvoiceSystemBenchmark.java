@@ -21,6 +21,7 @@ public class InvoiceSystemBenchmark {
     private ZipIngestService zipIngestService;
     private Path tempDir;
     private Path sourceZip;
+    private Path targetZip;
 
     @Param({"classic"})
     private String modelType;
@@ -70,6 +71,15 @@ public class InvoiceSystemBenchmark {
         DataGenerator.generateClassicZip(sourceZip);
     }
 
+    @Setup(Level.Invocation)
+    public void setupInvocation() throws IOException {
+        // Prepare the file for this iteration.
+        // This method's time is NOT included in the benchmark score.
+        String fileName = "bench-" + System.nanoTime() + ".zip";
+        targetZip = tempDir.resolve("input").resolve(fileName);
+        Files.copy(sourceZip, targetZip, StandardCopyOption.REPLACE_EXISTING);
+    }
+
     private void checkPdfCreatorHealth() {
         try {
             java.net.URL url = new java.net.URL("http://localhost:6969");
@@ -101,12 +111,7 @@ public class InvoiceSystemBenchmark {
 
     @Benchmark
     public void testThroughput() throws IOException {
-        // Copy source zip to input folder with a unique name
-        String fileName = "bench-" + System.nanoTime() + ".zip";
-        Path target = tempDir.resolve("input").resolve(fileName);
-        Files.copy(sourceZip, target, StandardCopyOption.REPLACE_EXISTING);
-        
-        // Process
-        zipIngestService.processZip(target);
+        // Process the pre-prepared file
+        zipIngestService.processZip(targetZip);
     }
 }
