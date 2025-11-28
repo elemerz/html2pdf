@@ -1,0 +1,71 @@
+Since this "Invoice Generator" project will be run on different machines, with very different capabilities/resources 
+(probably all of them will be Windows Server 2016 instances, running on virtual machines, where the resources of 
+such a virtual machine can easily vary over time).
+Therefore, I want to ensure for this "Invoice Generator" project the following features/capabilities:
+- can continuously measure its performance by some dedicated sub-module (maybe a JMH project?)
+- can automatically tune the parameters of the whole system in order to achieve the maximum possible performance on a given machine.
+
+Please make a plan to target the above goals. Make the plan's steps separately implementable, one after the other, in independent phases.
+- If you plan a JMH sub-module (but you may propose anything better than that), please bare in mind to:
+  - create also launcher scripts for it, both for Windows (*.cmd script) and Linux (*.sh script) systems.
+  - Adapt the existing launcher scripts in the project's root, so they continue to work correctly with: Amazon Corretto 25 JDK + SpringBoot 4.0.0 + Maven 3.9.x
+  - Set comfortable default values for all the parameters of JMH project. It is important to set the $ModelType to "classic" by default!
+  - To generate performance-test data for the new sub-module(s), you may use the existing @invoice-parser\utility-scripts\Generate-SampleData.ps1 PowerShell script.
+Before starting any implementation:
+ - please be interactive and let me take decisions!
+ - Make your best proposal for each step.
+_________________
+ Phase 1: Create performance-benchmark Module (JMH)
+
+     - Goal: A dedicated Maven module to measure system throughput.
+     - Approach:
+       - Create a new module performance-benchmark depending on invoice-parser and pdf-creator.
+       - Use JMH (Java Microbenchmark Harness) to drive the tests.
+       - Innovation: Use JMH @Param annotations to inject configuration values (e.g.,
+   zip.concurrent-workers, pdf.max-concurrent-conversions) into the Spring Boot application context.
+       - This effectively turns the benchmark into an Auto-Tuner: JMH will run the workload with
+   every combination of parameters (e.g., Threads: 8, 16, 32) and report which configuration yields
+   the highest operations/second.
+     - Data Generation: The benchmark @Setup will invoke Generate-SampleData.ps1 to create fresh test
+    data (defaulting to "classic" model).
+
+   Phase 2: Launcher Scripts & Environment
+
+     - Goal: robust execution on Windows/Linux with Java 25.
+     - Steps:
+       - Create build.cmd and build.sh in the root (currently missing) to build the entire project
+   including the new module.
+       - Create run-benchmark.cmd and run-benchmark.sh in the new module.
+       - Ensure scripts verify/configure Amazon Corretto 25 and Maven 3.9.x.
+
+   Phase 3: Tuning & Reporting
+
+     - Goal: Easy-to-read results.
+     - Steps:
+       - Configure JMH to output JSON/Text reports.
+       - Create a tune-system.cmd script that runs an exhaustive parameter search (long running).
+       - Create a check-health.cmd script that runs a quick test with default parameters.
+
+   Identified Tunable Parameters:
+
+     - invoice-parser: zip.concurrent-workers, pdf.max-concurrent-conversions
+     - pdf-creator: server.tomcat.threads.max, converter.max-concurrent,
+   spring.threads.virtual.enabled
+
+   Decision Point: Do you agree with this plan? Should I start with Phase 1 (Scaffolding the
+   performance-benchmark module)?
+   
+_______________________
+
+ Next Steps (Phase 3)
+
+   Now that we have a working benchmark, we can proceed to the final phase: Automatic Tuning.
+
+   I will create the tune-system.cmd script (and its Linux counterpart) that will:
+
+     - Run the benchmark with different combinations of parameters (e.g., zip.concurrent-workers = 8,
+    16, 32 and pdf.max-concurrent-conversions = 8, 16, 32).
+     - Parse the JMH output to find the configuration with the highest throughput.
+     - (Optional) Update the application.properties with the optimal values.
+
+   Shall I proceed with Phase 3?

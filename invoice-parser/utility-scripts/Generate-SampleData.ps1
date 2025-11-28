@@ -41,7 +41,8 @@ param(
 )
 
 # Sample data templates
-$script:invoiceTypes = @(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 32, 33, 34, 36, 40, 41, 42, 43, 44, 45, 50, 51, 64, 65, 66, 67, 68)
+#$script:invoiceTypes = @(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 32, 33, 34, 36, 40, 41, 42, 43, 44, 45, 50, 51, 64, 65, 66, 67, 68)
+$script:invoiceTypes = @(1, 2, 3, 4, 5, 6, 20, 8, 9, 10, 11, 12, 20, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 20, 28, 29, 30, 32, 33, 34, 36, 40, 41, 42, 20, 44, 45, 50, 51, 64, 65, 66, 20, 68)
 $script:insurers = @("Testverzekeraar Noord", "Testverzekeraar Zuid", "Zilveren Kruis Achmea Zorgverzekeringen NV", "CZ groep Zorgverzekeringen")
 $script:cities = @("VECOZOTESTCITY", "ALMERE", "EMMELOORD", "DIEMEN", "AMSTERDAM", "UTRECHT")
 $script:streets = @("VecozoTestStreet", "Antaresstraat", "Lindelaan", "DIEMERKADE", "P.J. Oudweg")
