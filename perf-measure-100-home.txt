@@ -35,10 +35,13 @@ ____After Performance Tuning: 100 Zips_______
 3: 17.780 s
 4: 18.445 s
 5: 17.785 s
+6: 18.934 s
+7: 18.422 s
+8: 17.379 s
 
 ____After Performance Tuning: 1000 Zips_______
 1: 173.694s
-2:  s
+2: 173.968 s
 3:  s
 4:  s
 5:  s
