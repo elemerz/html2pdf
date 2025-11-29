@@ -5,6 +5,43 @@
 ## 1. Executive Summary
 This system transforms zipped source data into production‑ready PDF invoices. It does so by (1) designing XHTML templates (fe-designer), (2) parsing heterogeneous ZIP payloads into a normalized JSON model (invoice-parser), and (3) rendering one PDF per debtor via a multi-threaded XHTML engine (pdf-creator).
 
+### 1.1 System Architecture Diagram
+```mermaid
+graph TD
+    %% Nodes
+    FE[fe-designer]
+    IP[invoice-parser]
+    PC[pdf-creator]
+    IM[invoice-models]
+    
+    %% Data Stores/Files
+    ZIP[(ZIP Archive)]
+    TPL[[XHTML Templates]]
+    PDF[(PDF Output)]
+
+    %% Relationships
+    FE -->|Produces| TPL
+    ZIP -->|Ingested by| IP
+    TPL -->|Read by| IP
+    
+    IP -->|Depends on| IM
+    PC -->|Depends on| IM
+    
+    IP -->|1. Sends XHTML + JSON Model| PC
+    PC -->|2. Returns PDF Bytes| IP
+    
+    IP -->|3. Persists| PDF
+
+    %% Styling
+    classDef service fill:#f9f,stroke:#333,stroke-width:2px;
+    classDef lib fill:#ff9,stroke:#333,stroke-width:2px;
+    classDef file fill:#9cf,stroke:#333,stroke-width:2px;
+    
+    class FE,IP,PC service;
+    class IM lib;
+    class ZIP,TPL,PDF file;
+```
+
 ```
 ZIP Archive (.txt in-scope)        fe-designer (XHTML Template Library)
             │                                   │
