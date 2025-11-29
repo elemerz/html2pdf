@@ -116,37 +116,49 @@ public class Html2PdfConverterService {
         return convertHtmlToPdf(htmlContent, false);
     }
 
+    /**
+     * Converts the supplied XHTML content into a PDF document.
+     *
+     * @param htmlContent XHTML content to convert
+     * @param includeSanitisedXhtml whether to include the sanitised XHTML in the result
+     * @return {@link PdfConversionResult} containing the PDF bytes and optional sanitised XHTML snapshot
+     * @throws HtmlToPdfConversionException when conversion fails or the thread is interrupted
+     */
     public PdfConversionResult convertHtmlToPdf(String htmlContent, boolean includeSanitisedXhtml)
             throws HtmlToPdfConversionException {
         if (htmlContent == null) {
             throw new HtmlToPdfConversionException("HTML content must not be null.");
         }
+        
         String cleanedHtml = stripBom(htmlContent);
+        
         try (ConversionPermit _ = acquireConversionPermit()) {
             long startMillis = System.currentTimeMillis();
             noteConversionStarted();
+            
             try {
-                Document document = parseDocumentSafely(cleanedHtml);
+                // 1. Parse and preprocess
+                Document document = prepareDocument(cleanedHtml);
+                
+                // 2. Optional: Generate sanitized XHTML
                 String sanitisedXhtml = null;
-                if (document != null) {
-                    objectFactory.preprocessDocument(document);
-                    if (includeSanitisedXhtml) {
-                        sanitisedXhtml = serializeDocument(document);
-                    }
+                if (includeSanitisedXhtml && document != null) {
+                    sanitisedXhtml = serializeDocument(document);
                 }
+                
+                // 3. Render to PDF
                 byte[] pdfBytes = renderToPdf(document, cleanedHtml);
 
-                long duration = System.currentTimeMillis() - startMillis;
-                String timestamp = LocalTime.now().format(TIMESTAMP_FORMATTER);
-                log.info("{} Conversion time: {} ms", timestamp, duration);
+                // 4. Log metrics
+                logConversionDuration(startMillis);
 
                 return new PdfConversionResult(pdfBytes, sanitisedXhtml);
+                
             } catch (Exception e) {
                 log.error("Error converting XHTML content", e);
                 throw new HtmlToPdfConversionException("Unable to convert XHTML content", e);
             } finally {
-                long finishMillis = System.currentTimeMillis();
-                scheduleBatchCompletionCheck(finishMillis);
+                trackBatchCompletion();
                 if (Thread.interrupted()) {
                     Thread.currentThread().interrupt();
                 }
@@ -157,9 +169,28 @@ public class Html2PdfConverterService {
         }
     }
 
+    private Document prepareDocument(String htmlContent) {
+        Document document = parseDocumentSafely(htmlContent);
+        if (document != null) {
+            objectFactory.preprocessDocument(document);
+        }
+        return document;
+    }
+
+    private void logConversionDuration(long startMillis) {
+        long duration = System.currentTimeMillis() - startMillis;
+        String timestamp = LocalTime.now().format(TIMESTAMP_FORMATTER);
+        log.info("{} Conversion time: {} ms", timestamp, duration);
+    }
+
+    private void trackBatchCompletion() {
+        long finishMillis = System.currentTimeMillis();
+        scheduleBatchCompletionCheck(finishMillis);
+    }
+
     private Document parseDocumentSafely(String htmlContent) {
-        try (InputStream in = new ByteArrayInputStream(htmlContent.getBytes(StandardCharsets.UTF_8))) {
-            return parseDocument(in);
+        try (InputStream inputStream = new ByteArrayInputStream(htmlContent.getBytes(StandardCharsets.UTF_8))) {
+            return parseDocument(inputStream);
         } catch (Exception ex) {
             log.warn("Unable to parse supplied XHTML content: {}", ex.getMessage());
             return null;
@@ -171,9 +202,9 @@ public class Html2PdfConverterService {
     private byte[] renderToPdf(Document document, String htmlContent) throws IOException {
         int key = htmlContent != null ? htmlContent.hashCode() : System.identityHashCode(document);
         int initialSize = Math.max(8 * 1024, templateSizeHint.getOrDefault(key, 64 * 1024));
-        try (ByteArrayOutputStream os = new ByteArrayOutputStream(initialSize)) {
-            renderToPdf(document, htmlContent, os);
-            byte[] bytes = os.toByteArray();
+        try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream(initialSize)) {
+            renderToPdf(document, htmlContent, outputStream);
+            byte[] bytes = outputStream.toByteArray();
             templateSizeHint.merge(key, bytes.length, (prev, cur) -> {
                 int avg = (prev + cur) >>> 1;
                 int cap = 8 * 1024 * 1024; // cap at 8MB
@@ -183,7 +214,7 @@ public class Html2PdfConverterService {
         }
     }
 
-    private void renderToPdf(Document document, String htmlContent, OutputStream os) throws IOException {
+    private void renderToPdf(Document document, String htmlContent, OutputStream outputStream) throws IOException {
         try {
             PdfRendererBuilder builder = configuredBuilderSkeleton();
             if (document != null) {
@@ -191,7 +222,7 @@ public class Html2PdfConverterService {
             } else {
                 builder.withHtmlContent(htmlContent, "about:blank");
             }
-            builder.toStream(os);
+            builder.toStream(outputStream);
             builder.run();
         } catch (Exception ex) {
             throw new IOException("Unable to render PDF", ex);

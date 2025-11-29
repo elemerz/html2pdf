@@ -278,7 +278,7 @@ public class FileWatchRunner implements ApplicationRunner {
 			}
 			Path zipPath = toZipSibling(marker);
 			if (Files.exists(zipPath)) {
-				deleteMarker(marker);
+				deleteMarker(marker); //delete the markert, so that pahreads cannot find it!
 				ingest.processZip(zipPath);
 			} else {
 				log.warn("Marker {} present but matching {} is missing", marker.getFileName(),

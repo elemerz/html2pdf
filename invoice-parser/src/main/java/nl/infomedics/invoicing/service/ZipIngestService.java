@@ -38,33 +38,34 @@ import nl.infomedics.invoicing.model.Practitioner;
 @Getter @Setter @Slf4j
 @Service
 public class ZipIngestService {
-	private final ParseService parse;
-	private final JsonAssembler json;
-	private final AppProperties props;
+	private final ParseService parseService;
+	private final JsonAssembler jsonAssembler;
+	private final AppProperties appProperties;
 
-	private final Path jsonOutDir;
-	private final Path pdfOutDir;
-	private final boolean jsonPretty;
+	private final Path jsonOutputDirectory;
+	private final Path pdfOutputDirectory;
+	private final boolean isJsonPrettyPrint;
 	private final Xhtml2PdfClient pdfClient;
 	private final ThreadPoolExecutor pdfConversionExecutor;
 	private final Semaphore pdfConversionPermits;
 	private final int maxConcurrentPdfConversions;
 	private final Map<Integer,String> templateHtmlMap;
+	
 	// Guard against concurrent processing of the same zip name in this JVM
-	private static final java.util.Set<String> ACTIVE = java.util.concurrent.ConcurrentHashMap.newKeySet();
+	private static final java.util.Set<String> ACTIVE_FILES = java.util.concurrent.ConcurrentHashMap.newKeySet();
 
-	public ZipIngestService(ParseService parse, JsonAssembler json, AppProperties props, Xhtml2PdfClient pdfClient, Map<Integer,String> templateHtmlMap,
-			@Value("${json.output.folder}") String jsonOut, @Value("${json.pretty:false}") boolean pretty,
-			@Value("${pdf.output.folder:C:/invoice-data/_pdf}") String pdfOut,
+	public ZipIngestService(ParseService parseService, JsonAssembler jsonAssembler, AppProperties appProperties, Xhtml2PdfClient pdfClient, Map<Integer,String> templateHtmlMap,
+			@Value("${json.output.folder}") String jsonOutputPath, @Value("${json.pretty:false}") boolean isJsonPrettyPrint,
+			@Value("${pdf.output.folder:C:/invoice-data/_pdf}") String pdfOutputPath,
 			@Value("${pdf.max-concurrent-conversions:64}") int maxConcurrentPdfConversions)
 			throws IOException {
-		this.parse = parse;
-		this.json = json;
-		this.props = props;
+		this.parseService = parseService;
+		this.jsonAssembler = jsonAssembler;
+		this.appProperties = appProperties;
 		this.pdfClient = pdfClient;
-		this.jsonOutDir = Paths.get(jsonOut);
-		this.pdfOutDir = Paths.get(pdfOut);
-		this.jsonPretty = pretty;
+		this.jsonOutputDirectory = Paths.get(jsonOutputPath);
+		this.pdfOutputDirectory = Paths.get(pdfOutputPath);
+		this.isJsonPrettyPrint = isJsonPrettyPrint;
 		this.maxConcurrentPdfConversions = Math.max(1, maxConcurrentPdfConversions);
 		this.pdfConversionPermits = new Semaphore(this.maxConcurrentPdfConversions);
 		this.templateHtmlMap = templateHtmlMap;
@@ -85,8 +86,8 @@ public class ZipIngestService {
 				new ThreadPoolExecutor.CallerRunsPolicy()
 		);
 		
-		Files.createDirectories(this.jsonOutDir);
-		Files.createDirectories(this.pdfOutDir);
+		Files.createDirectories(this.jsonOutputDirectory);
+		Files.createDirectories(this.pdfOutputDirectory);
 		log.info("ZipIngestService initialized with max {} concurrent PDF conversions, queue capacity: {}", 
 				this.maxConcurrentPdfConversions, queueCapacity);
 	}
@@ -121,130 +122,174 @@ public class ZipIngestService {
 		}
 		return false;
 	}
+
+	/**
+	 * Processes a ZIP file containing invoice data.
+	 * 
+	 * @param zipPath The path to the ZIP file to process.
+	 */
 	public void processZip(Path zipPath) {
-		String name = zipPath.getFileName().toString();
-		// Prevent duplicate concurrent processing of same file
-		if (!ACTIVE.add(name)) {
-			log.warn("Duplicate processing detected, skipping {}", name);
+		String zipFileName = zipPath.getFileName().toString();
+		
+		if (!startProcessing(zipFileName)) {
 			return;
 		}
-		String stage = "open zip";
-		int debiSize = 0;
-		int specSize = 0;
+
+		String currentStage = "open zip";
 		try {
-			log.info("Processing {}", name);
-			if (!Files.exists(zipPath)) { // file may have been moved already
-				log.warn("Zip {} no longer exists, treat as already processed", name);
+			log.info("Processing {}", zipFileName);
+			if (!Files.exists(zipPath)) {
+				log.warn("Zip {} no longer exists, treat as already processed", zipFileName);
 				return;
 			}
-			// Parse phase (inner try-with-resources for zip)
-			try (ZipFile zf = new ZipFile(zipPath.toFile(), StandardCharsets.UTF_8)) {
-				stage = "locate entries";
-				ZipEntry meta = find(zf, e -> e.getName().endsWith("_Meta.txt"));
-				ZipEntry debi = find(zf, e -> e.getName().endsWith("_Debiteuren.txt"));
-				ZipEntry spec = find(zf, e -> e.getName().endsWith("_Specificaties.txt"));
-				ZipEntry notas = find(zf, e -> e.getName().endsWith("_Notas.xml"));
-				if (meta == null) throw new IllegalStateException("Missing meta entry in " + name);
-				boolean xmlType = notas != null;
-				if (!xmlType && (debi == null || spec == null))
-					throw new IllegalStateException("Missing expected classic entries in " + name);
 
-				stage = "parse meta";
-				var metaInfo = parseWithReader(zf, meta, parse::parseMeta);
-				Map<String, nl.infomedics.invoicing.model.Debiteur> debiteuren;
-				Map<String, java.util.List<nl.infomedics.invoicing.model.Specificatie>> specificaties;
-				var practitioner = (nl.infomedics.invoicing.model.Practitioner) null;
-				if (xmlType) {
-					stage = "parse notas xml";
-					var nr = parseWithReader(zf, notas, reader1 -> parse.parseNotas(reader1));
-					debiteuren = nr.debiteuren;
-					specificaties = nr.specificaties;
-					practitioner = nr.practitioner;
-				} else {
-					stage = "parse debiteuren";
-					debiteuren = parseWithReader(zf, debi, parse::parseDebiteuren);
-					stage = "parse specificaties";
-					specificaties = parseWithReader(zf, spec, parse::parseSpecificaties);
-					practitioner = parse.getPractitioner();
-				}
-				debiSize = debiteuren.size();
-				specSize = specificaties.size();
+			try (ZipFile zipFile = new ZipFile(zipPath.toFile(), StandardCharsets.UTF_8)) {
+				currentStage = "parse content";
+				ZipContent content = parseZipContent(zipFile, zipFileName);
+				
+				currentStage = "assemble json";
+				var invoiceBundle = jsonAssembler.assemble(content.metaInfo, content.practitioner, content.debiteuren, content.specificaties);
+				
+				currentStage = "write json";
+				writeJsonOutput(zipFileName, invoiceBundle);
 
-				stage = "assemble json";
-				var bundle = json.assemble(metaInfo, practitioner, debiteuren, specificaties);
-				String jsonStr = json.stringify(bundle, jsonPretty);
-
-				stage = "write json";
-				Path out = jsonOutDir.resolve(stripZip(name) + ".json");
-				Files.writeString(out, jsonStr, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
-
-				Integer type = metaInfo!=null?metaInfo.getInvoiceType():null;
-				if (type != null && bundle.getDebiteuren() != null && !bundle.getDebiteuren().isEmpty()) {
-					generatePdfsPerDebtor(name, type, metaInfo, practitioner, bundle.getDebiteuren());
-				} else {
-					log.warn("PDF generation skipped for {}: invoiceType={}, debtorCount={}", 
-						name, type, bundle.getDebiteuren()!=null?bundle.getDebiteuren().size():0);
-				}
-			} catch (Exception ex) { // parsing failure
-				try {
-					Path err = Paths.get(props.getErrorFolder()).resolve(zipPath.getFileName());
-					Files.move(zipPath, err, StandardCopyOption.REPLACE_EXISTING);
-					log.warn("Moved {} to error folder after failure", name);
-				} catch (Exception moveEx) {
-					log.error("Failed to move {} to error folder: {}", name, moveEx.getMessage(), moveEx);
-				}
-				log.error("FAIL {} during {}: {}", name, stage, ex.getMessage(), ex);
-				return; // abort
-			}
-
-			// Archive phase
-			stage = "archive zip";
-			try {
-				Path archive = Paths.get(props.getArchiveFolder()).resolve(name);
-				if (attemptMoveWithRetry(zipPath, archive, 10, 250)) {
-					log.info("OK {} -> {} ({} debiteuren, {} specificaties)", name, archive.getFileName(), debiSize, specSize);
-				} else {
-					log.error("FAIL {} during {} after retries: still locked", name, stage);
-					Path err = Paths.get(props.getErrorFolder()).resolve(zipPath.getFileName());
-					attemptMoveWithRetry(zipPath, err, 5, 500);
-					log.warn("Moved {} to error folder after archive failure", name);
-				}
+				currentStage = "generate pdfs";
+				triggerPdfGeneration(zipFileName, content.metaInfo, content.practitioner, invoiceBundle.getDebiteuren());
+				
+				log.info("Processed {} ({} debiteuren, {} specificaties)", 
+						zipFileName, content.debiteuren.size(), content.specificaties.size());
 			} catch (Exception ex) {
-				log.error("FAIL {} during {}: {}", name, stage, ex.getMessage(), ex);
-				try {
-					Path err = Paths.get(props.getErrorFolder()).resolve(zipPath.getFileName());
-					Files.move(zipPath, err, StandardCopyOption.REPLACE_EXISTING);
-					log.warn("Moved {} to error folder after failure", name);
-				} catch (Exception moveEx) {
-					log.error("Failed to move {} to error folder: {}", name, moveEx.getMessage(), moveEx);
-				}
+				handleProcessingFailure(zipPath, zipFileName, currentStage, ex);
+				return;
 			}
+
+			archiveProcessedZip(zipPath, zipFileName);
+
 		} finally {
-			ACTIVE.remove(name);
+			finishProcessing(zipFileName);
 		}
 	}
 
-	private static ZipEntry find(ZipFile zf, java.util.function.Predicate<ZipEntry> p) {
-		Enumeration<? extends ZipEntry> en = zf.entries();
-		while (en.hasMoreElements()) {
-			ZipEntry e = en.nextElement();
-			if (!e.isDirectory() && p.test(e))
-				return e;
+	private boolean startProcessing(String fileName) {
+		if (!ACTIVE_FILES.add(fileName)) {
+			log.warn("Duplicate processing detected, skipping {}", fileName);
+			return false;
+		}
+		return true;
+	}
+
+	private void finishProcessing(String fileName) {
+		ACTIVE_FILES.remove(fileName);
+	}
+
+	private static class ZipContent {
+		MetaInfo metaInfo;
+		Map<String, nl.infomedics.invoicing.model.Debiteur> debiteuren;
+		Map<String, java.util.List<nl.infomedics.invoicing.model.Specificatie>> specificaties;
+		nl.infomedics.invoicing.model.Practitioner practitioner;
+	}
+
+	private ZipContent parseZipContent(ZipFile zipFile, String zipFileName) throws IOException {
+		ZipEntry metaEntry = findEntry(zipFile, e -> e.getName().endsWith("_Meta.txt"));
+		ZipEntry debiteurenEntry = findEntry(zipFile, e -> e.getName().endsWith("_Debiteuren.txt"));
+		ZipEntry specificatiesEntry = findEntry(zipFile, e -> e.getName().endsWith("_Specificaties.txt"));
+		ZipEntry notasEntry = findEntry(zipFile, e -> e.getName().endsWith("_Notas.xml"));
+
+		if (metaEntry == null) throw new IllegalStateException("Missing meta entry in " + zipFileName);
+		
+		boolean isXmlType = notasEntry != null;
+		if (!isXmlType && (debiteurenEntry == null || specificatiesEntry == null))
+			throw new IllegalStateException("Missing expected classic entries in " + zipFileName);
+
+		ZipContent content = new ZipContent();
+		content.metaInfo = parseWithReader(zipFile, metaEntry, parseService::parseMeta);
+
+		if (isXmlType) {
+			var notasResult = parseWithReader(zipFile, notasEntry, reader -> parseService.parseNotas(reader));
+			content.debiteuren = notasResult.debiteuren;
+			content.specificaties = notasResult.specificaties;
+			content.practitioner = notasResult.practitioner;
+		} else {
+			content.debiteuren = parseWithReader(zipFile, debiteurenEntry, parseService::parseDebiteuren);
+			content.specificaties = parseWithReader(zipFile, specificatiesEntry, parseService::parseSpecificaties);
+			content.practitioner = parseService.getPractitioner();
+		}
+		return content;
+	}
+
+	private void writeJsonOutput(String zipFileName, nl.infomedics.invoicing.model.InvoiceBundle bundle) throws IOException {
+		String jsonString = jsonAssembler.stringify(bundle, isJsonPrettyPrint);
+		Path outputPath = jsonOutputDirectory.resolve(stripZipExtension(zipFileName) + ".json");
+		Files.writeString(outputPath, jsonString, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+	}
+
+	private void triggerPdfGeneration(String zipFileName, MetaInfo metaInfo, Practitioner practitioner, List<DebiteurWithPractitioner> debiteuren) {
+		Integer invoiceType = metaInfo != null ? metaInfo.getInvoiceType() : null;
+		if (invoiceType != null && debiteuren != null && !debiteuren.isEmpty()) {
+			generatePdfsPerDebtor(zipFileName, invoiceType, metaInfo, practitioner, debiteuren);
+		} else {
+			log.warn("PDF generation skipped for {}: invoiceType={}, debtorCount={}", 
+				zipFileName, invoiceType, debiteuren != null ? debiteuren.size() : 0);
+		}
+	}
+
+	private void handleProcessingFailure(Path zipPath, String zipFileName, String stage, Exception ex) {
+		log.error("FAIL {} during {}: {}", zipFileName, stage, ex.getMessage(), ex);
+		moveToErrorFolder(zipPath, zipFileName);
+	}
+
+	private void archiveProcessedZip(Path zipPath, String zipFileName) {
+		String stage = "archive zip";
+		try {
+			Path archivePath = Paths.get(appProperties.getArchiveFolder()).resolve(zipFileName);
+			if (attemptMoveWithRetry(zipPath, archivePath, 10, 250)) {
+				log.info("Archived {} -> {}", zipFileName, archivePath.getFileName());
+			} else {
+				log.error("FAIL {} during {} after retries: still locked", zipFileName, stage);
+				// If archiving fails (file locked?), move to error folder as fallback
+				moveToErrorFolder(zipPath, zipFileName);
+			}
+		} catch (Exception ex) {
+			log.error("FAIL {} during {}: {}", zipFileName, stage, ex.getMessage(), ex);
+			moveToErrorFolder(zipPath, zipFileName);
+		}
+	}
+
+	private void moveToErrorFolder(Path zipPath, String zipFileName) {
+		try {
+			Path errorPath = Paths.get(appProperties.getErrorFolder()).resolve(zipPath.getFileName());
+			// Try with retry as well, just in case
+			if (!attemptMoveWithRetry(zipPath, errorPath, 5, 500)) {
+				log.error("Failed to move {} to error folder after retries", zipFileName);
+			} else {
+				log.warn("Moved {} to error folder", zipFileName);
+			}
+		} catch (Exception moveEx) {
+			log.error("Failed to move {} to error folder: {}", zipFileName, moveEx.getMessage(), moveEx);
+		}
+	}
+
+	private static ZipEntry findEntry(ZipFile zipFile, java.util.function.Predicate<ZipEntry> predicate) {
+		Enumeration<? extends ZipEntry> entries = zipFile.entries();
+		while (entries.hasMoreElements()) {
+			ZipEntry entry = entries.nextElement();
+			if (!entry.isDirectory() && predicate.test(entry))
+				return entry;
 		}
 		return null;
 	}
 
-	private static Reader reader(ZipFile zf, ZipEntry e) throws IOException {
-		return new BufferedReader(new InputStreamReader(zf.getInputStream(e), StandardCharsets.UTF_8));
+	private static Reader createReader(ZipFile zipFile, ZipEntry entry) throws IOException {
+		return new BufferedReader(new InputStreamReader(zipFile.getInputStream(entry), StandardCharsets.UTF_8));
 	}
 
-	private <T> T parseWithReader(ZipFile zf, ZipEntry entry, IOFunction<Reader, T> parser) throws IOException {
-		try (Reader r = reader(zf, entry)) {
-			return parser.apply(r);
+	private <T> T parseWithReader(ZipFile zipFile, ZipEntry entry, IOFunction<Reader, T> parser) throws IOException {
+		try (Reader reader = createReader(zipFile, entry)) {
+			return parser.apply(reader);
 		}
 	}
 
-	private void generatePdfsPerDebtor(String zipName, Integer invoiceType, MetaInfo metaInfo, Practitioner practitioner, List<DebiteurWithPractitioner> debiteuren) {
+	private void generatePdfsPerDebtor(String zipFileName, Integer invoiceType, MetaInfo metaInfo, Practitioner practitioner, List<DebiteurWithPractitioner> debiteuren) {
 		String stage = "load template";
 		try {
 			String templateHtml = loadTemplateHtml(invoiceType);
@@ -255,78 +300,78 @@ public class ZipIngestService {
 			for (DebiteurWithPractitioner dwp : debiteuren) {
 				try {
 					// Pass object directly, avoiding double serialization
-					nl.infomedics.invoicing.model.SingleDebtorInvoice sdi = new nl.infomedics.invoicing.model.SingleDebtorInvoice(dwp);
+					nl.infomedics.invoicing.model.SingleDebtorInvoice singleDebtorInvoice = new nl.infomedics.invoicing.model.SingleDebtorInvoice(dwp);
 					String outputId = sanitizeFilename(dwp.getDebiteur().getInvoiceNumber() != null ? 
 						dwp.getDebiteur().getInvoiceNumber() : dwp.getDebiteur().getInsuredId());
-					batchItems.add(new BatchConversionItem(sdi, outputId));
+					batchItems.add(new BatchConversionItem(singleDebtorInvoice, outputId));
 				} catch (Exception e) {
 					log.error("Failed to prepare batch item for debtor {} in {}: {}", 
-						dwp.getDebiteur().getInvoiceNumber(), zipName, e.getMessage(), e);
+						dwp.getDebiteur().getInvoiceNumber(), zipFileName, e.getMessage(), e);
 				}
 			}
 			
 			if (batchItems.isEmpty()) {
-				log.warn("No batch items prepared for {}", zipName);
+				log.warn("No batch items prepared for {}", zipFileName);
 				return;
 			}
 			
 			stage = "submit batch conversion";
-			submitBatchPdfConversion(zipName, batchItems, templateHtml);
+			submitBatchPdfConversion(zipFileName, batchItems, templateHtml);
 			
 		} catch (Exception ex) {
-			log.error("PDF generation FAILED for {} at stage '{}': {}", zipName, stage, ex.getMessage(), ex);
+			log.error("PDF generation FAILED for {} at stage '{}': {}", zipFileName, stage, ex.getMessage(), ex);
 		}
 	}
 
-	private void submitBatchPdfConversion(String zipName, List<BatchConversionItem> batchItems, String templateHtml) { // templateHtml propagated
+	private void submitBatchPdfConversion(String zipFileName, List<BatchConversionItem> batchItems, String templateHtml) {
 		try {
 			pdfConversionExecutor.submit(() -> {
-				boolean acquired = false;
+				boolean permitAcquired = false;
 				try {
-					acquired = pdfConversionPermits.tryAcquire(30, TimeUnit.SECONDS);
-					if (!acquired) {
-						log.error("Unable to acquire PDF conversion permit for {} after 30 seconds", zipName);
+					permitAcquired = pdfConversionPermits.tryAcquire(30, TimeUnit.SECONDS);
+					if (!permitAcquired) {
+						log.error("Unable to acquire PDF conversion permit for {} after 30 seconds", zipFileName);
 						logPdfExecutorState();
 						return;
 					}
-					convertBatchPdfs(zipName, new TemplateBatch(templateHtml, batchItems)); // use loaded templateHtml
+					convertBatchPdfs(zipFileName, new TemplateBatch(templateHtml, batchItems));
 				} catch (InterruptedException e) {
 					Thread.currentThread().interrupt();
-					log.error("Interrupted while converting PDFs for {}", zipName);
+					log.error("Interrupted while converting PDFs for {}", zipFileName);
 				} catch (Exception e) {
-					log.error("Unexpected error during batch PDF conversion for {}: {}", zipName, e.getMessage(), e);
+					log.error("Unexpected error during batch PDF conversion for {}: {}", zipFileName, e.getMessage(), e);
 				} finally {
-					if (acquired) {
+					if (permitAcquired) {
 						pdfConversionPermits.release();
 					}
 				}
 			});
 		} catch (RejectedExecutionException e) {
-			log.error("PDF conversion executor rejected batch task for {} (queue full or shutdown)", zipName);
+			log.error("PDF conversion executor rejected batch task for {} (queue full or shutdown)", zipFileName);
 			logPdfExecutorState();
 		}
 	}
 
-	private void convertBatchPdfs(String zipName, TemplateBatch batch) {
+	private void convertBatchPdfs(String zipFileName, TemplateBatch batch) {
 		try {
-			log.debug("Converting {} PDFs for {}", batch.items().size(), zipName);
+			log.debug("Converting {} PDFs for {}", batch.items().size(), zipFileName);
 			Map<String, byte[]> results = pdfClient.convertBatch(batch.html(), false, batch.items());
 			
-			String baseFileName = stripZip(zipName);
+			String baseFileName = stripZipExtension(zipFileName);
 			int successCount = 0;
 			for (Map.Entry<String, byte[]> entry : results.entrySet()) {
 				try {
-					Path pdfOut = pdfOutDir.resolve(baseFileName + "_" + entry.getKey() + ".pdf");
-					Files.write(pdfOut, entry.getValue(), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+					Path pdfOutputPath = pdfOutputDirectory.resolve(baseFileName + "_" + entry.getKey() + ".pdf");
+					Files.write(pdfOutputPath, entry.getValue(), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
 					successCount++;
 				} catch (Exception e) {
-					log.error("Failed to write PDF for debtor {} in {}: {}", entry.getKey(), zipName, e.getMessage(), e);
+					log.error("Failed to write PDF for debtor {} in {}: {}", entry.getKey(), zipFileName, e.getMessage(), e);
 				}
 			}
-			log.debug("Wrote {}/{} PDFs for {}", successCount, batch.items().size(), zipName);
+			log.debug("Wrote {}/{} PDFs for {}", successCount, batch.items().size(), zipFileName);
 			
 		} catch (Xhtml2PdfClient.ConversionException e) {
-			log.error("Batch PDF conversion FAILED for {}: {}", zipName, e.getMessage(), e);
+			log.error("Batch PDF conversion FAILED for {}: {}", zipFileName, e.getMessage(), e);
 		}
 	}
 
@@ -353,8 +398,8 @@ public class ZipIngestService {
 		O apply(I input) throws IOException;
 	}
 
-	private static String stripZip(String s) {
-		return s.endsWith(".zip") ? s.substring(0, s.length() - 4) : s;
+	private static String stripZipExtension(String fileName) {
+		return fileName.endsWith(".zip") ? fileName.substring(0, fileName.length() - 4) : fileName;
 	}
 
 	private String loadTemplateHtml(Integer invoiceType) {
