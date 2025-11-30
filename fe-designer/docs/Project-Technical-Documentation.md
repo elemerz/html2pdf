@@ -27,10 +27,10 @@ graph TD
     IP -->|Depends on| IM
     PC -->|Depends on| IM
     
-    IP -->|1. Sends XHTML + JSON Model| PC
-    PC -->|2. Returns PDF Bytes| IP
+    IP -->|"(1) Sends XHTML + JSON Model"| PC
+    PC -->|"(2) Returns PDF Bytes"| IP
     
-    IP -->|3. Persists| PDF
+    IP -->|"(3) Persists"| PDF
 
     %% Styling
     classDef service fill:#f9f,stroke:#333,stroke-width:2px;
@@ -40,19 +40,6 @@ graph TD
     class FE,IP,PC service;
     class IM lib;
     class ZIP,TPL,PDF file;
-```
-
-```
-ZIP Archive (.txt in-scope)        fe-designer (XHTML Template Library)
-            │                                   │
-            ▼                                   │
-     invoice-parser ── selects template by invoiceType ──► (XHTML + JSONModel)
-            │                                                   │
-            ▼                                                   ▼
-        pdf-creator ◄── placeholder binding & rendering ── Base64 PDFs
-            │
-            ▼
-     Output Folder (persisted files)
 ```
 
 ## 2. Module Overview

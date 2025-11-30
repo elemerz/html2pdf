@@ -27,9 +27,13 @@ public class DataGenerator {
     private static final String[] TREATMENT_CODES = {"2044", "6723", "5507", "1099", "4250", "1506", "3550"};
     private static final String[] POSTCODE_LETTERS = {"AA", "AB", "AC", "AD", "AE", "BA", "BB", "BC", "BD", "BE", "XA", "XB", "XC", "XX", "ZA", "ZB", "ZC", "ZZ"};
 
-    public static void generateClassicZip(Path zipPath) throws IOException {
+    public static int generateClassicZip(Path zipPath) throws IOException {
+        return generateClassicZip(zipPath, INVOICE_TYPES);
+    }
+
+    public static int generateClassicZip(Path zipPath, int[] allowedTypes) throws IOException {
         String folderName = zipPath.getFileName().toString().replace(".zip", "");
-        int invoiceType = INVOICE_TYPES[RANDOM.nextInt(INVOICE_TYPES.length)];
+        int invoiceType = allowedTypes[RANDOM.nextInt(allowedTypes.length)];
         int invoiceCount = 1 + RANDOM.nextInt(10);
         
         try (ZipOutputStream zos = new ZipOutputStream(Files.newOutputStream(zipPath))) {
@@ -99,6 +103,7 @@ public class DataGenerator {
             metaContent.append("# bedrag : ").append(String.format("%.2f", totalAmount / 100.0).replace('.', ',')).append("\n");
             addZipEntry(zos, folderName + "TPG_Meta.txt", metaContent.toString());
         }
+        return invoiceCount;
     }
     
     private static boolean isValidType(int t) {

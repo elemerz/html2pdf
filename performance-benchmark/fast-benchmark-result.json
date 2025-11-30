@@ -1,0 +1,57 @@
+[
+    {
+        "jmhVersion" : "1.37",
+        "benchmark" : "nl.infomedics.benchmark.FastInvoiceBenchmark.processFiles",
+        "mode" : "ss",
+        "threads" : 1,
+        "forks" : 1,
+        "jvm" : "d:\\jde\\software\\jdk25.0.1_8\\bin\\java.exe",
+        "jvmArgs" : [
+            "-Dzip.concurrent-workers=8",
+            "-Dpdf.max-concurrent-conversions=12"
+        ],
+        "jdkVersion" : "25.0.1",
+        "vmName" : "OpenJDK 64-Bit Server VM",
+        "vmVersion" : "25.0.1+8-LTS",
+        "warmupIterations" : 0,
+        "warmupTime" : "single-shot",
+        "warmupBatchSize" : 1,
+        "measurementIterations" : 1,
+        "measurementTime" : "single-shot",
+        "measurementBatchSize" : 1,
+        "params" : {
+            "fileCount" : "100",
+            "invoiceTypes" : "20"
+        },
+        "primaryMetric" : {
+            "score" : 28.3387874,
+            "scoreError" : "NaN",
+            "scoreConfidence" : [
+                "NaN",
+                "NaN"
+            ],
+            "scorePercentiles" : {
+                "0.0" : 28.3387874,
+                "50.0" : 28.3387874,
+                "90.0" : 28.3387874,
+                "95.0" : 28.3387874,
+                "99.0" : 28.3387874,
+                "99.9" : 28.3387874,
+                "99.99" : 28.3387874,
+                "99.999" : 28.3387874,
+                "99.9999" : 28.3387874,
+                "100.0" : 28.3387874
+            },
+            "scoreUnit" : "s/op",
+            "rawData" : [
+                [
+                    28.3387874
+                ]
+            ]
+        },
+        "secondaryMetrics" : {
+        }
+    }
+]
+
+
