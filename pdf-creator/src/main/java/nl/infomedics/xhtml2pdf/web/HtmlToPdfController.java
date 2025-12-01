@@ -145,8 +145,10 @@ public class HtmlToPdfController {
         // Extended placeholder resolution: supports ${a.b.c} and simple repeat nodes:
         // <tr data-repeat-over="collectionName" data-repeat-var="itemVar"> ... ${itemVar.prop} ... </tr>
         try {
+            // java.util.Map<String,String> cache = new java.util.HashMap<>(); // cache computed values per key
+            // java.util.Map<String,Object> debiteurMap = OBJECT_MAPPER.convertValue(debiteur, java.util.Map.class);
             java.util.Map<String,String> cache = new java.util.HashMap<>(); // cache computed values per key
-            java.util.Map<String,Object> debiteurMap = OBJECT_MAPPER.convertValue(debiteur, java.util.Map.class);
+            Object debiteurMap = debiteur;
 
             java.util.function.BiFunction<Object,String,Object> resolvePath = (root, path) -> {
                 if (root == null || path == null || path.isEmpty()) return null;
@@ -196,9 +198,10 @@ public class HtmlToPdfController {
     private String resolveItemPlaceholders(String inner, String varName, Object item, java.util.function.BiFunction<Object,String,Object> resolvePath) {
         if (inner == null || inner.isEmpty()) return inner;
         if (!inner.contains("${" + varName + ".")) return inner; // nothing to replace for this item
-        java.util.Map<String,Object> itemMap = (item instanceof java.util.Map<?,?> m)
-                ? (java.util.Map<String,Object>) m
-                : OBJECT_MAPPER.convertValue(item, java.util.Map.class);
+        // java.util.Map<String,Object> itemMap = (item instanceof java.util.Map<?,?> m)
+        //         ? (java.util.Map<String,Object>) m
+        //         : OBJECT_MAPPER.convertValue(item, java.util.Map.class);
+        Object itemMap = item;
         StringBuilder out = new StringBuilder(inner.length());
         int i=0; int len=inner.length();
         while (i < len) {
@@ -272,7 +275,7 @@ public class HtmlToPdfController {
         return new RepeatPlan(true, hasPlaceholders, java.util.Collections.unmodifiableList(segments), tail);
     }
 
-    private String expandRepeats(RepeatPlan plan, java.util.Map<String,Object> debiteurMap,
+    private String expandRepeats(RepeatPlan plan, Object debiteurMap,
                                  java.util.function.BiFunction<Object,String,Object> resolvePath) {
         if (!plan.hasRepeat) return plan.tail;
         StringBuilder out = new StringBuilder();

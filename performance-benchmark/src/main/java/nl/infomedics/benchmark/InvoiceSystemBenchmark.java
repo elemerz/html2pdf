@@ -38,6 +38,7 @@ public class InvoiceSystemBenchmark {
     private Path tempDir;
     private Path sourceZip;
     private Path targetZip;
+    private int expectedPdfCount;
 
     @Param({"classic"})
     private String modelType;
@@ -84,11 +85,18 @@ public class InvoiceSystemBenchmark {
         
         // Create a valid zip file using DataGenerator
         sourceZip = tempDir.resolve("source.zip");
-        DataGenerator.generateClassicZip(sourceZip);
+        expectedPdfCount = DataGenerator.generateClassicZip(sourceZip);
     }
 
     @Setup(Level.Invocation)
     public void setupInvocation() throws IOException {
+        // Clean pdf output to keep directory listing fast
+        try (java.util.stream.Stream<Path> files = Files.list(tempDir.resolve("pdf"))) {
+            files.forEach(p -> {
+                try { Files.delete(p); } catch (IOException e) {}
+            });
+        }
+
         // Prepare the file for this iteration.
         // This method's time is NOT included in the benchmark score.
         String fileName = "bench-" + System.nanoTime() + ".zip";
@@ -130,8 +138,23 @@ public class InvoiceSystemBenchmark {
     }
 
     @Benchmark
-    public void testThroughput() throws IOException {
+    public void testThroughput() throws IOException, InterruptedException {
+        long startCount;
+        try (java.util.stream.Stream<Path> files = Files.list(tempDir.resolve("pdf"))) {
+            startCount = files.count();
+        }
+
         // Process the pre-prepared file
         zipIngestService.processZip(targetZip);
+
+        Path pdfDir = tempDir.resolve("pdf");
+        while (true) {
+            try (java.util.stream.Stream<Path> files = Files.list(pdfDir)) {
+                if (files.count() >= startCount + expectedPdfCount) {
+                    break;
+                }
+            }
+            Thread.sleep(10);
+        }
     }
 }

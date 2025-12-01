@@ -7,17 +7,15 @@
         "forks" : 1,
         "jvm" : "d:\\jde\\software\\jdk25.0.1_8\\bin\\java.exe",
         "jvmArgs" : [
-            "--sun-misc-unsafe-memory-access=allow",
-            "--enable-native-access=ALL-UNNAMED"
         ],
         "jdkVersion" : "25.0.1",
         "vmName" : "OpenJDK 64-Bit Server VM",
         "vmVersion" : "25.0.1+8-LTS",
         "warmupIterations" : 0,
-        "warmupTime" : "10 s",
+        "warmupTime" : "1 s",
         "warmupBatchSize" : 1,
         "measurementIterations" : 1,
-        "measurementTime" : "10 s",
+        "measurementTime" : "1 s",
         "measurementBatchSize" : 1,
         "params" : {
             "modelType" : "classic",
@@ -25,28 +23,81 @@
             "zipConcurrentWorkers" : "16"
         },
         "primaryMetric" : {
-            "score" : 22.188285957914413,
+            "score" : 46.95211640577375,
             "scoreError" : "NaN",
             "scoreConfidence" : [
                 "NaN",
                 "NaN"
             ],
             "scorePercentiles" : {
-                "0.0" : 22.188285957914413,
-                "50.0" : 22.188285957914413,
-                "90.0" : 22.188285957914413,
-                "95.0" : 22.188285957914413,
-                "99.0" : 22.188285957914413,
-                "99.9" : 22.188285957914413,
-                "99.99" : 22.188285957914413,
-                "99.999" : 22.188285957914413,
-                "99.9999" : 22.188285957914413,
-                "100.0" : 22.188285957914413
+                "0.0" : 46.95211640577375,
+                "50.0" : 46.95211640577375,
+                "90.0" : 46.95211640577375,
+                "95.0" : 46.95211640577375,
+                "99.0" : 46.95211640577375,
+                "99.9" : 46.95211640577375,
+                "99.99" : 46.95211640577375,
+                "99.999" : 46.95211640577375,
+                "99.9999" : 46.95211640577375,
+                "100.0" : 46.95211640577375
             },
             "scoreUnit" : "ops/s",
             "rawData" : [
                 [
-                    22.188285957914413
+                    46.95211640577375
+                ]
+            ]
+        },
+        "secondaryMetrics" : {
+        }
+    },
+    {
+        "jmhVersion" : "1.37",
+        "benchmark" : "nl.infomedics.benchmark.FastInvoiceBenchmark.processFiles",
+        "mode" : "ss",
+        "threads" : 1,
+        "forks" : 1,
+        "jvm" : "d:\\jde\\software\\jdk25.0.1_8\\bin\\java.exe",
+        "jvmArgs" : [
+            "--sun-misc-unsafe-memory-access=allow",
+            "--enable-native-access=ALL-UNNAMED"
+        ],
+        "jdkVersion" : "25.0.1",
+        "vmName" : "OpenJDK 64-Bit Server VM",
+        "vmVersion" : "25.0.1+8-LTS",
+        "warmupIterations" : 0,
+        "warmupTime" : "single-shot",
+        "warmupBatchSize" : 1,
+        "measurementIterations" : 1,
+        "measurementTime" : "single-shot",
+        "measurementBatchSize" : 1,
+        "params" : {
+            "fileCount" : "100",
+            "invoiceTypes" : "20"
+        },
+        "primaryMetric" : {
+            "score" : 22.9312743,
+            "scoreError" : "NaN",
+            "scoreConfidence" : [
+                "NaN",
+                "NaN"
+            ],
+            "scorePercentiles" : {
+                "0.0" : 22.9312743,
+                "50.0" : 22.9312743,
+                "90.0" : 22.9312743,
+                "95.0" : 22.9312743,
+                "99.0" : 22.9312743,
+                "99.9" : 22.9312743,
+                "99.99" : 22.9312743,
+                "99.999" : 22.9312743,
+                "99.9999" : 22.9312743,
+                "100.0" : 22.9312743
+            },
+            "scoreUnit" : "s/op",
+            "rawData" : [
+                [
+                    22.9312743
                 ]
             ]
         },
