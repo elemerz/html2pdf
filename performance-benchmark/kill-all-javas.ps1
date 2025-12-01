@@ -1,0 +1,1 @@
+Stop-Process -Name java, javaw, javaws -Force -ErrorAction SilentlyContinue

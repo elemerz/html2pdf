@@ -38,6 +38,7 @@ public class FontRegistry {
     private final Object fontLoadLock = new Object();
     private volatile Map<String, byte[]> cachedFontData;
     private final Map<String, Set<String>> aliasCache = new ConcurrentHashMap<>();
+    private java.util.List<java.util.function.Consumer<PdfRendererBuilder>> cachedRegistrations;
 
     /**
      * Creates a registry backed by a classpath-aware resource resolver.
@@ -64,7 +65,48 @@ public class FontRegistry {
         fonts.forEach((name, data) ->
                 aliasCache.computeIfAbsent(buildAliasCacheKey(name, data),
                         _ -> deriveFontAliases(name, data)));
+        
+        this.cachedRegistrations = buildRegistrations(fonts);
         log.debug("Preloaded {} embedded fonts for OpenHTMLtoPDF.", fonts.size());
+    }
+
+    private java.util.List<java.util.function.Consumer<PdfRendererBuilder>> buildRegistrations(Map<String, byte[]> fonts) {
+        java.util.List<java.util.function.Consumer<PdfRendererBuilder>> list = new java.util.ArrayList<>();
+        
+        if (fonts != null && !fonts.isEmpty()) {
+            for (Map.Entry<String, byte[]> entry : fonts.entrySet()) {
+                String fileName = entry.getKey();
+                byte[] fontBytes = entry.getValue();
+                if (fontBytes == null || fontBytes.length == 0) continue;
+                
+                final byte[] fontBytesCopy = fontBytes;
+                String cacheKey = buildAliasCacheKey(fileName, fontBytesCopy);
+                Set<String> aliases = aliasCache.computeIfAbsent(cacheKey, _ -> deriveFontAliases(fileName, fontBytesCopy));
+                
+                if (aliases != null) {
+                    for (String alias : aliases) {
+                        list.add(b -> b.useFont(() -> new ByteArrayInputStream(fontBytesCopy), alias));
+                    }
+                }
+            }
+            
+            // Fallback aliases
+            DEFAULT_FONT_ALIASES.forEach((alias, backingFont) -> {
+                byte[] fontData = fonts.get(backingFont);
+                if (fontData != null && fontData.length > 0) {
+                    Set<String> variants = buildAliasVariants(alias);
+                    for (String name : variants) {
+                        list.add(b -> {
+                            b.useFont(() -> new ByteArrayInputStream(fontData), name, 400, PdfRendererBuilder.FontStyle.NORMAL, true);
+                            b.useFont(() -> new ByteArrayInputStream(fontData), name, 700, PdfRendererBuilder.FontStyle.NORMAL, true);
+                            b.useFont(() -> new ByteArrayInputStream(fontData), name, 400, PdfRendererBuilder.FontStyle.ITALIC, true);
+                            b.useFont(() -> new ByteArrayInputStream(fontData), name, 700, PdfRendererBuilder.FontStyle.ITALIC, true);
+                        });
+                    }
+                }
+            });
+        }
+        return java.util.Collections.unmodifiableList(list);
     }
 
     /**
@@ -73,9 +115,15 @@ public class FontRegistry {
      * @param builder PDF renderer builder used during conversion
      */
     public void registerEmbeddedFonts(PdfRendererBuilder builder) {
-        Map<String, byte[]> fonts = loadEmbeddedFontData();
-        registerFonts(builder, fonts);
-        registerFallbackAliases(builder, fonts);
+        if (cachedRegistrations != null) {
+            for (java.util.function.Consumer<PdfRendererBuilder> consumer : cachedRegistrations) {
+                consumer.accept(builder);
+            }
+        } else {
+            Map<String, byte[]> fonts = loadEmbeddedFontData();
+            registerFonts(builder, fonts);
+            registerFallbackAliases(builder, fonts);
+        }
     }
 
     /**

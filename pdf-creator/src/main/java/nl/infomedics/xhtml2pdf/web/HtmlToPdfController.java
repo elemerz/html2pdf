@@ -140,16 +140,9 @@ public class HtmlToPdfController {
     private String resolvePropertyPlaceholders(String htmlString, DebiteurWithPractitioner debiteur) {
         if (htmlString == null || htmlString.isEmpty() || debiteur == null) return htmlString;
         RepeatPlan plan = REPEAT_PLAN_CACHE.computeIfAbsent(htmlString, this::compileRepeatPlan);
-        if (!plan.hasRepeat && !plan.hasPlaceholders) return htmlString; // nothing to resolve
+        if (!plan.hasRepeat && !plan.hasPlaceholders) return htmlString;
 
-        // Extended placeholder resolution: supports ${a.b.c} and simple repeat nodes:
-        // <tr data-repeat-over="collectionName" data-repeat-var="itemVar"> ... ${itemVar.prop} ... </tr>
         try {
-            // java.util.Map<String,String> cache = new java.util.HashMap<>(); // cache computed values per key
-            // java.util.Map<String,Object> debiteurMap = OBJECT_MAPPER.convertValue(debiteur, java.util.Map.class);
-            java.util.Map<String,String> cache = new java.util.HashMap<>(); // cache computed values per key
-            Object debiteurMap = debiteur;
-
             java.util.function.BiFunction<Object,String,Object> resolvePath = (root, path) -> {
                 if (root == null || path == null || path.isEmpty()) return null;
                 Object current = root;
@@ -163,65 +156,113 @@ public class HtmlToPdfController {
                 }
                 return current;
             };
-            String afterRepeatExpansion = plan.hasRepeat
-                    ? expandRepeats(plan, debiteurMap, resolvePath)
-                    : htmlString;
-            if (!plan.hasPlaceholders) return afterRepeatExpansion;
-
-            // 2. Resolve remaining ${...} placeholders against root debiteur
-            StringBuilder out = new StringBuilder(afterRepeatExpansion.length());
-            int i=0; int len=afterRepeatExpansion.length();
-            while (i < len) {
-                int start = afterRepeatExpansion.indexOf("${", i);
-                if (start < 0) { out.append(afterRepeatExpansion, i, len); break; }
-                int end = afterRepeatExpansion.indexOf('}', start+2);
-                if (end < 0) { out.append(afterRepeatExpansion, i, len); break; }
-                out.append(afterRepeatExpansion, i, start);
-                String key = afterRepeatExpansion.substring(start+2, end).trim();
-                String val = cache.get(key);
-                if (val == null && !cache.containsKey(key)) {
-                    Object resolved = resolvePath.apply(debiteurMap, key);
-                    val = resolved != null ? resolved.toString() : "";
-                    cache.put(key, val);
-                }
-                out.append(val != null ? val : "");
-                i = end + 1;
-            }
-            return out.toString();
+            
+            return executePlan(plan, debiteur, resolvePath);
         } catch (Exception e) {
             log.warn("resolvePropertyPlaceholders failed: {}", e.getMessage());
             return htmlString;
         }
     }
 
-    // Resolves ${var.prop.path} within an inner repeat section for a single item object.
-    private String resolveItemPlaceholders(String inner, String varName, Object item, java.util.function.BiFunction<Object,String,Object> resolvePath) {
-        if (inner == null || inner.isEmpty()) return inner;
-        if (!inner.contains("${" + varName + ".")) return inner; // nothing to replace for this item
-        // java.util.Map<String,Object> itemMap = (item instanceof java.util.Map<?,?> m)
-        //         ? (java.util.Map<String,Object>) m
-        //         : OBJECT_MAPPER.convertValue(item, java.util.Map.class);
-        Object itemMap = item;
-        StringBuilder out = new StringBuilder(inner.length());
-        int i=0; int len=inner.length();
-        while (i < len) {
-            int start = inner.indexOf("${", i);
-            if (start < 0) { out.append(inner, i, len); break; }
-            int end = inner.indexOf('}', start+2);
-            if (end < 0) { out.append(inner, i, len); break; }
-            out.append(inner, i, start);
-            String key = inner.substring(start+2, end).trim();
-            if (key.startsWith(varName + ".")) {
-                String path = key.substring(varName.length()+1);
-                Object resolved = resolvePath.apply(itemMap, path);
-                out.append(resolved != null ? resolved.toString() : "");
-            } else {
-                // leave unresolved for later global pass
-                out.append("${"+key+"}");
+    private String executePlan(RepeatPlan plan, Object debiteurMap,
+                               java.util.function.BiFunction<Object,String,Object> resolvePath) {
+        StringBuilder out = new StringBuilder();
+        
+        java.util.function.Function<String, String> globalResolver = key -> {
+             Object val = resolvePath.apply(debiteurMap, key);
+             return val != null ? val.toString() : "";
+        };
+
+        if (!plan.hasRepeat) {
+            resolveParsed(plan.tail, out, globalResolver);
+            return out.toString();
+        }
+
+        for (RepeatSegment seg : plan.segments) {
+            resolveParsed(seg.prefix, out, globalResolver);
+            
+            Object collectionObj = resolvePath.apply(debiteurMap, seg.collectionPath);
+            if (collectionObj instanceof java.lang.Iterable<?> iterable) {
+                for (Object item : iterable) {
+                    processInner(seg, item, out, resolvePath, globalResolver);
+                }
+            } else if (collectionObj != null && collectionObj.getClass().isArray()) {
+                int length = java.lang.reflect.Array.getLength(collectionObj);
+                for (int idx = 0; idx < length; idx++) {
+                    Object item = java.lang.reflect.Array.get(collectionObj, idx);
+                    processInner(seg, item, out, resolvePath, globalResolver);
+                }
             }
+        }
+        resolveParsed(plan.tail, out, globalResolver);
+        return out.toString();
+    }
+
+    private void processInner(RepeatSegment seg, Object item, StringBuilder out, 
+                              java.util.function.BiFunction<Object,String,Object> resolvePath,
+                              java.util.function.Function<String, String> globalResolver) {
+        out.append(seg.openingTagStripped);
+        for (Token t : seg.inner.tokens) {
+            if (!t.isPlaceholder) {
+                out.append(t.content);
+            } else {
+                String key = t.content;
+                String val;
+                if (key.startsWith(seg.varName + ".")) {
+                    String path = key.substring(seg.varName.length() + 1);
+                    Object obj = resolvePath.apply(item, path);
+                    val = obj != null ? obj.toString() : "";
+                } else {
+                    val = globalResolver.apply(key);
+                }
+                
+                if (val != null) {
+                    out.append(val);
+                } else {
+                    out.append("${").append(key).append("}");
+                }
+            }
+        }
+        out.append(seg.closingTag);
+    }
+
+    private void resolveParsed(ParsedString ps, StringBuilder out, java.util.function.Function<String, String> resolver) {
+        for (Token t : ps.tokens) {
+            if (!t.isPlaceholder) {
+                out.append(t.content);
+            } else {
+                String val = resolver.apply(t.content);
+                if (val != null) {
+                    out.append(val);
+                } else {
+                    out.append("${").append(t.content).append("}");
+                }
+            }
+        }
+    }
+
+    private ParsedString parseString(String input) {
+        if (input == null || input.isEmpty()) return new ParsedString(java.util.Collections.emptyList());
+        java.util.List<Token> tokens = new java.util.ArrayList<>();
+        int i = 0; int len = input.length();
+        while (i < len) {
+            int start = input.indexOf("${", i);
+            if (start < 0) {
+                tokens.add(new Token(false, input.substring(i)));
+                break;
+            }
+            if (start > i) {
+                tokens.add(new Token(false, input.substring(i, start)));
+            }
+            int end = input.indexOf('}', start + 2);
+            if (end < 0) {
+                tokens.add(new Token(false, input.substring(start)));
+                break;
+            }
+            tokens.add(new Token(true, input.substring(start + 2, end).trim()));
             i = end + 1;
         }
-        return out.toString();
+        return new ParsedString(tokens);
     }
 
     private Object invokeProperty(Object obj, String name) {
@@ -253,7 +294,7 @@ public class HtmlToPdfController {
         boolean hasRepeat = html.contains("data-repeat-over");
         boolean hasPlaceholders = html.contains("${");
         if (!hasRepeat) {
-            return new RepeatPlan(hasRepeat, hasPlaceholders, java.util.Collections.emptyList(), html);
+            return new RepeatPlan(hasRepeat, hasPlaceholders, java.util.Collections.emptyList(), parseString(html));
         }
         java.util.List<RepeatSegment> segments = new java.util.ArrayList<>();
         java.util.regex.Matcher rm = REPEAT_BLOCK_PATTERN.matcher(html);
@@ -268,45 +309,33 @@ public class HtmlToPdfController {
             String strippedOpening = openingTag
                     .replace("data-repeat-over=\"" + collectionPath + "\"", "")
                     .replace("data-repeat-var=\"" + varName + "\"", "");
-            segments.add(new RepeatSegment(prefix, strippedOpening, closingTag, collectionPath, varName, inner));
+            segments.add(new RepeatSegment(parseString(prefix), strippedOpening, closingTag, collectionPath, varName, parseString(inner)));
             last = rm.end();
         }
         String tail = html.substring(last);
-        return new RepeatPlan(true, hasPlaceholders, java.util.Collections.unmodifiableList(segments), tail);
+        return new RepeatPlan(true, hasPlaceholders, java.util.Collections.unmodifiableList(segments), parseString(tail));
     }
 
-    private String expandRepeats(RepeatPlan plan, Object debiteurMap,
-                                 java.util.function.BiFunction<Object,String,Object> resolvePath) {
-        if (!plan.hasRepeat) return plan.tail;
-        StringBuilder out = new StringBuilder();
-        for (RepeatSegment seg : plan.segments) {
-            out.append(seg.prefix);
-            Object collectionObj = resolvePath.apply(debiteurMap, seg.collectionPath);
-            StringBuilder repeated = new StringBuilder();
-            if (collectionObj instanceof java.lang.Iterable<?> iterable) {
-                for (Object item : iterable) {
-                    String resolvedInner = resolveItemPlaceholders(seg.inner, seg.varName, item, resolvePath);
-                    repeated.append(seg.openingTagStripped).append(resolvedInner).append(seg.closingTag);
-                }
-            } else if (collectionObj != null && collectionObj.getClass().isArray()) {
-                int length = java.lang.reflect.Array.getLength(collectionObj);
-                for (int idx = 0; idx < length; idx++) {
-                    Object item = java.lang.reflect.Array.get(collectionObj, idx);
-                    String resolvedInner = resolveItemPlaceholders(seg.inner, seg.varName, item, resolvePath);
-                    repeated.append(seg.openingTagStripped).append(resolvedInner).append(seg.closingTag);
-                }
-            }
-            out.append(repeated);
-        }
-        out.append(plan.tail);
-        return out.toString();
-    }
+
+    
+    // Wait, if I want to resolve global placeholders inside the loop, I need access to debiteurMap.
+    // The original code left them as `${key}` and then the global pass resolved them.
+    // If I want to do it in one pass, I must resolve them now.
+    
+    // So `processInner` needs `debiteurMap`.
+    
+    // Let's refine `expandRepeats` replacement.
+    
+
+
+    private record Token(boolean isPlaceholder, String content) {}
+    private record ParsedString(java.util.List<Token> tokens) {}
 
     private record RepeatPlan(boolean hasRepeat, boolean hasPlaceholders,
-                              java.util.List<RepeatSegment> segments, String tail) { }
+                              java.util.List<RepeatSegment> segments, ParsedString tail) { }
 
-    private record RepeatSegment(String prefix, String openingTagStripped, String closingTag,
-                                 String collectionPath, String varName, String inner) { }
+    private record RepeatSegment(ParsedString prefix, String openingTagStripped, String closingTag,
+                                 String collectionPath, String varName, ParsedString inner) { }
 
     private int determineMaxInFlight(ExecutorService executor) {
         if (executor instanceof java.util.concurrent.ThreadPoolExecutor tpe) {
