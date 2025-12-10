@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
+import nl.infomedics.invoicing.metrics.DiagnosticsRecorder;
 import nl.infomedics.invoicing.model.BatchConversionItem;
 import nl.infomedics.invoicing.model.BatchConversionRequest;
 import nl.infomedics.invoicing.model.BatchConversionResponse;
@@ -33,11 +34,13 @@ public class Xhtml2PdfClient {
     private final URI convertEndpoint;
     private final URI batchConvertEndpoint;
     private final Duration requestTimeout;
+    private final DiagnosticsRecorder diagnostics;
 
     public Xhtml2PdfClient(
             @Value("${xhtml2pdf.base-url:http://localhost:8080}") String baseUrl,
             @Value("${xhtml2pdf.request-timeout:PT30S}") Duration requestTimeout,
-            @Value("${xhtml2pdf.connect-timeout:PT5S}") Duration connectTimeout) {
+            @Value("${xhtml2pdf.connect-timeout:PT5S}") Duration connectTimeout,
+            DiagnosticsRecorder diagnostics) {
         this.convertEndpoint = buildEndpoint(baseUrl, "/api/v1/pdf/convert-with-model");
         this.batchConvertEndpoint = buildEndpoint(baseUrl, "/api/v1/pdf/convert-batch");
         this.requestTimeout = requestTimeout;
@@ -48,6 +51,7 @@ public class Xhtml2PdfClient {
         this.objectMapper = new ObjectMapper()
                 .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
                 .registerModule(new JavaTimeModule());
+        this.diagnostics = diagnostics;
     }
 
     public byte[] convert(String html, String jsonModel) throws ConversionException {
@@ -77,7 +81,7 @@ public class Xhtml2PdfClient {
         if (html == null || html.isBlank()) throw new ConversionException("HTML must not be blank");
         if (items == null || items.isEmpty()) throw new ConversionException("Items must not be empty");
         try {
-        	BatchConversionRequest payload = new BatchConversionRequest(html, includeSanitisedXhtml, items.stream()
+            BatchConversionRequest payload = new BatchConversionRequest(html, includeSanitisedXhtml, items.stream()
                 .map(i -> new BatchConversionItem(i.jsonModel(), i.outputId()))
                 .collect(Collectors.toList()));
             String body = objectMapper.writeValueAsString(payload);
@@ -87,15 +91,22 @@ public class Xhtml2PdfClient {
                     .header("Accept", "application/json")
                     .POST(HttpRequest.BodyPublishers.ofString(body, StandardCharsets.UTF_8))
                     .build();
-            HttpResponse<String> resp = httpClient.send(req, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
-            if (resp.statusCode() >= 400) throw new ConversionException("Remote error status=" + resp.statusCode());
-            BatchConversionResponse r = objectMapper.readValue(resp.body(), BatchConversionResponse.class);
-            return r.results().stream()
-                .filter(result -> result.pdfContent() != null && result.error() == null)
-                .collect(Collectors.toMap(
-                		BatchConversionResultItem::outputId,
-                    BatchConversionResultItem::pdfContent
-                ));
+            Map<String, byte[]> results;
+            try (var timer = diagnostics.start("parser.pdf.http", Map.of(
+                    "endpoint", "convert-batch",
+                    "items", Integer.toString(items.size())
+            ))) {
+                HttpResponse<String> resp = httpClient.send(req, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+                if (resp.statusCode() >= 400) throw new ConversionException("Remote error status=" + resp.statusCode());
+                BatchConversionResponse r = objectMapper.readValue(resp.body(), BatchConversionResponse.class);
+                results = r.results().stream()
+                    .filter(result -> result.pdfContent() != null && result.error() == null)
+                    .collect(Collectors.toMap(
+                            BatchConversionResultItem::outputId,
+                        BatchConversionResultItem::pdfContent
+                    ));
+            }
+            return results;
         } catch (IOException | InterruptedException e) {
             if (e instanceof InterruptedException) Thread.currentThread().interrupt();
             throw new ConversionException("Batch conversion failed: " + e.getMessage(), e);
@@ -110,5 +121,5 @@ public class Xhtml2PdfClient {
 
     public static class ConversionException extends Exception {
         private static final long serialVersionUID = 8288132479461418327L;
-		public ConversionException(String m){super(m);} public ConversionException(String m, Throwable c){super(m,c);} }
+        public ConversionException(String m){super(m);} public ConversionException(String m, Throwable c){super(m,c);} }
 }

@@ -29,6 +29,7 @@ import nl.infomedics.invoicing.model.BatchConversionRequest;
 import nl.infomedics.invoicing.model.BatchConversionResponse;
 import nl.infomedics.invoicing.model.BatchConversionResultItem;
 import nl.infomedics.invoicing.model.DebiteurWithPractitioner;
+import nl.infomedics.reporting.metrics.DiagnosticsRecorder;
 import nl.infomedics.reporting.service.Html2PdfConverterService;
 import nl.infomedics.reporting.service.Html2PdfConverterService.HtmlToPdfConversionException;
 import nl.infomedics.reporting.service.Html2PdfConverterService.PdfConversionResult;
@@ -44,6 +45,7 @@ public class HtmlToPdfController {
 
     private final Html2PdfConverterService converterService;
     private final ExecutorService pdfConversionExecutor;
+    private final DiagnosticsRecorder diagnostics;
     private static final java.util.Map<String, RepeatPlan> REPEAT_PLAN_CACHE = new java.util.concurrent.ConcurrentHashMap<>();
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper()
             .registerModule(new com.fasterxml.jackson.datatype.jsr310.JavaTimeModule())
@@ -55,9 +57,11 @@ public class HtmlToPdfController {
     private static final java.util.Map<String, java.lang.reflect.Method> METHOD_CACHE = new java.util.concurrent.ConcurrentHashMap<>();
 
     public HtmlToPdfController(Html2PdfConverterService converterService,
-                               @Qualifier("pdfConversionExecutor") ExecutorService pdfConversionExecutor) {
+                               @Qualifier("pdfConversionExecutor") ExecutorService pdfConversionExecutor,
+                               DiagnosticsRecorder diagnostics) {
         this.converterService = converterService;
         this.pdfConversionExecutor = pdfConversionExecutor;
+        this.diagnostics = diagnostics;
     }
 
     @PostMapping(
@@ -66,24 +70,27 @@ public class HtmlToPdfController {
             produces = MediaType.APPLICATION_JSON_VALUE
     )
     public ResponseEntity<BatchConversionResponse> convertBatch(@Valid @RequestBody BatchConversionRequest request) {
-        // debug: batch conversion items=" + request.items().size()
-        
         int maxInFlight = determineMaxInFlight(pdfConversionExecutor);
         java.util.concurrent.Semaphore limiter = new java.util.concurrent.Semaphore(maxInFlight);
 
-        List<CompletableFuture<BatchConversionResultItem>> futures = request.items().stream()
-                .map(item -> CompletableFuture.supplyAsync(() -> {
-                            try {
-                                limiter.acquire();
-                                return convertSingleItem(request.html(), request.includeSanitisedXhtml(), item);
-                            } catch (InterruptedException ie) {
-                                Thread.currentThread().interrupt();
-                                return BatchConversionResultItem.failure(item.outputId(), "Interrupted");
-                            } finally {
-                                limiter.release();
-                            }
-                        }, pdfConversionExecutor))
-                .collect(Collectors.toList());
+        List<CompletableFuture<BatchConversionResultItem>> futures;
+        try (var timer = diagnostics.start("creator.batch.total", java.util.Map.of(
+                "items", Integer.toString(request.items().size())
+        ))) {
+            futures = request.items().stream()
+                    .map(item -> CompletableFuture.supplyAsync(() -> {
+                                try {
+                                    limiter.acquire();
+                                    return convertSingleItem(request.html(), request.includeSanitisedXhtml(), item);
+                                } catch (InterruptedException ie) {
+                                    Thread.currentThread().interrupt();
+                                    return BatchConversionResultItem.failure(item.outputId(), "Interrupted");
+                                } finally {
+                                    limiter.release();
+                                }
+                            }, pdfConversionExecutor))
+                    .collect(Collectors.toList());
+        }
         
         List<BatchConversionResultItem> results = futures.stream()
                 .map(CompletableFuture::join)
@@ -118,7 +125,10 @@ public class HtmlToPdfController {
     }
 
     private BatchConversionResultItem convertSingleItem(String sharedHtml, boolean includeSanitised, BatchConversionItem item) {
-        try {
+        String outputId = item.outputId() != null ? item.outputId() : "unknown";
+        try (var itemTimer = diagnostics.start("creator.batch.item", java.util.Map.of(
+                "outputId", outputId
+        ))) {
             DebiteurWithPractitioner dwp = null;
             try {
                 dwp = parseDebiteur(item.jsonModel());
@@ -126,9 +136,12 @@ public class HtmlToPdfController {
                 log.warn("Failed to parse debiteur model for {}: {}", item.outputId(), parseEx.getMessage());
             }
             String htmlResolved = dwp != null ? resolvePropertyPlaceholders(sharedHtml, dwp) : sharedHtml;
-//            log.info("\n\nsharedHtml =\n\n {}", sharedHtml);
-//            log.info("\n\nhtmlResolved =\n\n {}", htmlResolved);
-            PdfConversionResult result = converterService.convertHtmlToPdf(htmlResolved, includeSanitised);
+            PdfConversionResult result;
+            try (var renderTimer = diagnostics.start("creator.render", java.util.Map.of(
+                    "includeSanitised", Boolean.toString(includeSanitised)
+            ))) {
+                result = converterService.convertHtmlToPdf(htmlResolved, includeSanitised);
+            }
             byte[] pdfBytes = result.pdfContent();
             return BatchConversionResultItem.success(item.outputId(), pdfBytes);
         } catch (Exception e) {

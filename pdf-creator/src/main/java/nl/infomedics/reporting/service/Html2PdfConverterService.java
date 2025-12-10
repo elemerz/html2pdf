@@ -37,6 +37,7 @@ import com.openhtmltopdf.pdfboxout.PdfRendererBuilder;
 import com.openhtmltopdf.svgsupport.BatikSVGDrawer;
 
 import lombok.extern.slf4j.Slf4j;
+import nl.infomedics.reporting.metrics.DiagnosticsRecorder;
 
 /**
  * Converts XHTML input into PDF output and tracks conversion statistics.
@@ -82,6 +83,7 @@ public class Html2PdfConverterService {
     });
     private final int maxConcurrentConversions;
     private final byte[] srgbColorProfile;
+    private final DiagnosticsRecorder diagnostics;
 
     /**
      * Creates the converter service with an injected font registry for renderer configuration.
@@ -90,7 +92,8 @@ public class Html2PdfConverterService {
      * @param configuredMaxConcurrent configured concurrency limit
      */
     public Html2PdfConverterService(FontRegistry fontRegistry,
-                                    @Value("${converter.max-concurrent:16}") int configuredMaxConcurrent) {
+                                    @Value("${converter.max-concurrent:16}") int configuredMaxConcurrent,
+                                    DiagnosticsRecorder diagnostics) {
         this.fontRegistry = fontRegistry;
         this.srgbColorProfile = loadSrgbColorProfile();
         if (configuredMaxConcurrent < 1) {
@@ -101,6 +104,7 @@ public class Html2PdfConverterService {
         }
         this.maxConcurrentConversions = Math.max(1, configuredMaxConcurrent);
         this.conversionPermits = new Semaphore(this.maxConcurrentConversions);
+        this.diagnostics = diagnostics;
         log.debug("Html2PdfConverterService concurrency limited to {} simultaneous conversions.",
                 this.maxConcurrentConversions);
     }
@@ -132,24 +136,35 @@ public class Html2PdfConverterService {
         
         String cleanedHtml = stripBom(htmlContent);
         
-        try (ConversionPermit _ = acquireConversionPermit()) {
+        try (ConversionPermit _ = acquireConversionPermit();
+             var totalTimer = diagnostics.start("creator.convert.total", java.util.Map.of(
+                     "includeSanitised", Boolean.toString(includeSanitisedXhtml)
+             ))) {
             long startMillis = System.currentTimeMillis();
             noteConversionStarted();
             
             try {
-                // 1. Parse and preprocess
-                Document document = prepareDocument(cleanedHtml);
-                
-                // 2. Optional: Generate sanitized XHTML
-                String sanitisedXhtml = null;
-                if (includeSanitisedXhtml && document != null) {
-                    sanitisedXhtml = serializeDocument(document);
+                Document document;
+                try (var parseTimer = diagnostics.start("creator.convert.parse", java.util.Map.of(
+                        "sanitise", Boolean.toString(includeSanitisedXhtml)
+                ))) {
+                    document = prepareDocument(cleanedHtml);
                 }
                 
-                // 3. Render to PDF
-                byte[] pdfBytes = renderToPdf(document, cleanedHtml);
+                String sanitisedXhtml = null;
+                if (includeSanitisedXhtml && document != null) {
+                    try (var sanitiseTimer = diagnostics.start("creator.convert.sanitise", java.util.Map.of())) {
+                        sanitisedXhtml = serializeDocument(document);
+                    } catch (Exception e) {
+                        log.warn("Failed to produce sanitised XHTML snapshot: {}", e.getMessage());
+                    }
+                }
+                
+                byte[] pdfBytes;
+                try (var renderTimer = diagnostics.start("creator.convert.render", java.util.Map.of())) {
+                    pdfBytes = renderToPdf(document, cleanedHtml);
+                }
 
-                // 4. Log metrics
                 logConversionDuration(startMillis);
 
                 return new PdfConversionResult(pdfBytes, sanitisedXhtml);

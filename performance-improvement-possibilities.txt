@@ -1,0 +1,16 @@
+1. Connection reuse and pooling: ensure HTTP keep-alive is on, pools sized to your concurrency
+  2. Reduce round-trips: batch more work per request if your PDF service supports it; send multiple
+     docs per call rather than one-at-a-time.
+  3. Compress payloads: enable gzip/deflate if payloads are text/HTML and the server supports it.
+  4. HTTP/2: worth it only if the PDF service supports it; gains come from multiplexing many requests
+     over few connections. Switch client/server together; otherwise no benefit.
+  5. Co-locate / cache: keep the PDF renderer on the same host/VLAN; cache static assets/fonts and
+     avoid external fetches during render.
+  6. Tune async/concurrency: if your HTTP client is synchronous and threads spend time blocked, an
+     async client (NIO) can reduce thread count and context switches, but won’t improve raw service
+     latency. Keep concurrency near the observed sweet spot (pdf=8, zip=16) unless the service gets
+     faster.
+  7. Payload size: trim templates, inline only what’s needed, minimize images or pre-scale them to
+     target resolution.
+  8. Profile the server side: if the PDF renderer is yours, profile its queues/threads; increase
+     worker count only if CPU is available there.

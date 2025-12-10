@@ -7,26 +7,37 @@ This system transforms zipped source data into production-ready PDF invoices. It
 
 ### 1.1 System Architecture Diagram
 ```mermaid
+%%{init: {
+  "themeVariables": {
+    "padding": 10,
+    "nodePadding": 10
+  },
+  "flowchart": {
+    "padding": 5,
+    "nodeSpacing": 20,
+    "rankSpacing": 20
+  }
+}}%%
 flowchart TB
     FE[fe-designer]
     TPL[XHTML templates]
     ZIP[ZIP archive]
     IP[invoice-parser]
     PC[pdf-creator]
-    PDF[PDF out]
+    PDF[PDF</br>out]
     IM[invoice-models]
     PB[Perf.</br>benchmark]
 
-    FE --> TPL
-    ZIP --> IP
-    TPL --> IP
-    IP --> PC
-    PC --> IP
-    IP --> PDF
-    IM --> IP
-    IM --> PC
-    PB --> IP
-    PB --> PC
+    FE -->|produces| TPL
+    ZIP -->|supplies data| IP
+    TPL -->|provides template| IP
+    IP -->|calls| PC
+    PC -->|returns pdf-s| IP
+    IP -->|emits| PDF
+    IM -->|shares| IP
+    IM -->|shares| PC
+    PB -->|benchmarks| IP
+    PB -->|benchmarks| PC
 
     classDef service fill:#f9f,stroke:#333,stroke-width:2px;
     classDef lib fill:#ff9,stroke:#333,stroke-width:2px;

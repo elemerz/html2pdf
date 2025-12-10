@@ -1,0 +1,508 @@
+[
+    {
+        "jmhVersion" : "1.37",
+        "benchmark" : "nl.infomedics.benchmark.InvoiceSystemBenchmark.testThroughput",
+        "mode" : "thrpt",
+        "threads" : 1,
+        "forks" : 1,
+        "jvm" : "C:\\Program Files\\Amazon Corretto\\jdk25.0.1_8\\bin\\java.exe",
+        "jvmArgs" : [
+        ],
+        "jdkVersion" : "25.0.1",
+        "vmName" : "OpenJDK 64-Bit Server VM",
+        "vmVersion" : "25.0.1+8-LTS",
+        "warmupIterations" : 5,
+        "warmupTime" : "1 s",
+        "warmupBatchSize" : 1,
+        "measurementIterations" : 5,
+        "measurementTime" : "1 s",
+        "measurementBatchSize" : 1,
+        "params" : {
+            "modelType" : "classic",
+            "pdfMaxConcurrentConversions" : "4",
+            "zipConcurrentWorkers" : "4"
+        },
+        "primaryMetric" : {
+            "score" : 2.828827962900854,
+            "scoreError" : 2.291447089605815,
+            "scoreConfidence" : [
+                0.5373808732950391,
+                5.120275052506669
+            ],
+            "scorePercentiles" : {
+                "0.0" : 1.8211192835862429,
+                "50.0" : 3.07529742739069,
+                "90.0" : 3.314177388030517,
+                "95.0" : 3.314177388030517,
+                "99.0" : 3.314177388030517,
+                "99.9" : 3.314177388030517,
+                "99.99" : 3.314177388030517,
+                "99.999" : 3.314177388030517,
+                "99.9999" : 3.314177388030517,
+                "100.0" : 3.314177388030517
+            },
+            "scoreUnit" : "ops/s",
+            "rawData" : [
+                [
+                    1.8211192835862429,
+                    2.784231781727365,
+                    3.314177388030517,
+                    3.149313933769456,
+                    3.07529742739069
+                ]
+            ]
+        },
+        "secondaryMetrics" : {
+        }
+    },
+    {
+        "jmhVersion" : "1.37",
+        "benchmark" : "nl.infomedics.benchmark.InvoiceSystemBenchmark.testThroughput",
+        "mode" : "thrpt",
+        "threads" : 1,
+        "forks" : 1,
+        "jvm" : "C:\\Program Files\\Amazon Corretto\\jdk25.0.1_8\\bin\\java.exe",
+        "jvmArgs" : [
+        ],
+        "jdkVersion" : "25.0.1",
+        "vmName" : "OpenJDK 64-Bit Server VM",
+        "vmVersion" : "25.0.1+8-LTS",
+        "warmupIterations" : 5,
+        "warmupTime" : "1 s",
+        "warmupBatchSize" : 1,
+        "measurementIterations" : 5,
+        "measurementTime" : "1 s",
+        "measurementBatchSize" : 1,
+        "params" : {
+            "modelType" : "classic",
+            "pdfMaxConcurrentConversions" : "4",
+            "zipConcurrentWorkers" : "8"
+        },
+        "primaryMetric" : {
+            "score" : 3.314972061723137,
+            "scoreError" : 0.6323863459996537,
+            "scoreConfidence" : [
+                2.682585715723483,
+                3.9473584077227906
+            ],
+            "scorePercentiles" : {
+                "0.0" : 3.1281846385957452,
+                "50.0" : 3.3209202867880343,
+                "90.0" : 3.5591932092017244,
+                "95.0" : 3.5591932092017244,
+                "99.0" : 3.5591932092017244,
+                "99.9" : 3.5591932092017244,
+                "99.99" : 3.5591932092017244,
+                "99.999" : 3.5591932092017244,
+                "99.9999" : 3.5591932092017244,
+                "100.0" : 3.5591932092017244
+            },
+            "scoreUnit" : "ops/s",
+            "rawData" : [
+                [
+                    3.2080920914915785,
+                    3.3584700825386005,
+                    3.5591932092017244,
+                    3.3209202867880343,
+                    3.1281846385957452
+                ]
+            ]
+        },
+        "secondaryMetrics" : {
+        }
+    },
+    {
+        "jmhVersion" : "1.37",
+        "benchmark" : "nl.infomedics.benchmark.InvoiceSystemBenchmark.testThroughput",
+        "mode" : "thrpt",
+        "threads" : 1,
+        "forks" : 1,
+        "jvm" : "C:\\Program Files\\Amazon Corretto\\jdk25.0.1_8\\bin\\java.exe",
+        "jvmArgs" : [
+        ],
+        "jdkVersion" : "25.0.1",
+        "vmName" : "OpenJDK 64-Bit Server VM",
+        "vmVersion" : "25.0.1+8-LTS",
+        "warmupIterations" : 5,
+        "warmupTime" : "1 s",
+        "warmupBatchSize" : 1,
+        "measurementIterations" : 5,
+        "measurementTime" : "1 s",
+        "measurementBatchSize" : 1,
+        "params" : {
+            "modelType" : "classic",
+            "pdfMaxConcurrentConversions" : "4",
+            "zipConcurrentWorkers" : "16"
+        },
+        "primaryMetric" : {
+            "score" : 3.980465368273272,
+            "scoreError" : 0.23204960843748149,
+            "scoreConfidence" : [
+                3.7484157598357903,
+                4.212514976710754
+            ],
+            "scorePercentiles" : {
+                "0.0" : 3.885864013605964,
+                "50.0" : 3.9964072299003197,
+                "90.0" : 4.050219071286792,
+                "95.0" : 4.050219071286792,
+                "99.0" : 4.050219071286792,
+                "99.9" : 4.050219071286792,
+                "99.99" : 4.050219071286792,
+                "99.999" : 4.050219071286792,
+                "99.9999" : 4.050219071286792,
+                "100.0" : 4.050219071286792
+            },
+            "scoreUnit" : "ops/s",
+            "rawData" : [
+                [
+                    4.050219071286792,
+                    3.9964072299003197,
+                    3.97047002622694,
+                    3.885864013605964,
+                    3.999366500346345
+                ]
+            ]
+        },
+        "secondaryMetrics" : {
+        }
+    },
+    {
+        "jmhVersion" : "1.37",
+        "benchmark" : "nl.infomedics.benchmark.InvoiceSystemBenchmark.testThroughput",
+        "mode" : "thrpt",
+        "threads" : 1,
+        "forks" : 1,
+        "jvm" : "C:\\Program Files\\Amazon Corretto\\jdk25.0.1_8\\bin\\java.exe",
+        "jvmArgs" : [
+        ],
+        "jdkVersion" : "25.0.1",
+        "vmName" : "OpenJDK 64-Bit Server VM",
+        "vmVersion" : "25.0.1+8-LTS",
+        "warmupIterations" : 5,
+        "warmupTime" : "1 s",
+        "warmupBatchSize" : 1,
+        "measurementIterations" : 5,
+        "measurementTime" : "1 s",
+        "measurementBatchSize" : 1,
+        "params" : {
+            "modelType" : "classic",
+            "pdfMaxConcurrentConversions" : "8",
+            "zipConcurrentWorkers" : "4"
+        },
+        "primaryMetric" : {
+            "score" : 13.735775954662973,
+            "scoreError" : 1.524850368090191,
+            "scoreConfidence" : [
+                12.210925586572781,
+                15.260626322753165
+            ],
+            "scorePercentiles" : {
+                "0.0" : 13.173597718657149,
+                "50.0" : 13.957609344659335,
+                "90.0" : 14.080665315459203,
+                "95.0" : 14.080665315459203,
+                "99.0" : 14.080665315459203,
+                "99.9" : 14.080665315459203,
+                "99.99" : 14.080665315459203,
+                "99.999" : 14.080665315459203,
+                "99.9999" : 14.080665315459203,
+                "100.0" : 14.080665315459203
+            },
+            "scoreUnit" : "ops/s",
+            "rawData" : [
+                [
+                    14.000942263414327,
+                    14.080665315459203,
+                    13.957609344659335,
+                    13.173597718657149,
+                    13.466065131124846
+                ]
+            ]
+        },
+        "secondaryMetrics" : {
+        }
+    },
+    {
+        "jmhVersion" : "1.37",
+        "benchmark" : "nl.infomedics.benchmark.InvoiceSystemBenchmark.testThroughput",
+        "mode" : "thrpt",
+        "threads" : 1,
+        "forks" : 1,
+        "jvm" : "C:\\Program Files\\Amazon Corretto\\jdk25.0.1_8\\bin\\java.exe",
+        "jvmArgs" : [
+        ],
+        "jdkVersion" : "25.0.1",
+        "vmName" : "OpenJDK 64-Bit Server VM",
+        "vmVersion" : "25.0.1+8-LTS",
+        "warmupIterations" : 5,
+        "warmupTime" : "1 s",
+        "warmupBatchSize" : 1,
+        "measurementIterations" : 5,
+        "measurementTime" : "1 s",
+        "measurementBatchSize" : 1,
+        "params" : {
+            "modelType" : "classic",
+            "pdfMaxConcurrentConversions" : "8",
+            "zipConcurrentWorkers" : "8"
+        },
+        "primaryMetric" : {
+            "score" : 7.080576569681841,
+            "scoreError" : 0.7597091002219566,
+            "scoreConfidence" : [
+                6.320867469459884,
+                7.840285669903798
+            ],
+            "scorePercentiles" : {
+                "0.0" : 6.830545771340845,
+                "50.0" : 7.06700367524574,
+                "90.0" : 7.379256908829281,
+                "95.0" : 7.379256908829281,
+                "99.0" : 7.379256908829281,
+                "99.9" : 7.379256908829281,
+                "99.99" : 7.379256908829281,
+                "99.999" : 7.379256908829281,
+                "99.9999" : 7.379256908829281,
+                "100.0" : 7.379256908829281
+            },
+            "scoreUnit" : "ops/s",
+            "rawData" : [
+                [
+                    7.102881689836436,
+                    7.023194803156906,
+                    6.830545771340845,
+                    7.06700367524574,
+                    7.379256908829281
+                ]
+            ]
+        },
+        "secondaryMetrics" : {
+        }
+    },
+    {
+        "jmhVersion" : "1.37",
+        "benchmark" : "nl.infomedics.benchmark.InvoiceSystemBenchmark.testThroughput",
+        "mode" : "thrpt",
+        "threads" : 1,
+        "forks" : 1,
+        "jvm" : "C:\\Program Files\\Amazon Corretto\\jdk25.0.1_8\\bin\\java.exe",
+        "jvmArgs" : [
+        ],
+        "jdkVersion" : "25.0.1",
+        "vmName" : "OpenJDK 64-Bit Server VM",
+        "vmVersion" : "25.0.1+8-LTS",
+        "warmupIterations" : 5,
+        "warmupTime" : "1 s",
+        "warmupBatchSize" : 1,
+        "measurementIterations" : 5,
+        "measurementTime" : "1 s",
+        "measurementBatchSize" : 1,
+        "params" : {
+            "modelType" : "classic",
+            "pdfMaxConcurrentConversions" : "8",
+            "zipConcurrentWorkers" : "16"
+        },
+        "primaryMetric" : {
+            "score" : 4.300430876192317,
+            "scoreError" : 1.8555636411530692,
+            "scoreConfidence" : [
+                2.444867235039248,
+                6.155994517345387
+            ],
+            "scorePercentiles" : {
+                "0.0" : 3.827851562806527,
+                "50.0" : 4.322306438040861,
+                "90.0" : 5.055241147640845,
+                "95.0" : 5.055241147640845,
+                "99.0" : 5.055241147640845,
+                "99.9" : 5.055241147640845,
+                "99.99" : 5.055241147640845,
+                "99.999" : 5.055241147640845,
+                "99.9999" : 5.055241147640845,
+                "100.0" : 5.055241147640845
+            },
+            "scoreUnit" : "ops/s",
+            "rawData" : [
+                [
+                    4.3593989644334945,
+                    5.055241147640845,
+                    3.937356268039859,
+                    3.827851562806527,
+                    4.322306438040861
+                ]
+            ]
+        },
+        "secondaryMetrics" : {
+        }
+    },
+    {
+        "jmhVersion" : "1.37",
+        "benchmark" : "nl.infomedics.benchmark.InvoiceSystemBenchmark.testThroughput",
+        "mode" : "thrpt",
+        "threads" : 1,
+        "forks" : 1,
+        "jvm" : "C:\\Program Files\\Amazon Corretto\\jdk25.0.1_8\\bin\\java.exe",
+        "jvmArgs" : [
+        ],
+        "jdkVersion" : "25.0.1",
+        "vmName" : "OpenJDK 64-Bit Server VM",
+        "vmVersion" : "25.0.1+8-LTS",
+        "warmupIterations" : 5,
+        "warmupTime" : "1 s",
+        "warmupBatchSize" : 1,
+        "measurementIterations" : 5,
+        "measurementTime" : "1 s",
+        "measurementBatchSize" : 1,
+        "params" : {
+            "modelType" : "classic",
+            "pdfMaxConcurrentConversions" : "16",
+            "zipConcurrentWorkers" : "4"
+        },
+        "primaryMetric" : {
+            "score" : 2.852852840745415,
+            "scoreError" : 1.833641994421639,
+            "scoreConfidence" : [
+                1.019210846323776,
+                4.686494835167054
+            ],
+            "scorePercentiles" : {
+                "0.0" : 2.2055771399869517,
+                "50.0" : 3.01072480389644,
+                "90.0" : 3.2808770309243984,
+                "95.0" : 3.2808770309243984,
+                "99.0" : 3.2808770309243984,
+                "99.9" : 3.2808770309243984,
+                "99.99" : 3.2808770309243984,
+                "99.999" : 3.2808770309243984,
+                "99.9999" : 3.2808770309243984,
+                "100.0" : 3.2808770309243984
+            },
+            "scoreUnit" : "ops/s",
+            "rawData" : [
+                [
+                    3.2564056348191825,
+                    3.2808770309243984,
+                    3.01072480389644,
+                    2.510679594100104,
+                    2.2055771399869517
+                ]
+            ]
+        },
+        "secondaryMetrics" : {
+        }
+    },
+    {
+        "jmhVersion" : "1.37",
+        "benchmark" : "nl.infomedics.benchmark.InvoiceSystemBenchmark.testThroughput",
+        "mode" : "thrpt",
+        "threads" : 1,
+        "forks" : 1,
+        "jvm" : "C:\\Program Files\\Amazon Corretto\\jdk25.0.1_8\\bin\\java.exe",
+        "jvmArgs" : [
+        ],
+        "jdkVersion" : "25.0.1",
+        "vmName" : "OpenJDK 64-Bit Server VM",
+        "vmVersion" : "25.0.1+8-LTS",
+        "warmupIterations" : 5,
+        "warmupTime" : "1 s",
+        "warmupBatchSize" : 1,
+        "measurementIterations" : 5,
+        "measurementTime" : "1 s",
+        "measurementBatchSize" : 1,
+        "params" : {
+            "modelType" : "classic",
+            "pdfMaxConcurrentConversions" : "16",
+            "zipConcurrentWorkers" : "8"
+        },
+        "primaryMetric" : {
+            "score" : 10.39073911090644,
+            "scoreError" : 2.490132969611525,
+            "scoreConfidence" : [
+                7.900606141294915,
+                12.880872080517964
+            ],
+            "scorePercentiles" : {
+                "0.0" : 9.63110647062999,
+                "50.0" : 10.74372351672153,
+                "90.0" : 11.043302999722512,
+                "95.0" : 11.043302999722512,
+                "99.0" : 11.043302999722512,
+                "99.9" : 11.043302999722512,
+                "99.99" : 11.043302999722512,
+                "99.999" : 11.043302999722512,
+                "99.9999" : 11.043302999722512,
+                "100.0" : 11.043302999722512
+            },
+            "scoreUnit" : "ops/s",
+            "rawData" : [
+                [
+                    11.043302999722512,
+                    9.63110647062999,
+                    9.760306395538368,
+                    10.74372351672153,
+                    10.7752561719198
+                ]
+            ]
+        },
+        "secondaryMetrics" : {
+        }
+    },
+    {
+        "jmhVersion" : "1.37",
+        "benchmark" : "nl.infomedics.benchmark.InvoiceSystemBenchmark.testThroughput",
+        "mode" : "thrpt",
+        "threads" : 1,
+        "forks" : 1,
+        "jvm" : "C:\\Program Files\\Amazon Corretto\\jdk25.0.1_8\\bin\\java.exe",
+        "jvmArgs" : [
+        ],
+        "jdkVersion" : "25.0.1",
+        "vmName" : "OpenJDK 64-Bit Server VM",
+        "vmVersion" : "25.0.1+8-LTS",
+        "warmupIterations" : 5,
+        "warmupTime" : "1 s",
+        "warmupBatchSize" : 1,
+        "measurementIterations" : 5,
+        "measurementTime" : "1 s",
+        "measurementBatchSize" : 1,
+        "params" : {
+            "modelType" : "classic",
+            "pdfMaxConcurrentConversions" : "16",
+            "zipConcurrentWorkers" : "16"
+        },
+        "primaryMetric" : {
+            "score" : 3.6604989819024096,
+            "scoreError" : 0.3482254688604565,
+            "scoreConfidence" : [
+                3.312273513041953,
+                4.008724450762866
+            ],
+            "scorePercentiles" : {
+                "0.0" : 3.5764864257587137,
+                "50.0" : 3.620618553714954,
+                "90.0" : 3.808638391779587,
+                "95.0" : 3.808638391779587,
+                "99.0" : 3.808638391779587,
+                "99.9" : 3.808638391779587,
+                "99.99" : 3.808638391779587,
+                "99.999" : 3.808638391779587,
+                "99.9999" : 3.808638391779587,
+                "100.0" : 3.808638391779587
+            },
+            "scoreUnit" : "ops/s",
+            "rawData" : [
+                [
+                    3.620618553714954,
+                    3.6785813771633853,
+                    3.6181701610954082,
+                    3.5764864257587137,
+                    3.808638391779587
+                ]
+            ]
+        },
+        "secondaryMetrics" : {
+        }
+    }
+]
+
+
