@@ -113,6 +113,9 @@ Write-Host "  Throughput:          $($bestGlobalConfig.Score) ops/s"
 Write-Host "  PDF Server Threads:  $($bestGlobalConfig.ServerConcurrency)"
 Write-Host "  Zip Client Workers:  $($bestGlobalConfig.ClientZipWorkers)"
 Write-Host "  PDF Client Limit:    $($bestGlobalConfig.ClientPdfConversions)"
+Write-Host "Recommended settings:"
+Write-Host "  - invoice-parser:pdf.max-concurrent-conversions=$($bestGlobalConfig.ClientPdfConversions)"
+Write-Host "  - pdf-creator:converter.max-concurrent=$($bestGlobalConfig.ServerConcurrency)"
 Write-Host "********************************************************"
 
 # Output all results

@@ -70,7 +70,7 @@ for LEVEL in "${PDF_LEVELS[@]}"; do
         # Compare floating point numbers
         if (( $(echo "$SCORE > $BEST_SCORE" | bc -l) )); then
             BEST_SCORE=$SCORE
-            BEST_CONFIG="Throughput: $SCORE ops/s\n  PDF Server Threads: $LEVEL\n  Zip Client Workers: $ZIP\n  PDF Client Limit: $PDF"
+            BEST_CONFIG="Throughput: $SCORE ops/s\n  PDF Server Threads: $LEVEL\n  Zip Client Workers: $ZIP\n  PDF Client Limit: $PDF\nRecommended settings:\n- invoice-parser:pdf.max-concurrent-conversions=$PDF\n- pdf-creator:converter.max-concurrent=$LEVEL"
         fi
     else
         echo "No tuning results found."
