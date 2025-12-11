@@ -37,17 +37,35 @@ public class Xhtml2PdfClient {
     private final DiagnosticsRecorder diagnostics;
 
     public Xhtml2PdfClient(
-            @Value("${xhtml2pdf.base-url:http://localhost:8080}") String baseUrl,
+            @Value("${xhtml2pdf.base-url:https://localhost:8080}") String baseUrl,
             @Value("${xhtml2pdf.request-timeout:PT30S}") Duration requestTimeout,
             @Value("${xhtml2pdf.connect-timeout:PT5S}") Duration connectTimeout,
+            @Value("${xhtml2pdf.ssl.trust-store:}") String trustStorePath,
+            @Value("${xhtml2pdf.ssl.trust-store-password:}") String trustStorePassword,
             DiagnosticsRecorder diagnostics) {
         this.convertEndpoint = buildEndpoint(baseUrl, "/api/v1/pdf/convert-with-model");
         this.batchConvertEndpoint = buildEndpoint(baseUrl, "/api/v1/pdf/convert-batch");
         this.requestTimeout = requestTimeout;
-        this.httpClient = HttpClient.newBuilder()
+        HttpClient.Builder builder = HttpClient.newBuilder()
                 .version(HttpClient.Version.HTTP_1_1)
-                .connectTimeout(connectTimeout)
-                .build();
+                .connectTimeout(connectTimeout);
+        // Configure TLS trust store if provided
+        if (trustStorePath != null && !trustStorePath.isBlank()) {
+            try {
+                java.security.KeyStore ks = java.security.KeyStore.getInstance("PKCS12");
+                try (java.io.FileInputStream fis = new java.io.FileInputStream(trustStorePath)) {
+                    ks.load(fis, trustStorePassword != null ? trustStorePassword.toCharArray() : null);
+                }
+                javax.net.ssl.TrustManagerFactory tmf = javax.net.ssl.TrustManagerFactory.getInstance(javax.net.ssl.TrustManagerFactory.getDefaultAlgorithm());
+                tmf.init(ks);
+                javax.net.ssl.SSLContext sslContext = javax.net.ssl.SSLContext.getInstance("TLS");
+                sslContext.init(null, tmf.getTrustManagers(), new java.security.SecureRandom());
+                builder = builder.sslContext(sslContext);
+            } catch (Exception e) {
+                throw new RuntimeException("Failed to configure TLS trust store: " + e.getMessage(), e);
+            }
+        }
+        this.httpClient = builder.build();
         this.objectMapper = new ObjectMapper()
                 .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
                 .registerModule(new JavaTimeModule());
@@ -115,7 +133,7 @@ public class Xhtml2PdfClient {
 
     private URI buildEndpoint(String baseUrl, String path) {
         String norm = Objects.requireNonNullElse(baseUrl, "").replaceAll("/+$", "");
-        if (norm.isEmpty()) norm = "http://localhost:8080";
+        if (norm.isEmpty()) norm = "https://localhost:8080";
         return URI.create(norm + path);
     }
 
