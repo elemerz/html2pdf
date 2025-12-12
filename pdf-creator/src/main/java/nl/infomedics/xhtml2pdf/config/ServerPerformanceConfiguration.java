@@ -53,6 +53,19 @@ public class ServerPerformanceConfiguration implements WebMvcConfigurer {
         return protocolHandler -> protocolHandler.setExecutor(virtualThreadExecutor);
     }
 
+    // Increase HTTP/2 concurrent stream capacity to avoid RST_STREAM under load
+    @Bean
+    TomcatProtocolHandlerCustomizer<ProtocolHandler> http2StreamCapacityCustomizer() {
+        return handler -> {
+            if (handler instanceof org.apache.coyote.http2.Http2Protocol h2) {
+                h2.setMaxConcurrentStreams(4096);
+                // Increase flow control window for large payloads
+                h2.setInitialWindowSize(64 * 1024 * 1024); // 64 MB
+                // Frame size tuning not supported by this Tomcat version; keep default.
+            }
+        };
+    }
+
     @Override
     public void configureAsyncSupport(AsyncSupportConfigurer configurer) {
         configurer.setDefaultTimeout(DEFAULT_ASYNC_TIMEOUT.toMillis());
