@@ -70,7 +70,7 @@ function Run-Benchmark {
     # Run JMH
     # We use -jvmArgs to pass the Spring Boot properties
     # -rf json -rff ... to output JSON
-    $jvmArgs = "-Dzip.concurrent-workers=$z -Dpdf.max-concurrent-conversions=$p"
+    $jvmArgs = "-Dzip.concurrent-workers=$z -Dpdf.max-concurrent-conversions=$p -Dxhtml2pdf.base-url=https://localhost:6969 -Dxhtml2pdf.ssl.trust-store=..\keystore\infomedics-trust.p12 -Dxhtml2pdf.ssl.trust-store-password=changeit -Djavax.net.ssl.trustStore=..\keystore\infomedics-trust.p12 -Djavax.net.ssl.trustStoreType=PKCS12 -Djavax.net.ssl.trustStorePassword=changeit"
     $cmdArgs = "-jar `"$jarPath`" FastInvoiceBenchmark -p fileCount=100 -p invoiceTypes=`"20`" -jvmArgs `"$jvmArgs`" -rf json -rff `"$benchmarkResultFile`""
     
     # Run synchronously
@@ -229,6 +229,7 @@ Write-Host "  PDF Server Threads:  $($globalBestConfig.S)"
 Write-Host "  Zip Client Workers:  $($globalBestConfig.Z)"
 Write-Host "  PDF Client Limit:    $($globalBestConfig.P)"
 Write-Host "Recommended settings:"
+Write-Host "  - invoice-parser:zip.concurrent-workers=$($globalBestConfig.Z)"
 Write-Host "  - invoice-parser:pdf.max-concurrent-conversions=$($globalBestConfig.P)"
 Write-Host "  - pdf-creator:converter.max-concurrent=$($globalBestConfig.S)"
 Write-Host "========================================================"

@@ -54,7 +54,7 @@ public class FastInvoiceBenchmark {
         // Avoid port conflict
         System.setProperty("server.port", "0");
         // Ensure we point to the local PDF creator
-        System.setProperty("xhtml2pdf.base-url", "http://localhost:6969");
+        System.setProperty("xhtml2pdf.base-url", "https://localhost:6969");
         
         // Use templates from the sibling module
         System.setProperty("templates.for-pdf.path", "../invoice-parser/for-pdf");
@@ -135,8 +135,8 @@ public class FastInvoiceBenchmark {
         int retries = 30;
         while (retries > 0) {
             try {
-                java.net.URL url = new java.net.URL("http://localhost:6969");
-                java.net.HttpURLConnection conn = (java.net.HttpURLConnection) url.openConnection();
+                java.net.URL url = new java.net.URL("https://localhost:6969");
+                javax.net.ssl.HttpsURLConnection conn = (javax.net.ssl.HttpsURLConnection) url.openConnection();
                 conn.setConnectTimeout(2000);
                 conn.connect();
                 conn.disconnect();

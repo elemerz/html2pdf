@@ -7,8 +7,14 @@
         "forks" : 1,
         "jvm" : "C:\\Program Files\\Amazon Corretto\\jdk25.0.1_8\\bin\\java.exe",
         "jvmArgs" : [
-            "-Dzip.concurrent-workers=8",
-            "-Dpdf.max-concurrent-conversions=12"
+            "-Dzip.concurrent-workers=12",
+            "-Dpdf.max-concurrent-conversions=12",
+            "-Dxhtml2pdf.base-url=https://localhost:6969",
+            "-Dxhtml2pdf.ssl.trust-store=..\\keystore\\infomedics-trust.p12",
+            "-Dxhtml2pdf.ssl.trust-store-password=changeit",
+            "-Djavax.net.ssl.trustStore=..\\keystore\\infomedics-trust.p12",
+            "-Djavax.net.ssl.trustStoreType=PKCS12",
+            "-Djavax.net.ssl.trustStorePassword=changeit"
         ],
         "jdkVersion" : "25.0.1",
         "vmName" : "OpenJDK 64-Bit Server VM",
@@ -24,28 +30,28 @@
             "invoiceTypes" : "20"
         },
         "primaryMetric" : {
-            "score" : 24.8111211,
+            "score" : 29.3846719,
             "scoreError" : "NaN",
             "scoreConfidence" : [
                 "NaN",
                 "NaN"
             ],
             "scorePercentiles" : {
-                "0.0" : 24.8111211,
-                "50.0" : 24.8111211,
-                "90.0" : 24.8111211,
-                "95.0" : 24.8111211,
-                "99.0" : 24.8111211,
-                "99.9" : 24.8111211,
-                "99.99" : 24.8111211,
-                "99.999" : 24.8111211,
-                "99.9999" : 24.8111211,
-                "100.0" : 24.8111211
+                "0.0" : 29.3846719,
+                "50.0" : 29.3846719,
+                "90.0" : 29.3846719,
+                "95.0" : 29.3846719,
+                "99.0" : 29.3846719,
+                "99.9" : 29.3846719,
+                "99.99" : 29.3846719,
+                "99.999" : 29.3846719,
+                "99.9999" : 29.3846719,
+                "100.0" : 29.3846719
             },
             "scoreUnit" : "s/op",
             "rawData" : [
                 [
-                    24.8111211
+                    29.3846719
                 ]
             ]
         },

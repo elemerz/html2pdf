@@ -12,7 +12,7 @@ echo Please ensure pdf-creator is running externally!
 REM Run JMH with parameter sweeps
 REM We use -wi 1 -i 3 -f 1 to keep it relatively short for this demo, but in real life it should be longer.
 REM We vary workers and pdf conversions.
-java --sun-misc-unsafe-memory-access=allow --enable-native-access=ALL-UNNAMED -jar target/benchmarks.jar -p zipConcurrentWorkers=8,16,32 -p pdfMaxConcurrentConversions=8,16,32 -wi 1 -i 3 -f 1 -rf json -rff tuning-results.json
+java --sun-misc-unsafe-memory-access=allow --enable-native-access=ALL-UNNAMED -Dxhtml2pdf.base-url=https://localhost:6969 -Dxhtml2pdf.ssl.trust-store=..\keystore\infomedics-trust.p12 -Dxhtml2pdf.ssl.trust-store-password=changeit -Djavax.net.ssl.trustStore=..\keystore\infomedics-trust.p12 -Djavax.net.ssl.trustStoreType=PKCS12 -Djavax.net.ssl.trustStorePassword=changeit -jar target/benchmarks.jar -p zipConcurrentWorkers=8,16,32 -p pdfMaxConcurrentConversions=8,16,32 -wi 1 -i 3 -f 1 -rf json -rff tuning-results.json
 
 echo.
 echo Analyzing results...
