@@ -47,7 +47,7 @@ public class Xhtml2PdfClient {
         this.batchConvertEndpoint = buildEndpoint(baseUrl, "/api/v1/pdf/convert-batch");
         this.requestTimeout = requestTimeout;
         HttpClient.Builder builder = HttpClient.newBuilder()
-                .version(HttpClient.Version.HTTP_1_1)
+                .version(HttpClient.Version.HTTP_2)
                 .connectTimeout(connectTimeout);
         // Configure TLS trust store if provided
         if (trustStorePath != null && !trustStorePath.isBlank()) {
@@ -114,15 +114,32 @@ public class Xhtml2PdfClient {
                     "endpoint", "convert-batch",
                     "items", Integer.toString(items.size())
             ))) {
-                HttpResponse<String> resp = httpClient.send(req, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
-                if (resp.statusCode() >= 400) throw new ConversionException("Remote error status=" + resp.statusCode());
-                BatchConversionResponse r = objectMapper.readValue(resp.body(), BatchConversionResponse.class);
-                results = r.results().stream()
-                    .filter(result -> result.pdfContent() != null && result.error() == null)
-                    .collect(Collectors.toMap(
-                            BatchConversionResultItem::outputId,
-                        BatchConversionResultItem::pdfContent
-                    ));
+                int attempts = 0;
+                while (true) {
+                    try {
+                        HttpResponse<String> resp = httpClient.send(req, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+                        if (resp.statusCode() >= 400) throw new ConversionException("Remote error status=" + resp.statusCode());
+                        BatchConversionResponse r = objectMapper.readValue(resp.body(), BatchConversionResponse.class);
+                        results = r.results().stream()
+                            .filter(result -> result.pdfContent() != null && result.error() == null)
+                            .collect(Collectors.toMap(
+                                    BatchConversionResultItem::outputId,
+                                BatchConversionResultItem::pdfContent
+                            ));
+                        break;
+                    } catch (IOException ioex) {
+                        // Retry transient HTTP/2 flow-control errors (RST_STREAM) with exponential backoff
+                        String msg = ioex.getMessage();
+                        boolean isCapacity = msg != null && msg.contains("RST_STREAM") && msg.contains("Processing capacity exceeded");
+                        if (isCapacity && attempts < 3) {
+                            attempts++;
+                            long backoffMs = (long) Math.min(2000, 200 * Math.pow(2, attempts - 1));
+                            try { Thread.sleep(backoffMs); } catch (InterruptedException ie) { Thread.currentThread().interrupt(); throw new ConversionException("Batch conversion interrupted", ie); }
+                            continue;
+                        }
+                        throw ioex;
+                    }
+                }
             }
             return results;
         } catch (IOException | InterruptedException e) {
