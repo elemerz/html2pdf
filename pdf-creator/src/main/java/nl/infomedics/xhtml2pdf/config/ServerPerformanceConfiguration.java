@@ -61,7 +61,8 @@ public class ServerPerformanceConfiguration implements WebMvcConfigurer {
                 h2.setMaxConcurrentStreams(4096);
                 // Increase flow control window for large payloads
                 h2.setInitialWindowSize(64 * 1024 * 1024); // 64 MB
-                // Frame size tuning not supported by this Tomcat version; keep default.
+                // Disable HTTP/2 pings to avoid "Failed to send ping" errors when clients close connections
+                h2.setReadTimeout(-1); // -1 disables read timeout and associated pings
             }
         };
     }

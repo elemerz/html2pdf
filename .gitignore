@@ -6,3 +6,7 @@
 /pdf-creator/logs
 *.log
 **/*.log
+**/**/*.log
+**/**/.idea
+**/**/*.log
+/performance-benchmark/pdf-creator-startup.log

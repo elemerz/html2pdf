@@ -1,0 +1,13 @@
+========================================================
+TUNING COMPLETE
+========================================================
+Max Performance Configuration:
+  Throughput:          90.7597639 ops/s
+  PDF Server Threads:  32
+  Zip Client Workers:  8
+  PDF Client Limit:    192
+Recommended settings:
+  - invoice-parser:zip.concurrent-workers=8
+  - invoice-parser:pdf.max-concurrent-conversions=192
+  - pdf-creator:converter.max-concurrent=32
+========================================================
