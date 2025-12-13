@@ -2,3 +2,5 @@
 /fe-designer/package-lock.json
 /performance-benchmark/target/
 /performance-benchmark/docs/.obsidian
+/.idea
+/pdf-creator/logs

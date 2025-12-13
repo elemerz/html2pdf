@@ -15,21 +15,34 @@ import nl.infomedics.invoicing.model.BatchConversionResultItem;
 import nl.infomedics.invoicing.model.HtmlToPdfResponse;
 import nl.infomedics.invoicing.model.HtmlToPdfWithModelRequest;
 
+import okhttp3.ConnectionPool;
+import okhttp3.MediaType;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
+import okhttp3.Protocol;
+
+import jakarta.annotation.PreDestroy;
+
 import java.io.IOException;
 import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManagerFactory;
+import javax.net.ssl.X509TrustManager;
 
 @Service
 public class Xhtml2PdfClient {
-    private final HttpClient httpClient;
+    private final OkHttpClient httpClient;
     private final ObjectMapper objectMapper;
     private final URI convertEndpoint;
     private final URI batchConvertEndpoint;
@@ -42,30 +55,58 @@ public class Xhtml2PdfClient {
             @Value("${xhtml2pdf.connect-timeout:PT5S}") Duration connectTimeout,
             @Value("${xhtml2pdf.ssl.trust-store:}") String trustStorePath,
             @Value("${xhtml2pdf.ssl.trust-store-password:}") String trustStorePassword,
+            @Value("${xhtml2pdf.max-connections:200}") int maxConnections,
+            @Value("${xhtml2pdf.max-idle-connections:50}") int maxIdleConnections,
+            @Value("${xhtml2pdf.keep-alive-duration:PT5M}") Duration keepAliveDuration,
             DiagnosticsRecorder diagnostics) {
         this.convertEndpoint = buildEndpoint(baseUrl, "/api/v1/pdf/convert-with-model");
         this.batchConvertEndpoint = buildEndpoint(baseUrl, "/api/v1/pdf/convert-batch");
         this.requestTimeout = requestTimeout;
-        HttpClient.Builder builder = HttpClient.newBuilder()
-                .version(HttpClient.Version.HTTP_2)
-                .connectTimeout(connectTimeout);
+        
         // Configure TLS trust store if provided
+        SSLContext sslContext = null;
+        X509TrustManager trustManager = null;
         if (trustStorePath != null && !trustStorePath.isBlank()) {
             try {
                 java.security.KeyStore ks = java.security.KeyStore.getInstance("PKCS12");
                 try (java.io.FileInputStream fis = new java.io.FileInputStream(trustStorePath)) {
                     ks.load(fis, trustStorePassword != null ? trustStorePassword.toCharArray() : null);
                 }
-                javax.net.ssl.TrustManagerFactory tmf = javax.net.ssl.TrustManagerFactory.getInstance(javax.net.ssl.TrustManagerFactory.getDefaultAlgorithm());
+                TrustManagerFactory tmf = TrustManagerFactory.getInstance(
+                    TrustManagerFactory.getDefaultAlgorithm());
                 tmf.init(ks);
-                javax.net.ssl.SSLContext sslContext = javax.net.ssl.SSLContext.getInstance("TLS");
+                sslContext = SSLContext.getInstance("TLS");
                 sslContext.init(null, tmf.getTrustManagers(), new java.security.SecureRandom());
-                builder = builder.sslContext(sslContext);
+                trustManager = (X509TrustManager) tmf.getTrustManagers()[0];
             } catch (Exception e) {
                 throw new RuntimeException("Failed to configure TLS trust store: " + e.getMessage(), e);
             }
         }
+        
+        // Build OkHttp client with connection pooling and HTTP/2 support
+        ConnectionPool connectionPool = new ConnectionPool(
+            maxIdleConnections,
+            keepAliveDuration.toMillis(),
+            TimeUnit.MILLISECONDS
+        );
+        
+        OkHttpClient.Builder builder = new OkHttpClient.Builder()
+                .connectionPool(connectionPool)
+                .connectTimeout(connectTimeout.toMillis(), TimeUnit.MILLISECONDS)
+                .readTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS)
+                .writeTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS)
+                .callTimeout(requestTimeout.multipliedBy(2).toMillis(), TimeUnit.MILLISECONDS)
+                .protocols(Arrays.asList(Protocol.HTTP_2, Protocol.HTTP_1_1))
+                .retryOnConnectionFailure(true);
+        
+        if (sslContext != null && trustManager != null) {
+            builder.sslSocketFactory(sslContext.getSocketFactory(), trustManager);
+            // Disable hostname verification for localhost development
+            builder.hostnameVerifier((hostname, session) -> true);
+        }
+        
         this.httpClient = builder.build();
+        
         this.objectMapper = new ObjectMapper()
                 .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
                 .registerModule(new JavaTimeModule());
@@ -78,19 +119,26 @@ public class Xhtml2PdfClient {
         HtmlToPdfWithModelRequest payload = new HtmlToPdfWithModelRequest(html, jsonModel, false);
         try {
             String body = objectMapper.writeValueAsString(payload);
-            HttpRequest req = HttpRequest.newBuilder(convertEndpoint)
-                    .timeout(requestTimeout)
-                    .header("Content-Type", "application/json")
+            RequestBody requestBody = RequestBody.create(body, MediaType.get("application/json; charset=utf-8"));
+            
+            Request request = new Request.Builder()
+                    .url(convertEndpoint.toString())
+                    .post(requestBody)
                     .header("Accept", "application/json")
-                    .POST(HttpRequest.BodyPublishers.ofString(body, StandardCharsets.UTF_8))
                     .build();
-            HttpResponse<String> resp = httpClient.send(req, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
-            if (resp.statusCode() >= 400) throw new ConversionException("Remote error status=" + resp.statusCode());
-            HtmlToPdfResponse r = objectMapper.readValue(resp.body(), HtmlToPdfResponse.class);
-            if (r.pdfContent()==null || r.pdfContent().length==0) throw new ConversionException("Empty PDF payload");
-            return r.pdfContent();
-        } catch (IOException | InterruptedException e) {
-            if (e instanceof InterruptedException) Thread.currentThread().interrupt();
+            
+            try (Response response = httpClient.newCall(request).execute()) {
+                if (!response.isSuccessful()) {
+                    throw new ConversionException("Remote error status=" + response.code());
+                }
+                String responseBody = response.body().string();
+                HtmlToPdfResponse r = objectMapper.readValue(responseBody, HtmlToPdfResponse.class);
+                if (r.pdfContent() == null || r.pdfContent().length == 0) {
+                    throw new ConversionException("Empty PDF payload");
+                }
+                return r.pdfContent();
+            }
+        } catch (IOException e) {
             throw new ConversionException("Conversion failed: " + e.getMessage(), e);
         }
     }
@@ -103,12 +151,21 @@ public class Xhtml2PdfClient {
                 .map(i -> new BatchConversionItem(i.jsonModel(), i.outputId()))
                 .collect(Collectors.toList()));
             String body = objectMapper.writeValueAsString(payload);
-            HttpRequest req = HttpRequest.newBuilder(batchConvertEndpoint)
-                    .timeout(requestTimeout.multipliedBy(Math.max(2, items.size() / 10)))
-                    .header("Content-Type", "application/json")
-                    .header("Accept", "application/json")
-                    .POST(HttpRequest.BodyPublishers.ofString(body, StandardCharsets.UTF_8))
+            RequestBody requestBody = RequestBody.create(body, MediaType.get("application/json; charset=utf-8"));
+            
+            // Build request with extended timeout for batch operations
+            long batchTimeoutMillis = requestTimeout.multipliedBy(Math.max(2, items.size() / 10)).toMillis();
+            OkHttpClient batchClient = httpClient.newBuilder()
+                    .readTimeout(batchTimeoutMillis, TimeUnit.MILLISECONDS)
+                    .callTimeout(batchTimeoutMillis * 2, TimeUnit.MILLISECONDS)
                     .build();
+            
+            Request request = new Request.Builder()
+                    .url(batchConvertEndpoint.toString())
+                    .post(requestBody)
+                    .header("Accept", "application/json")
+                    .build();
+            
             Map<String, byte[]> results;
             try (var timer = diagnostics.start("parser.pdf.http", Map.of(
                     "endpoint", "convert-batch",
@@ -116,10 +173,15 @@ public class Xhtml2PdfClient {
             ))) {
                 int attempts = 0;
                 while (true) {
-                    try {
-                        HttpResponse<String> resp = httpClient.send(req, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
-                        if (resp.statusCode() >= 400) throw new ConversionException("Remote error status=" + resp.statusCode());
-                        BatchConversionResponse r = objectMapper.readValue(resp.body(), BatchConversionResponse.class);
+                    try (Response response = batchClient.newCall(request).execute()) {
+                        if (!response.isSuccessful()) {
+                            String errorBody = response.body() != null ? response.body().string() : "";
+                            String errorDetails = String.format("Remote error status=%d, body=%s, request-size=%d bytes", 
+                                response.code(), errorBody, body.length());
+                            throw new ConversionException(errorDetails);
+                        }
+                        String responseBody = response.body().string();
+                        BatchConversionResponse r = objectMapper.readValue(responseBody, BatchConversionResponse.class);
                         results = r.results().stream()
                             .filter(result -> result.pdfContent() != null && result.error() == null)
                             .collect(Collectors.toMap(
@@ -128,13 +190,20 @@ public class Xhtml2PdfClient {
                             ));
                         break;
                     } catch (IOException ioex) {
-                        // Retry transient HTTP/2 flow-control errors (RST_STREAM) with exponential backoff
+                        // Retry transient connection errors with exponential backoff
                         String msg = ioex.getMessage();
-                        boolean isCapacity = msg != null && msg.contains("RST_STREAM") && msg.contains("Processing capacity exceeded");
-                        if (isCapacity && attempts < 3) {
+                        boolean isRetryable = msg != null && (
+                            msg.contains("Connection reset") || 
+                            msg.contains("Broken pipe") ||
+                            msg.contains("timeout") ||
+                            msg.contains("stream was reset"));
+                        if (isRetryable && attempts < 3) {
                             attempts++;
                             long backoffMs = (long) Math.min(2000, 200 * Math.pow(2, attempts - 1));
-                            try { Thread.sleep(backoffMs); } catch (InterruptedException ie) { Thread.currentThread().interrupt(); throw new ConversionException("Batch conversion interrupted", ie); }
+                            try { Thread.sleep(backoffMs); } catch (InterruptedException ie) { 
+                                Thread.currentThread().interrupt(); 
+                                throw new ConversionException("Batch conversion interrupted", ie); 
+                            }
                             continue;
                         }
                         throw ioex;
@@ -142,8 +211,7 @@ public class Xhtml2PdfClient {
                 }
             }
             return results;
-        } catch (IOException | InterruptedException e) {
-            if (e instanceof InterruptedException) Thread.currentThread().interrupt();
+        } catch (IOException e) {
             throw new ConversionException("Batch conversion failed: " + e.getMessage(), e);
         }
     }
@@ -152,6 +220,14 @@ public class Xhtml2PdfClient {
         String norm = Objects.requireNonNullElse(baseUrl, "").replaceAll("/+$", "");
         if (norm.isEmpty()) norm = "https://localhost:8080";
         return URI.create(norm + path);
+    }
+
+    @PreDestroy
+    public void shutdown() {
+        if (httpClient != null) {
+            httpClient.dispatcher().executorService().shutdown();
+            httpClient.connectionPool().evictAll();
+        }
     }
 
     public static class ConversionException extends Exception {
