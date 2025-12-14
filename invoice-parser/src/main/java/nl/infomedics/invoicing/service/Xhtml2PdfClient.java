@@ -22,6 +22,7 @@ import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
 import okhttp3.Protocol;
+import okio.BufferedSink;
 
 import jakarta.annotation.PreDestroy;
 
@@ -118,8 +119,7 @@ public class Xhtml2PdfClient {
         if (jsonModel == null || jsonModel.isBlank()) jsonModel = "{}";
         HtmlToPdfWithModelRequest payload = new HtmlToPdfWithModelRequest(html, jsonModel, false);
         try {
-            String body = objectMapper.writeValueAsString(payload);
-            RequestBody requestBody = RequestBody.create(body, MediaType.get("application/json; charset=utf-8"));
+            RequestBody requestBody = createStreamingRequestBody(payload);
             
             Request request = new Request.Builder()
                     .url(convertEndpoint.toString())
@@ -150,8 +150,7 @@ public class Xhtml2PdfClient {
             BatchConversionRequest payload = new BatchConversionRequest(html, includeSanitisedXhtml, items.stream()
                 .map(i -> new BatchConversionItem(i.jsonModel(), i.outputId()))
                 .collect(Collectors.toList()));
-            String body = objectMapper.writeValueAsString(payload);
-            RequestBody requestBody = RequestBody.create(body, MediaType.get("application/json; charset=utf-8"));
+            RequestBody requestBody = createStreamingRequestBody(payload);
             
             // Build request with extended timeout for batch operations
             long batchTimeoutMillis = requestTimeout.multipliedBy(Math.max(2, items.size() / 10)).toMillis();
@@ -176,8 +175,8 @@ public class Xhtml2PdfClient {
                     try (Response response = batchClient.newCall(request).execute()) {
                         if (!response.isSuccessful()) {
                             String errorBody = response.body() != null ? response.body().string() : "";
-                            String errorDetails = String.format("Remote error status=%d, body=%s, request-size=%d bytes", 
-                                response.code(), errorBody, body.length());
+                            String errorDetails = String.format("Remote error status=%d, body=%s", 
+                                response.code(), errorBody);
                             throw new ConversionException(errorDetails);
                         }
                         String responseBody = response.body().string();
@@ -214,6 +213,20 @@ public class Xhtml2PdfClient {
         } catch (IOException e) {
             throw new ConversionException("Batch conversion failed: " + e.getMessage(), e);
         }
+    }
+
+    private <T> RequestBody createStreamingRequestBody(T payload) {
+        return new RequestBody() {
+            @Override
+            public MediaType contentType() {
+                return MediaType.get("application/json; charset=utf-8");
+            }
+
+            @Override
+            public void writeTo(BufferedSink sink) throws IOException {
+                objectMapper.writeValue(sink.outputStream(), payload);
+            }
+        };
     }
 
     private URI buildEndpoint(String baseUrl, String path) {

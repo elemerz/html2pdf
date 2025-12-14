@@ -15,6 +15,7 @@
         <module>invoice-parser</module>
         <module>pdf-creator</module>
         <module>performance-benchmark</module>
+        <module>helper-input-data-creator</module>
     </modules>
 
     <build>

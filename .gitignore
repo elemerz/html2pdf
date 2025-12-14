@@ -10,3 +10,4 @@
 **/**/.idea
 **/**/*.log
 /performance-benchmark/pdf-creator-startup.log
+/helper-input-data-creator/target

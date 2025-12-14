@@ -46,6 +46,7 @@ public class ZipIngestService {
     private final Path jsonOutputDirectory;
     private final Path pdfOutputDirectory;
     private final boolean isJsonPrettyPrint;
+    private final boolean saveJsonToFolder;
     private final Xhtml2PdfClient pdfClient;
     private final ThreadPoolExecutor pdfConversionExecutor;
     private final Semaphore pdfConversionPermits;
@@ -58,6 +59,7 @@ public class ZipIngestService {
 
     public ZipIngestService(ParseService parseService, JsonAssembler jsonAssembler, AppProperties appProperties, Xhtml2PdfClient pdfClient, Map<Integer,String> templateHtmlMap,
             @Value("${json.output.folder}") String jsonOutputPath, @Value("${json.pretty:false}") boolean isJsonPrettyPrint,
+            @Value("${json.output.folder.saveto:false}") boolean saveJsonToFolder,
             @Value("${pdf.output.folder:C:/invoice-data/_pdf}") String pdfOutputPath,
             @Value("${pdf.max-concurrent-conversions:64}") int maxConcurrentPdfConversions,
             DiagnosticsRecorder diagnostics)
@@ -69,6 +71,7 @@ public class ZipIngestService {
         this.jsonOutputDirectory = Paths.get(jsonOutputPath);
         this.pdfOutputDirectory = Paths.get(pdfOutputPath);
         this.isJsonPrettyPrint = isJsonPrettyPrint;
+        this.saveJsonToFolder = saveJsonToFolder;
         this.maxConcurrentPdfConversions = Math.max(1, maxConcurrentPdfConversions);
         this.pdfConversionPermits = new Semaphore(this.maxConcurrentPdfConversions);
         this.templateHtmlMap = templateHtmlMap;
@@ -92,8 +95,8 @@ public class ZipIngestService {
         
         Files.createDirectories(this.jsonOutputDirectory);
         Files.createDirectories(this.pdfOutputDirectory);
-        log.info("ZipIngestService initialized with max {} concurrent PDF conversions, queue capacity: {}", 
-                this.maxConcurrentPdfConversions, queueCapacity);
+        log.info("ZipIngestService initialized with max {} concurrent PDF conversions, queue capacity: {}, save JSON: {}", 
+                this.maxConcurrentPdfConversions, queueCapacity, this.saveJsonToFolder);
     }
 
     @PreDestroy
@@ -233,6 +236,9 @@ public class ZipIngestService {
     }
 
     private void writeJsonOutput(String zipFileName, nl.infomedics.invoicing.model.InvoiceBundle bundle) throws IOException {
+        if (!saveJsonToFolder) {
+            return;
+        }
         String jsonString = jsonAssembler.stringify(bundle, isJsonPrettyPrint);
         Path outputPath = jsonOutputDirectory.resolve(stripZipExtension(zipFileName) + ".json");
         Files.writeString(outputPath, jsonString, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);

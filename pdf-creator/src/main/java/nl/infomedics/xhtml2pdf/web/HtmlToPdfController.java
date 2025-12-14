@@ -46,7 +46,7 @@ public class HtmlToPdfController {
     private final Html2PdfConverterService converterService;
     private final ExecutorService pdfConversionExecutor;
     private final DiagnosticsRecorder diagnostics;
-    private static final java.util.Map<String, RepeatPlan> REPEAT_PLAN_CACHE = new java.util.concurrent.ConcurrentHashMap<>();
+    private static final java.util.Map<String, CompiledTemplate> TEMPLATE_CACHE = new java.util.concurrent.ConcurrentHashMap<>();
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper()
             .registerModule(new com.fasterxml.jackson.datatype.jsr310.JavaTimeModule())
             .disable(com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
@@ -55,6 +55,20 @@ public class HtmlToPdfController {
     );
 
     private static final java.util.Map<String, java.lang.reflect.Method> METHOD_CACHE = new java.util.concurrent.ConcurrentHashMap<>();
+    
+    private static class CompiledTemplate {
+        final boolean hasRepeat;
+        final boolean hasPlaceholders;
+        final int estimatedOutputSize;
+        final RepeatPlan plan;
+        
+        CompiledTemplate(RepeatPlan plan, int estimatedOutputSize) {
+            this.hasRepeat = plan.hasRepeat;
+            this.hasPlaceholders = plan.hasPlaceholders;
+            this.estimatedOutputSize = estimatedOutputSize;
+            this.plan = plan;
+        }
+    }
 
     public HtmlToPdfController(Html2PdfConverterService converterService,
                                @Qualifier("pdfConversionExecutor") ExecutorService pdfConversionExecutor,
@@ -152,37 +166,44 @@ public class HtmlToPdfController {
 
     private String resolvePropertyPlaceholders(String htmlString, DebiteurWithPractitioner debiteur) {
         if (htmlString == null || htmlString.isEmpty() || debiteur == null) return htmlString;
-        RepeatPlan plan = REPEAT_PLAN_CACHE.computeIfAbsent(htmlString, this::compileRepeatPlan);
-        if (!plan.hasRepeat && !plan.hasPlaceholders) return htmlString;
+        CompiledTemplate compiled = TEMPLATE_CACHE.computeIfAbsent(htmlString, this::compileTemplate);
+        if (!compiled.hasRepeat && !compiled.hasPlaceholders) return htmlString;
 
         try {
-            java.util.function.BiFunction<Object,String,Object> resolvePath = (root, path) -> {
-                if (root == null || path == null || path.isEmpty()) return null;
-                Object current = root;
-                for (String part : path.split("\\.")) {
-                    if (current == null) return null;
-                    if (current instanceof java.util.Map<?,?> m && m.containsKey(part)) {
-                        current = m.get(part);
-                    } else {
-                        current = invokeProperty(current, part);
-                    }
-                }
-                return current;
-            };
-            
-            return executePlan(plan, debiteur, resolvePath);
+            PathResolver pathResolver = new PathResolver();
+            return executePlan(compiled.plan, debiteur, pathResolver, compiled.estimatedOutputSize);
         } catch (Exception e) {
             log.warn("resolvePropertyPlaceholders failed: {}", e.getMessage());
             return htmlString;
         }
     }
+    
+    private class PathResolver {
+        private final java.util.Map<String, String[]> pathSplitCache = new java.util.HashMap<>(32);
+        
+        Object resolve(Object root, String path) {
+            if (root == null || path == null || path.isEmpty()) return null;
+            
+            String[] parts = pathSplitCache.computeIfAbsent(path, p -> p.split("\\."));
+            Object current = root;
+            
+            for (String part : parts) {
+                if (current == null) return null;
+                if (current instanceof java.util.Map<?,?> m && m.containsKey(part)) {
+                    current = m.get(part);
+                } else {
+                    current = invokeProperty(current, part);
+                }
+            }
+            return current;
+        }
+    }
 
-    private String executePlan(RepeatPlan plan, Object debiteurMap,
-                               java.util.function.BiFunction<Object,String,Object> resolvePath) {
-        StringBuilder out = new StringBuilder();
+    private String executePlan(RepeatPlan plan, Object debiteurMap, PathResolver pathResolver, int estimatedSize) {
+        StringBuilder out = new StringBuilder(estimatedSize);
         
         java.util.function.Function<String, String> globalResolver = key -> {
-             Object val = resolvePath.apply(debiteurMap, key);
+             Object val = pathResolver.resolve(debiteurMap, key);
              return val != null ? val.toString() : "";
         };
 
@@ -194,16 +215,16 @@ public class HtmlToPdfController {
         for (RepeatSegment seg : plan.segments) {
             resolveParsed(seg.prefix, out, globalResolver);
             
-            Object collectionObj = resolvePath.apply(debiteurMap, seg.collectionPath);
+            Object collectionObj = pathResolver.resolve(debiteurMap, seg.collectionPath);
             if (collectionObj instanceof java.lang.Iterable<?> iterable) {
                 for (Object item : iterable) {
-                    processInner(seg, item, out, resolvePath, globalResolver);
+                    processInner(seg, item, out, pathResolver, globalResolver);
                 }
             } else if (collectionObj != null && collectionObj.getClass().isArray()) {
                 int length = java.lang.reflect.Array.getLength(collectionObj);
                 for (int idx = 0; idx < length; idx++) {
                     Object item = java.lang.reflect.Array.get(collectionObj, idx);
-                    processInner(seg, item, out, resolvePath, globalResolver);
+                    processInner(seg, item, out, pathResolver, globalResolver);
                 }
             }
         }
@@ -212,7 +233,7 @@ public class HtmlToPdfController {
     }
 
     private void processInner(RepeatSegment seg, Object item, StringBuilder out, 
-                              java.util.function.BiFunction<Object,String,Object> resolvePath,
+                              PathResolver pathResolver,
                               java.util.function.Function<String, String> globalResolver) {
         out.append(seg.openingTagStripped);
         for (Token t : seg.inner.tokens) {
@@ -223,7 +244,7 @@ public class HtmlToPdfController {
                 String val;
                 if (key.startsWith(seg.varName + ".")) {
                     String path = key.substring(seg.varName.length() + 1);
-                    Object obj = resolvePath.apply(item, path);
+                    Object obj = pathResolver.resolve(item, path);
                     val = obj != null ? obj.toString() : "";
                 } else {
                     val = globalResolver.apply(key);
@@ -303,30 +324,66 @@ public class HtmlToPdfController {
         return null;
     }
 
-    private RepeatPlan compileRepeatPlan(String html) {
+    private CompiledTemplate compileTemplate(String html) {
         boolean hasRepeat = html.contains("data-repeat-over");
         boolean hasPlaceholders = html.contains("${");
+        
+        RepeatPlan plan;
         if (!hasRepeat) {
-            return new RepeatPlan(hasRepeat, hasPlaceholders, java.util.Collections.emptyList(), parseString(html));
+            plan = new RepeatPlan(hasRepeat, hasPlaceholders, java.util.Collections.emptyList(), parseString(html));
+        } else {
+            java.util.List<RepeatSegment> segments = new java.util.ArrayList<>();
+            java.util.regex.Matcher rm = REPEAT_BLOCK_PATTERN.matcher(html);
+            int last = 0;
+            while (rm.find()) {
+                String prefix = html.substring(last, rm.start());
+                String openingTag = rm.group(1);
+                String collectionPath = rm.group(4);
+                String varName = rm.group(5);
+                String inner = rm.group(6);
+                String closingTag = "</" + rm.group(2) + ">";
+                String strippedOpening = openingTag
+                        .replace("data-repeat-over=\"" + collectionPath + "\"", "")
+                        .replace("data-repeat-var=\"" + varName + "\"", "");
+                segments.add(new RepeatSegment(parseString(prefix), strippedOpening, closingTag, collectionPath, varName, parseString(inner)));
+                last = rm.end();
+            }
+            String tail = html.substring(last);
+            plan = new RepeatPlan(true, hasPlaceholders, java.util.Collections.unmodifiableList(segments), parseString(tail));
         }
-        java.util.List<RepeatSegment> segments = new java.util.ArrayList<>();
-        java.util.regex.Matcher rm = REPEAT_BLOCK_PATTERN.matcher(html);
-        int last = 0;
-        while (rm.find()) {
-            String prefix = html.substring(last, rm.start());
-            String openingTag = rm.group(1);
-            String collectionPath = rm.group(4);
-            String varName = rm.group(5);
-            String inner = rm.group(6);
-            String closingTag = "</" + rm.group(2) + ">";
-            String strippedOpening = openingTag
-                    .replace("data-repeat-over=\"" + collectionPath + "\"", "")
-                    .replace("data-repeat-var=\"" + varName + "\"", "");
-            segments.add(new RepeatSegment(parseString(prefix), strippedOpening, closingTag, collectionPath, varName, parseString(inner)));
-            last = rm.end();
+        
+        int estimatedSize = calculateEstimatedSize(html, plan);
+        return new CompiledTemplate(plan, estimatedSize);
+    }
+    
+    private int calculateEstimatedSize(String html, RepeatPlan plan) {
+        int baseSize = html.length();
+        int placeholderCount = 0;
+        
+        if (!plan.hasRepeat) {
+            placeholderCount = plan.tail.tokens.stream()
+                    .filter(t -> t.isPlaceholder)
+                    .mapToInt(t -> 1)
+                    .sum();
+        } else {
+            for (RepeatSegment seg : plan.segments) {
+                placeholderCount += seg.prefix.tokens.stream()
+                        .filter(t -> t.isPlaceholder)
+                        .mapToInt(t -> 1)
+                        .sum();
+                placeholderCount += seg.inner.tokens.stream()
+                        .filter(t -> t.isPlaceholder)
+                        .mapToInt(t -> 1)
+                        .sum() * 10;
+            }
+            placeholderCount += plan.tail.tokens.stream()
+                    .filter(t -> t.isPlaceholder)
+                    .mapToInt(t -> 1)
+                    .sum();
         }
-        String tail = html.substring(last);
-        return new RepeatPlan(true, hasPlaceholders, java.util.Collections.unmodifiableList(segments), parseString(tail));
+        
+        int estimatedPlaceholderExpansion = placeholderCount * 20;
+        return baseSize + estimatedPlaceholderExpansion;
     }
 
 

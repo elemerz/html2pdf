@@ -40,7 +40,7 @@ ____After Performance Tuning: 100 Zips_______
 8: 17.379 s
 9: 18.937 s
 10 19.070 s
-11 
+
 
 ____After Performance Tuning: 1000 Zips_______
 1: 173.694 s
@@ -48,3 +48,35 @@ ____After Performance Tuning: 1000 Zips_______
 3: 160.086 s
 4:  s
 5:  s
+===================
+____After Performance Tuning: 100 Zips HTTPS+HTTP/2_______
+1: 27.934 s
+2: 20.124 s
+3: 18.803 s
+4: 18.588 s
+5: 17.819 s
+===================
+🎯 Recommended Order:
+
+     - Template Pre-Parsing
+     - XML Parsing
+     - HTTP Body Streaming
+     - Config tuning (connection pools, concurrency limits)
+==================
+____After Performance Tuning: 100 Zips HTTPS+HTTP/2 + Template Pre-parsing_______
+1: 28.590 s
+2: 19.437 s
+3: 19.410 s
+4: 18.563 s
+5: 18.317 s
+
+____After Performance Tuning: 1000 Zips HTTPS+HTTP/2 + Template Pre-parsing_______
+1: 160.366 s
+2: 156.279 s
+
+____After Performance Tuning: 100 Zips HTTPS+HTTP/2 + Template Pre-parsing + HTTP Body Streaming_______
+1: 28.225 s
+2: 19.688 s
+3: 19.209 s
+4: 18.686 s
+5: 18.523 s
