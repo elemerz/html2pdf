@@ -1,6 +1,6 @@
 /fe-designer-dragdrop/package-lock.json
 /fe-designer/package-lock.json
-/performance-benchmark/target/
+**/target/
 /performance-benchmark/docs/.obsidian
 /.idea
 /pdf-creator/logs

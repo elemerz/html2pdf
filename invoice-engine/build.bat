@@ -1,0 +1,28 @@
+@echo off
+REM Build Invoice Engine (Windows)
+
+cd /d "%~dp0"
+
+echo ======================================
+echo Building Invoice Engine
+echo ======================================
+echo.
+
+call mvn clean package -DskipTests
+
+if %ERRORLEVEL% EQU 0 (
+    echo.
+    echo ======================================
+    echo Build completed successfully!
+    echo ======================================
+    echo.
+    echo Executable JAR: invoice-engine\target\invoice-engine-0.0.1-SNAPSHOT-exec.jar
+    echo.
+) else (
+    echo.
+    echo ======================================
+    echo Build FAILED!
+    echo ======================================
+    pause
+    exit /b 1
+)

@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <springProperty scope="context" name="APP_NAME" source="spring.application.name"/>
+    
+    <!-- Console Appender for development -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} ${HOSTNAME} ${APP_NAME} %5level [trace=%X{traceId:-~},span=%X{spanId:-~}] [%thread] - %40.40logger{40}: %msg%n</pattern>
+        </encoder>
+    </appender>
+    
+    <!-- File Appender for persistent logs -->
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>logs/invoice-engine.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>logs/invoice-engine.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <maxFileSize>512MB</maxFileSize>
+            <maxHistory>30</maxHistory>
+            <totalSizeCap>2GB</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} ${HOSTNAME} ${APP_NAME} %5level [trace=%X{traceId:-~},span=%X{spanId:-~}] [%thread] - %40.40logger{40}: %msg%n</pattern>
+        </encoder>
+    </appender>
+    
+    <!-- Application loggers -->
+    <logger name="nl.infomedics" level="INFO" />
+    <logger name="nl.infomedics.engine.watch" level="INFO" />
+    <logger name="com.sun.jersey.api.client.filter.LoggingFilter" level="ERROR" />
+    
+    <!-- Spring Boot loggers -->
+    <logger name="org.springframework.boot" level="INFO" />
+    <logger name="org.springframework.web" level="INFO" />
+    
+    <!-- PDF generation libraries (reduce noise) -->
+    <logger name="com.openhtmltopdf" level="WARN" />
+    <logger name="org.apache.pdfbox" level="WARN" />
+    
+    <!-- Root logger -->
+    <root level="INFO">
+        <appender-ref ref="CONSOLE" />
+        <appender-ref ref="FILE" />
+    </root>
+    
+</configuration>
+
