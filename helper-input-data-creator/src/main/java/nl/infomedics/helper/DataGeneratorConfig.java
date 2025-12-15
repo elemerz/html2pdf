@@ -22,4 +22,5 @@ public class DataGeneratorConfig {
     private String modelType;
     private boolean continuousMode;
     private List<Integer> invoiceTypes;
+    private GenerationMode generationMode = GenerationMode.NORMAL;
 }

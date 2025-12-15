@@ -109,15 +109,16 @@ public class PropertyFileWatcher {
                 config.setModelType(newConfig.getModelType());
                 config.setContinuousMode(newConfig.isContinuousMode());
                 config.setInvoiceTypes(newConfig.getInvoiceTypes());
+                config.setGenerationMode(newConfig.getGenerationMode());
             });
 
             log.info(">>> Properties reloaded successfully <<<");
-            log.info("Current config - Batch: {}-{}, Invoices: {}-{}, Batch-Delay: {}-{}ms, Inter-File-Delay: {}-{}ms, Output: {}", 
+            log.info("Current config - Batch: {}-{}, Invoices: {}-{}, Batch-Delay: {}-{}ms, Inter-File-Delay: {}-{}ms, Output: {}, Mode: {}", 
                      config.getBatchMinCount(), config.getBatchMaxCount(),
                      config.getInvoiceMinCount(), config.getInvoiceMaxCount(),
                      config.getDelayMinMs(), config.getDelayMaxMs(),
                      config.getInterFileDelayMinMs(), config.getInterFileDelayMaxMs(),
-                     config.getOutputFolder());
+                     config.getOutputFolder(), config.getGenerationMode());
 
         } catch (Exception e) {
             log.error("Failed to reload properties", e);

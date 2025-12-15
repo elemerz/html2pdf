@@ -16,6 +16,7 @@ During development and testing, this helper continuously generates realistic tes
 - **Enhanced Logging**: Each log entry shows the batch count and file progress (e.g., `[Batch: 5] [3/5] Creating...`)
 - **Property Auto-Reload**: Modify `application.properties` while running and see changes applied immediately without restart
 - **Inter-File Delay Control**: Configure timing between files within a batch (e.g., simulate 142 files arriving at 200-500ms intervals)
+- **Generation Modes**: `normal` (default), `fast` (machine-gun), `mixed` (random per batch)
 - Randomizes:
   - Number of ZIP files per batch
   - Number of invoices per ZIP
@@ -53,7 +54,7 @@ data-generator.markerDelayMs=500
 
 **Batch Delay** (`delayMinMs/MaxMs`): Time between batches  
 **Inter-File Delay** (`interFileDelayMinMs/MaxMs`): Time between files WITHIN a batch (0 = no delay)  
-**Marker Delay** (`markerDelayMs`): Fixed delay to ensure ZIP is complete before marker
+**Marker Delay** (`markerDelayMs`): Fixed delay to ensure ZIP is complete before marker (skipped in `fast` mode)
 
 ### Operating Mode
 ```properties
@@ -61,6 +62,14 @@ data-generator.continuous-mode=true
 ```
 - `true`: Runs indefinitely (press Ctrl+C to stop)
 - `false`: Generates one batch and exits
+
+### Generation Mode
+```properties
+data-generator.generationMode=normal  # normal | fast | mixed
+```
+- `normal`: current behavior (respects inter-file and marker delays)
+- `fast`: no inter-file delay and skips marker delay for maximum throughput
+- `mixed`: randomly selects `normal` or `fast` per batch
 
 ### Invoice Types
 ```properties

@@ -30,6 +30,7 @@ public class InputDataCreatorApplication implements CommandLineRunner {
         log.info("Continuous mode: {}", config.isContinuousMode());
         log.info("Batch size: {} to {} files", config.getBatchMinCount(), config.getBatchMaxCount());
         log.info("Delay between batches: {} to {} ms", config.getDelayMinMs(), config.getDelayMaxMs());
+        log.info("Generation mode: {}", config.getGenerationMode());
         
         if (config.isContinuousMode()) {
             dataGeneratorService.runContinuously();

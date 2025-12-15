@@ -44,14 +44,15 @@ public class DataGeneratorService {
 
     public void generateBatch() {
         int batchSize = getRandomBatchSize();
-        log.info("[Batch: {}] === Generating {} file(s) ===", batchSize, batchSize);
+        GenerationMode batchMode = resolveBatchMode();
+        log.info("[Batch: {}] === Generating {} file(s) in {} mode ===", batchSize, batchSize, batchMode);
         
         for (int i = 0; i < batchSize; i++) {
             try {
-                generateSingleZipWithMarker(i + 1, batchSize);
+                generateSingleZipWithMarker(i + 1, batchSize, batchMode);
                 
-                // Add inter-file delay (except after the last file)
-                if (i < batchSize - 1) {
+                // Add inter-file delay (except after the last file) - skip in FAST mode
+                if (batchMode != GenerationMode.FAST && i < batchSize - 1) {
                     long interFileDelay = getRandomInterFileDelay();
                     if (interFileDelay > 0) {
                         log.debug("[Batch: {}] Waiting {} ms before next file...", batchSize, interFileDelay);
@@ -66,7 +67,7 @@ public class DataGeneratorService {
         log.info("[Batch: {}] === Complete: {} file(s) generated ===", batchSize, batchSize);
     }
 
-    private void generateSingleZipWithMarker(int fileNum, int batchSize) throws IOException, InterruptedException {
+    private void generateSingleZipWithMarker(int fileNum, int batchSize, GenerationMode mode) throws IOException, InterruptedException {
         ensureOutputFolderExists();
         
         String folderName = generateFolderName();
@@ -82,7 +83,9 @@ public class DataGeneratorService {
         
         classicDataGenerator.generateClassicZip(zipPath, folderName, invoiceType, invoiceCount);
         
-        Thread.sleep(config.getMarkerDelayMs());
+        if (mode != GenerationMode.FAST) {
+            Thread.sleep(config.getMarkerDelayMs());
+        }
         
         Files.createFile(markerPath);
         log.info("[Batch: {}] [{}/{}] Created marker: {}", batchSize, fileNum, batchSize, markerPath.getFileName());
@@ -131,5 +134,13 @@ public class DataGeneratorService {
             return 0;
         }
         return (long) (random.nextDouble() * (config.getInterFileDelayMaxMs() - config.getInterFileDelayMinMs()) + config.getInterFileDelayMinMs());
+    }
+
+    private GenerationMode resolveBatchMode() {
+        GenerationMode mode = config.getGenerationMode() == null ? GenerationMode.NORMAL : config.getGenerationMode();
+        if (mode == GenerationMode.MIXED) {
+            return random.nextBoolean() ? GenerationMode.NORMAL : GenerationMode.FAST;
+        }
+        return mode;
     }
 }

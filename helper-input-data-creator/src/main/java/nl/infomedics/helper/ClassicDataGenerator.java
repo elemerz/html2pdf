@@ -5,9 +5,10 @@ import org.springframework.stereotype.Component;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.nio.channels.FileChannel;
+import java.nio.file.*;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -76,7 +77,18 @@ public class ClassicDataGenerator {
             zos.closeEntry();
         }
         
-        Files.write(zipPath, baos.toByteArray());
+        // Write to a temp file and atomically move to final name to ensure observers never see a partial ZIP
+        byte[] bytes = baos.toByteArray();
+        Path tempPath = zipPath.resolveSibling(zipPath.getFileName().toString() + ".part");
+        try (FileChannel channel = FileChannel.open(tempPath, StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING)) {
+            channel.write(ByteBuffer.wrap(bytes));
+            channel.force(true); // fsync data to disk
+        }
+        try {
+            Files.move(tempPath, zipPath, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+        } catch (AtomicMoveNotSupportedException ex) {
+            Files.move(tempPath, zipPath, StandardCopyOption.REPLACE_EXISTING);
+        }
     }
 
     private String generateMetaFile(int invoiceType, int count, double totalAmount) {

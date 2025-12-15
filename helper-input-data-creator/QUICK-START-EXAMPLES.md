@@ -32,14 +32,28 @@ java -jar target/helper-input-data-creator-0.0.1-SNAPSHOT.jar ^
   --data-generator.delay.max-ms=2000
 ```
 
-## 5. Custom Output Folder
+## 5. Machine-Gun Mode
+Enable ultra-fast generation (skips inter-file and marker delays):
+```bash
+java -jar target/helper-input-data-creator-0.0.1-SNAPSHOT.jar ^
+  --data-generator.generationMode=fast
+```
+
+## 6. Mixed Mode
+Randomly alternates between normal and fast per batch:
+```bash
+java -jar target/helper-input-data-creator-0.0.1-SNAPSHOT.jar ^
+  --data-generator.generationMode=mixed
+```
+
+## 7. Custom Output Folder
 Send files to a different location:
 ```bash
 java -jar target/helper-input-data-creator-0.0.1-SNAPSHOT.jar ^
   --data-generator.output-folder=D:\test\input
 ```
 
-## 6. Large Invoices
+## 8. Large Invoices
 Generate ZIPs with many invoices:
 ```bash
 java -jar target/helper-input-data-creator-0.0.1-SNAPSHOT.jar ^
@@ -47,7 +61,7 @@ java -jar target/helper-input-data-creator-0.0.1-SNAPSHOT.jar ^
   --data-generator.invoice.max-count=100
 ```
 
-## 7. Slow Steady Stream
+## 9. Slow Steady Stream
 Simulate slow arrival rate:
 ```bash
 java -jar target/helper-input-data-creator-0.0.1-SNAPSHOT.jar ^
@@ -57,7 +71,7 @@ java -jar target/helper-input-data-creator-0.0.1-SNAPSHOT.jar ^
   --data-generator.delay.max-ms=60000
 ```
 
-## 8. Production-like Burst
+## 10. Production-like Burst
 Simulate production bursts:
 ```bash
 java -jar target/helper-input-data-creator-0.0.1-SNAPSHOT.jar ^
@@ -71,7 +85,7 @@ java -jar target/helper-input-data-creator-0.0.1-SNAPSHOT.jar ^
 
 ## Important Notes
 
-1. **Presence Marker Timing**: The helper always creates the `.txt` presence marker 500ms (configurable via `data-generator.marker.delay-ms`) after the `.zip` file to ensure the ZIP is fully written before processing starts.
+1. **Presence Marker Timing**: In `normal` mode, the helper creates the `.txt` presence marker after a configurable delay (`data-generator.markerDelayMs`, default 500ms). In `fast` mode the delay is skipped.
 
 2. **Output Folder**: Make sure the `data-generator.output-folder` matches the `zip.input-folder` in `invoice-parser`'s `application.properties`.
 
