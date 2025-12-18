@@ -320,13 +320,25 @@ export class CellEditorDialogComponent implements OnInit, OnDestroy, AfterViewIn
         spinnerWrapper.style.gap = '4px';
         spinnerWrapper.innerHTML = `<input type=\"number\" min=\"1\" max=\"120\" step=\"0.25\" value=\"${this.currentFontSize}\" style=\"width:60px;padding:2px 4px;font-size:11px;\" /> <span style=\"font-size:11px;\">pt</span>`;
         const inputEl = spinnerWrapper.querySelector('input') as HTMLInputElement;
-        inputEl.addEventListener('input', () => {
+        // Apply size only when user confirms (Enter) or leaves the field, to prevent focus loss mid-typing (e.g., typing 12)
+        const commitSize = () => {
           const v = parseFloat(inputEl.value);
           if (!Number.isFinite(v)) return;
           this.currentFontSize = Math.min(120, Math.max(1, v));
           this.applyFontSize();
           inputEl.value = this.currentFontSize.toString();
+        };
+        inputEl.addEventListener('keydown', (e) => {
+          // Keep typing inside input; do not let Quill intercept toolbar key events
+          e.stopPropagation();
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            commitSize();
+            inputEl.blur();
+          }
         });
+        inputEl.addEventListener('change', () => commitSize());
+        inputEl.addEventListener('blur', () => commitSize());
         if (formatsGroup && formatsGroup.nextSibling) {
           formatsGroup.parentElement!.insertBefore(spinnerWrapper, formatsGroup.nextSibling);
         } else if (formatsGroup) {
